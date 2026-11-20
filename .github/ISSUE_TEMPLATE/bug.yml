@@ -1,0 +1,86 @@
+name: Signaler un bug
+description: Un comportement inattendu, une erreur réseau, un écran qui ne répond pas.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ce dépôt est public : ne joins **aucun nom, adresse, adresse e-mail, identifiant d'appareil,
+        adresse réseau privée réelle, jeton ou clé**. Décris ton environnement sans le citer
+        (« l'iPhone de test », « une adresse privée en 192.168.1.x »). Voir AGENTS.md.
+
+  - type: textarea
+    id: constat
+    attributes:
+      label: Ce qui se passe
+      description: Le comportement observé, avec le message exact affiché par l'app si tu l'as encore sous les yeux.
+    validations:
+      required: true
+
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Ce qui devrait se passer
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Étapes de reproduction
+      placeholder: |
+        1. Réglages → ...
+        2. Ouvrir une conversation avec ...
+        3. Envoyer ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: moteur
+    attributes:
+      label: Moteur utilisé
+      options:
+        - Serveur compatible OpenAI
+        - Modèle Apple (Apple Intelligence)
+        - Modèle GGUF sur l'iPhone
+        - Assistant vocal ou Siri
+        - Sans objet / je ne sais pas
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version de l'app
+      description: Réglages → À propos, par exemple 1.111 (113).
+      placeholder: "1.111 (113)"
+    validations:
+      required: true
+
+  - type: input
+    id: appareil
+    attributes:
+      label: Appareil et version d'iOS
+      description: Modèle et version d'iOS, sans identifiant d'appareil.
+      placeholder: "iPhone 17, iOS 27.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Extraits utiles (facultatif)
+      description: Message d'erreur, code HTTP, réponse du serveur. Retire toute donnée personnelle avant de coller.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: verifications
+    attributes:
+      label: Avant d'envoyer
+      options:
+        - label: J'ai vérifié qu'aucune issue ouverte ne décrit déjà ce problème.
+          required: true
+        - label: Mon message ne contient aucune donnée personnelle ni identifiant d'appareil.
+          required: true

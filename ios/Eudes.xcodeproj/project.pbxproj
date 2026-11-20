@@ -1,0 +1,893 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BF3400000000000000000031 /* LocalModelClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3400000000000000000032 /* LocalModelClient.swift */; };
+		BF3400000000000000000021 /* LocalLlamaEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3400000000000000000022 /* LocalLlamaEngine.swift */; };
+		BF3400000000000000000011 /* EudesLlama in Frameworks */ = {isa = PBXBuildFile; productRef = BF3400000000000000000012 /* EudesLlama */; };
+		BF3400000000000000000005 /* LocalModelDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3400000000000000000006 /* LocalModelDownloads.swift */; };
+		BF3400000000000000000003 /* LocalModelFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3400000000000000000004 /* LocalModelFileStore.swift */; };
+		BF3400000000000000000001 /* LocalModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3400000000000000000002 /* LocalModelCatalog.swift */; };
+		067120A7E842BC6F80F761AA /* Eudes/UI/ServerEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0FCE96955810CF99FFC213D /* Eudes/UI/ServerEditorView.swift */; };
+		0A55EDE78B1EAD7BC2AA06C5 /* Eudes/App/EudesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9646756F4666B1E84E589420 /* Eudes/App/EudesApp.swift */; };
+		0BA972FEEF43E5ACA97E402F /* Eudes/Core/LocalEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161AFF1DF032D60C91E1BB66 /* Eudes/Core/LocalEndpoint.swift */; };
+		0DBD19FA00E702E581585D9C /* Eudes/UI/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2545D0C06F3CBB59C800BD95 /* Eudes/UI/RootView.swift */; };
+		17DF3832B661E529E3E7D201 /* Eudes/Services/LocalAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C941E6104AB4FE6812946B6 /* Eudes/Services/LocalAPIClient.swift */; };
+		1AA7437EB71E617924F8D510 /* Eudes/UI/SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4D1840B2D848BD4684FE994 /* Eudes/UI/SettingsView.swift */; };
+		1CB145524D3AE6B9782F5096 /* Eudes/UI/ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4799D477B725B3F272DBC4B /* Eudes/UI/ChatView.swift */; };
+		20357A64B1AC8F2B9165A2FA /* Eudes/Core/SSEDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A87946A941EC8D425CCBF532 /* Eudes/Core/SSEDecoder.swift */; };
+		2482AB39702F0648A047FAA5 /* Eudes/Services/PrivateStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5682E994F93DF85DFE2B30F /* Eudes/Services/PrivateStorage.swift */; };
+		2620198005FCED2FF3181E8D /* Eudes/Core/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDDD9CDE56FE8454A3A2E69A /* Eudes/Core/Models.swift */; };
+		D1A6C0DE0000000000000002 /* Eudes/Core/DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A6C0DE0000000000000001 /* Eudes/Core/DiagnosticLog.swift */; };
+		2838A4D60DAD9C4BA3EAAC48 /* Eudes/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A4FF486DACFC029802E7AED6 /* Eudes/Assets.xcassets */; };
+		362E57431EBF8D80EAC95A8C /* Eudes/App/AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FA2F47F3E7EC43D47ECE54 /* Eudes/App/AppStore.swift */; };
+		42B6A222A95F1571ABD47F54 /* EudesTests/LocalEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F75A93EDC15D2825D6C2080F /* EudesTests/LocalEndpointTests.swift */; };
+		5BC1563BBA5197C59FE230D7 /* Eudes/UI/DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C40E37904BAE618682923E /* Eudes/UI/DesignSystem.swift */; };
+		81BCCB00A0460D5366E46209 /* EudesTests/PrivateStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D611D0843D71C392E985B599 /* EudesTests/PrivateStorageTests.swift */; };
+		A7E0650EFFE7DA3BB61C5CF8 /* Eudes/UI/HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B6CBD8F1A5FE972232DC2A8 /* Eudes/UI/HistoryView.swift */; };
+		AA1616161616161616161601 /* Eudes/Services/AppleModelClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1616161616161616161602 /* Eudes/Services/AppleModelClient.swift */; };
+		EE0000000000000000000001 /* Eudes/Services/PocketTTS.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0000000000000000000004 /* Eudes/Services/PocketTTS.swift */; };
+		EE0000000000000000000002 /* EudesTests/PocketTTSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0000000000000000000005 /* EudesTests/PocketTTSTests.swift */; };
+		ACBD00000000000000000001 /* Eudes/Services/SiriAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBD00000000000000000002 /* Eudes/Services/SiriAssistant.swift */; };
+		ACBD00000000000000000003 /* EudesTests/SiriAssistantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBD00000000000000000004 /* EudesTests/SiriAssistantTests.swift */; };
+		ACBD00000000000000000005 /* EudesTests/SiriImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBD00000000000000000006 /* EudesTests/SiriImportTests.swift */; };
+		B1C08CEBEF431487E13DD719 /* Eudes/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F64F86472E206717BCA61D9F /* Eudes/PrivacyInfo.xcprivacy */; };
+		BEEF00000000000000000001 /* Eudes/Services/VoiceAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEF00000000000000000002 /* Eudes/Services/VoiceAssistant.swift */; };
+		BEEF00000000000000000003 /* Eudes/UI/VoiceAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEF00000000000000000004 /* Eudes/UI/VoiceAssistantView.swift */; };
+		BEEF00000000000000000005 /* EudesTests/VoiceAssistantTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEF00000000000000000006 /* EudesTests/VoiceAssistantTests.swift */; };
+		C0CF018B6F6DCA4857B98F19 /* Eudes/UI/MessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045112602A09B273F3266732 /* Eudes/UI/MessageView.swift */; };
+		DA6900000000000000000002 /* Eudes/Shared/VoiceActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000001 /* Eudes/Shared/VoiceActivityAttributes.swift */; };
+		DA6900000000000000000003 /* Eudes/Shared/VoiceActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000001 /* Eudes/Shared/VoiceActivityAttributes.swift */; };
+		DA6900000000000000000005 /* Eudes/Shared/StopEudesVoiceIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000004 /* Eudes/Shared/StopEudesVoiceIntent.swift */; };
+		DA6900000000000000000006 /* Eudes/Shared/StopEudesVoiceIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000004 /* Eudes/Shared/StopEudesVoiceIntent.swift */; };
+		DA6900000000000000000008 /* Eudes/Services/VoiceActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000007 /* Eudes/Services/VoiceActivityController.swift */; };
+		DA690000000000000000000A /* Eudes/Services/BackgroundVoiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000009 /* Eudes/Services/BackgroundVoiceSession.swift */; };
+		DA690000000000000000000C /* Eudes/Services/BackgroundVoiceAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA690000000000000000000B /* Eudes/Services/BackgroundVoiceAudio.swift */; };
+		DA690000000000000000000E /* EudesTests/BackgroundVoiceSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA690000000000000000000D /* EudesTests/BackgroundVoiceSessionTests.swift */; };
+		DA6900000000000000000010 /* EudesTests/BackgroundVoiceAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA690000000000000000000F /* EudesTests/BackgroundVoiceAudioTests.swift */; };
+		DA6900000000000000000012 /* EudesVoiceWidget/EudesVoiceWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000011 /* EudesVoiceWidget/EudesVoiceWidget.swift */; };
+		DA690000000000000000001E /* EudesVoiceWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = DA6900000000000000000013 /* EudesVoiceWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EF3B3812E247F20060112D9A /* EudesTests/SSEDecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0934F5FE32CBD99795059D50 /* EudesTests/SSEDecoderTests.swift */; };
+		D1A6C0DE0000000000000004 /* EudesTests/DiagnosticLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A6C0DE0000000000000003 /* EudesTests/DiagnosticLogTests.swift */; };
+		F03811F9309865A800FF8BDE /* WebSearchPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03811F8309865A800FF8BDE /* WebSearchPolicy.swift */; };
+		F03811FB309865AB00FF8BDE /* WebSearchClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03811FA309865AB00FF8BDE /* WebSearchClient.swift */; };
+		F03811FD309865AD00FF8BDE /* WebSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03811FC309865AD00FF8BDE /* WebSearchTests.swift */; };
+		F03811FF309865B400FF8BDE /* WebSearchPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F03811FE309865B400FF8BDE /* WebSearchPolicyTests.swift */; };
+		F0381201309865B600FF8BDE /* WebSearchStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0381200309865B600FF8BDE /* WebSearchStoreTests.swift */; };
+		F0DBAE3930991E8A00C48281 /* HybridWebResearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBAE3830991E8A00C48281 /* HybridWebResearch.swift */; };
+		A88000000000000000000002 /* AppleWebResearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88000000000000000000001 /* AppleWebResearch.swift */; };
+		F0DBAE3B30991E8C00C48281 /* WebResearchModelClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBAE3A30991E8C00C48281 /* WebResearchModelClient.swift */; };
+		F0DBAE3D30991E8F00C48281 /* WebPageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBAE3C30991E8F00C48281 /* WebPageReader.swift */; };
+		F0DBAE3F30991E9000C48281 /* WebResearchModelClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBAE3E30991E9000C48281 /* WebResearchModelClientTests.swift */; };
+		F0DBAE4130991E9200C48281 /* WebPageReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBAE4030991E9200C48281 /* WebPageReaderTests.swift */; };
+		F0DBAE4330991EF100C48281 /* HybridWebResearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBAE4230991EF100C48281 /* HybridWebResearchTests.swift */; };
+		A88000000000000000000004 /* AppleWebResearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88000000000000000000003 /* AppleWebResearchTests.swift */; };
+		F0DBAE453099B5D200C48281 /* AppleSpeechTranscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0DBAE443099B5D200C48281 /* AppleSpeechTranscription.swift */; };
+		FACE05000000000000000012 /* Eudes/Services/VoiceActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE05000000000000000011 /* Eudes/Services/VoiceActions.swift */; };
+		FACE05000000000000000022 /* Eudes/UI/VoiceActionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACE05000000000000000021 /* Eudes/UI/VoiceActionView.swift */; };
+		CA1100000000000000000002 /* Eudes/Services/PocketCoreML/PocketCoreMLEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000001 /* Eudes/Services/PocketCoreML/PocketCoreMLEngine.swift */; };
+		CA1100000000000000000012 /* Eudes/Services/PocketCoreML/PocketTtsLayerKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000011 /* Eudes/Services/PocketCoreML/PocketTtsLayerKeys.swift */; };
+		CA1100000000000000000022 /* Eudes/Services/PocketCoreML/PocketTtsMimiKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000021 /* Eudes/Services/PocketCoreML/PocketTtsMimiKeys.swift */; };
+		CA1100000000000000000032 /* Eudes/Services/PocketCoreML/SentencePieceProto.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000031 /* Eudes/Services/PocketCoreML/SentencePieceProto.swift */; };
+		CA1100000000000000000042 /* Eudes/Services/PocketCoreML/SentencePieceTokenizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1100000000000000000041 /* Eudes/Services/PocketCoreML/SentencePieceTokenizer.swift */; };
+		CAFE00000000000000000004 /* Eudes/Resources/Licenses in Resources */ = {isa = PBXBuildFile; fileRef = CAFE00000000000000000005 /* Eudes/Resources/Licenses */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DA6900000000000000000020 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 244210E48437B6556980A702 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DA6900000000000000000014;
+			remoteInfo = EudesVoiceWidget;
+		};
+		DAB01D73CBBCF1FEDE84E2D6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 244210E48437B6556980A702 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1E9827DB735CA9BAA54A540;
+			remoteInfo = Eudes;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DA690000000000000000001F /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DA690000000000000000001E /* EudesVoiceWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		DE7200000000000000000001 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = SOURCE_ROOT; };
+		BF3400000000000000000032 /* LocalModelClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/LocalModelClient.swift; sourceTree = SOURCE_ROOT; };
+		BF3400000000000000000022 /* LocalLlamaEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/LocalLlamaEngine.swift; sourceTree = SOURCE_ROOT; };
+		BF3400000000000000000006 /* LocalModelDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/LocalModelDownloads.swift; sourceTree = SOURCE_ROOT; };
+		BF3400000000000000000004 /* LocalModelFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/LocalModelFileStore.swift; sourceTree = SOURCE_ROOT; };
+		BF3400000000000000000002 /* LocalModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/LocalModelCatalog.swift; sourceTree = SOURCE_ROOT; };
+		026410DB3982EB37E6A3FEF3 /* Eudes/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Eudes/Info.plist; sourceTree = SOURCE_ROOT; };
+		045112602A09B273F3266732 /* Eudes/UI/MessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/MessageView.swift; sourceTree = SOURCE_ROOT; };
+		0934F5FE32CBD99795059D50 /* EudesTests/SSEDecoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/SSEDecoderTests.swift; sourceTree = SOURCE_ROOT; };
+		D1A6C0DE0000000000000003 /* EudesTests/DiagnosticLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/DiagnosticLogTests.swift; sourceTree = SOURCE_ROOT; };
+		161AFF1DF032D60C91E1BB66 /* Eudes/Core/LocalEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Core/LocalEndpoint.swift; sourceTree = SOURCE_ROOT; };
+		1EB3B7CB8355B1925187BCC2 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
+		2545D0C06F3CBB59C800BD95 /* Eudes/UI/RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/RootView.swift; sourceTree = SOURCE_ROOT; };
+		4B6CBD8F1A5FE972232DC2A8 /* Eudes/UI/HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/HistoryView.swift; sourceTree = SOURCE_ROOT; };
+		5C941E6104AB4FE6812946B6 /* Eudes/Services/LocalAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/LocalAPIClient.swift; sourceTree = SOURCE_ROOT; };
+		681C948D238C526E9E3424E0 /* Eudes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Eudes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		70C40E37904BAE618682923E /* Eudes/UI/DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/DesignSystem.swift; sourceTree = SOURCE_ROOT; };
+		9646756F4666B1E84E589420 /* Eudes/App/EudesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/App/EudesApp.swift; sourceTree = SOURCE_ROOT; };
+		A4D1840B2D848BD4684FE994 /* Eudes/UI/SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/SettingsView.swift; sourceTree = SOURCE_ROOT; };
+		A4FF486DACFC029802E7AED6 /* Eudes/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Eudes/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		A87946A941EC8D425CCBF532 /* Eudes/Core/SSEDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Core/SSEDecoder.swift; sourceTree = SOURCE_ROOT; };
+		AA1616161616161616161602 /* Eudes/Services/AppleModelClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/AppleModelClient.swift; sourceTree = SOURCE_ROOT; };
+		EE0000000000000000000004 /* Eudes/Services/PocketTTS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/PocketTTS.swift; sourceTree = SOURCE_ROOT; };
+		EE0000000000000000000005 /* EudesTests/PocketTTSTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/PocketTTSTests.swift; sourceTree = SOURCE_ROOT; };
+		ACBD00000000000000000002 /* Eudes/Services/SiriAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/SiriAssistant.swift; sourceTree = SOURCE_ROOT; };
+		ACBD00000000000000000004 /* EudesTests/SiriAssistantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/SiriAssistantTests.swift; sourceTree = SOURCE_ROOT; };
+		ACBD00000000000000000006 /* EudesTests/SiriImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/SiriImportTests.swift; sourceTree = SOURCE_ROOT; };
+		BEEF00000000000000000002 /* Eudes/Services/VoiceAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/VoiceAssistant.swift; sourceTree = SOURCE_ROOT; };
+		BEEF00000000000000000004 /* Eudes/UI/VoiceAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/VoiceAssistantView.swift; sourceTree = SOURCE_ROOT; };
+		BEEF00000000000000000006 /* EudesTests/VoiceAssistantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/VoiceAssistantTests.swift; sourceTree = SOURCE_ROOT; };
+		C5682E994F93DF85DFE2B30F /* Eudes/Services/PrivateStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/PrivateStorage.swift; sourceTree = SOURCE_ROOT; };
+		D0FCE96955810CF99FFC213D /* Eudes/UI/ServerEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/ServerEditorView.swift; sourceTree = SOURCE_ROOT; };
+		D611D0843D71C392E985B599 /* EudesTests/PrivateStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/PrivateStorageTests.swift; sourceTree = SOURCE_ROOT; };
+		D8FA2F47F3E7EC43D47ECE54 /* Eudes/App/AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/App/AppStore.swift; sourceTree = SOURCE_ROOT; };
+		DA6900000000000000000001 /* Eudes/Shared/VoiceActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Shared/VoiceActivityAttributes.swift; sourceTree = SOURCE_ROOT; };
+		DA6900000000000000000004 /* Eudes/Shared/StopEudesVoiceIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Shared/StopEudesVoiceIntent.swift; sourceTree = SOURCE_ROOT; };
+		DA6900000000000000000007 /* Eudes/Services/VoiceActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/VoiceActivityController.swift; sourceTree = SOURCE_ROOT; };
+		DA6900000000000000000009 /* Eudes/Services/BackgroundVoiceSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/BackgroundVoiceSession.swift; sourceTree = SOURCE_ROOT; };
+		DA690000000000000000000B /* Eudes/Services/BackgroundVoiceAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/BackgroundVoiceAudio.swift; sourceTree = SOURCE_ROOT; };
+		DA690000000000000000000D /* EudesTests/BackgroundVoiceSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/BackgroundVoiceSessionTests.swift; sourceTree = SOURCE_ROOT; };
+		DA690000000000000000000F /* EudesTests/BackgroundVoiceAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/BackgroundVoiceAudioTests.swift; sourceTree = SOURCE_ROOT; };
+		DA6900000000000000000011 /* EudesVoiceWidget/EudesVoiceWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesVoiceWidget/EudesVoiceWidget.swift; sourceTree = SOURCE_ROOT; };
+		DA6900000000000000000013 /* EudesVoiceWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = EudesVoiceWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		DA690000000000000000001D /* EudesVoiceWidget/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = EudesVoiceWidget/Info.plist; sourceTree = SOURCE_ROOT; };
+		EDDD9CDE56FE8454A3A2E69A /* Eudes/Core/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Core/Models.swift; sourceTree = SOURCE_ROOT; };
+		D1A6C0DE0000000000000001 /* Eudes/Core/DiagnosticLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Core/DiagnosticLog.swift; sourceTree = SOURCE_ROOT; };
+		F03811F8309865A800FF8BDE /* WebSearchPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchPolicy.swift; sourceTree = "<group>"; };
+		F03811FA309865AB00FF8BDE /* WebSearchClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchClient.swift; sourceTree = "<group>"; };
+		F03811FC309865AD00FF8BDE /* WebSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchTests.swift; sourceTree = "<group>"; };
+		F03811FE309865B400FF8BDE /* WebSearchPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchPolicyTests.swift; sourceTree = "<group>"; };
+		F0381200309865B600FF8BDE /* WebSearchStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSearchStoreTests.swift; sourceTree = "<group>"; };
+		F0DBAE3830991E8A00C48281 /* HybridWebResearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HybridWebResearch.swift; sourceTree = "<group>"; };
+		A88000000000000000000001 /* AppleWebResearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleWebResearch.swift; sourceTree = "<group>"; };
+		F0DBAE3A30991E8C00C48281 /* WebResearchModelClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebResearchModelClient.swift; sourceTree = "<group>"; };
+		F0DBAE3C30991E8F00C48281 /* WebPageReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPageReader.swift; sourceTree = "<group>"; };
+		F0DBAE3E30991E9000C48281 /* WebResearchModelClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebResearchModelClientTests.swift; sourceTree = "<group>"; };
+		F0DBAE4030991E9200C48281 /* WebPageReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPageReaderTests.swift; sourceTree = "<group>"; };
+		F0DBAE4230991EF100C48281 /* HybridWebResearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HybridWebResearchTests.swift; sourceTree = "<group>"; };
+		A88000000000000000000003 /* AppleWebResearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleWebResearchTests.swift; sourceTree = "<group>"; };
+		F0DBAE443099B5D200C48281 /* AppleSpeechTranscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSpeechTranscription.swift; sourceTree = "<group>"; };
+		F4799D477B725B3F272DBC4B /* Eudes/UI/ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/ChatView.swift; sourceTree = SOURCE_ROOT; };
+		F64F86472E206717BCA61D9F /* Eudes/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Eudes/PrivacyInfo.xcprivacy; sourceTree = SOURCE_ROOT; };
+		F739566ED5280322FF98A798 /* EudesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EudesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F75A93EDC15D2825D6C2080F /* EudesTests/LocalEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/LocalEndpointTests.swift; sourceTree = SOURCE_ROOT; };
+		FACE05000000000000000011 /* Eudes/Services/VoiceActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/VoiceActions.swift; sourceTree = SOURCE_ROOT; };
+		FACE05000000000000000021 /* Eudes/UI/VoiceActionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/VoiceActionView.swift; sourceTree = SOURCE_ROOT; };
+		CA1100000000000000000001 /* Eudes/Services/PocketCoreML/PocketCoreMLEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/PocketCoreML/PocketCoreMLEngine.swift; sourceTree = SOURCE_ROOT; };
+		CA1100000000000000000011 /* Eudes/Services/PocketCoreML/PocketTtsLayerKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/PocketCoreML/PocketTtsLayerKeys.swift; sourceTree = SOURCE_ROOT; };
+		CA1100000000000000000021 /* Eudes/Services/PocketCoreML/PocketTtsMimiKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/PocketCoreML/PocketTtsMimiKeys.swift; sourceTree = SOURCE_ROOT; };
+		CA1100000000000000000031 /* Eudes/Services/PocketCoreML/SentencePieceProto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/PocketCoreML/SentencePieceProto.swift; sourceTree = SOURCE_ROOT; };
+		CA1100000000000000000041 /* Eudes/Services/PocketCoreML/SentencePieceTokenizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/PocketCoreML/SentencePieceTokenizer.swift; sourceTree = SOURCE_ROOT; };
+		CAFE00000000000000000005 /* Eudes/Resources/Licenses */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Eudes/Resources/Licenses; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7A4C2DC8FCA657188648E999 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF3400000000000000000011 /* EudesLlama in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B10CDED79664567B030B2B4F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DA6900000000000000000017 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		085ED06E573690BA3A56BC1E /* Eudes */ = {
+			isa = PBXGroup;
+			children = (
+				13C4608B5138EBE9B3A45A55 /* App */,
+				2BA340BF271E1A0E2D6B10FC /* Core */,
+				6B8B2B5CD808F874BF4EE1BA /* Services */,
+				6BCFDF74E09E3385B1DD91B6 /* UI */,
+				A4FF486DACFC029802E7AED6 /* Eudes/Assets.xcassets */,
+				F64F86472E206717BCA61D9F /* Eudes/PrivacyInfo.xcprivacy */,
+				CAFE00000000000000000005 /* Eudes/Resources/Licenses */,
+				026410DB3982EB37E6A3FEF3 /* Eudes/Info.plist */,
+				DA690000000000000000001C /* Shared */,
+			);
+			name = Eudes;
+			sourceTree = "<group>";
+		};
+		13C4608B5138EBE9B3A45A55 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				D8FA2F47F3E7EC43D47ECE54 /* Eudes/App/AppStore.swift */,
+				9646756F4666B1E84E589420 /* Eudes/App/EudesApp.swift */,
+			);
+			name = App;
+			sourceTree = "<group>";
+		};
+		2BA340BF271E1A0E2D6B10FC /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				161AFF1DF032D60C91E1BB66 /* Eudes/Core/LocalEndpoint.swift */,
+				EDDD9CDE56FE8454A3A2E69A /* Eudes/Core/Models.swift */,
+				D1A6C0DE0000000000000001 /* Eudes/Core/DiagnosticLog.swift */,
+				A87946A941EC8D425CCBF532 /* Eudes/Core/SSEDecoder.swift */,
+				F03811F8309865A800FF8BDE /* WebSearchPolicy.swift */,
+			);
+			name = Core;
+			sourceTree = "<group>";
+		};
+		6B8B2B5CD808F874BF4EE1BA /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				5C941E6104AB4FE6812946B6 /* Eudes/Services/LocalAPIClient.swift */,
+				AA1616161616161616161602 /* Eudes/Services/AppleModelClient.swift */,
+				BF3400000000000000000002 /* LocalModelCatalog.swift */,
+				BF3400000000000000000004 /* LocalModelFileStore.swift */,
+				BF3400000000000000000006 /* LocalModelDownloads.swift */,
+				BF3400000000000000000022 /* LocalLlamaEngine.swift */,
+				BF3400000000000000000032 /* LocalModelClient.swift */,
+				C5682E994F93DF85DFE2B30F /* Eudes/Services/PrivateStorage.swift */,
+				CA1100000000000000000001 /* Eudes/Services/PocketCoreML/PocketCoreMLEngine.swift */,
+				CA1100000000000000000011 /* Eudes/Services/PocketCoreML/PocketTtsLayerKeys.swift */,
+				CA1100000000000000000021 /* Eudes/Services/PocketCoreML/PocketTtsMimiKeys.swift */,
+				CA1100000000000000000031 /* Eudes/Services/PocketCoreML/SentencePieceProto.swift */,
+				CA1100000000000000000041 /* Eudes/Services/PocketCoreML/SentencePieceTokenizer.swift */,
+				EE0000000000000000000004 /* Eudes/Services/PocketTTS.swift */,
+				ACBD00000000000000000002 /* Eudes/Services/SiriAssistant.swift */,
+				BEEF00000000000000000002 /* Eudes/Services/VoiceAssistant.swift */,
+				FACE05000000000000000011 /* Eudes/Services/VoiceActions.swift */,
+				DA6900000000000000000007 /* Eudes/Services/VoiceActivityController.swift */,
+				DA6900000000000000000009 /* Eudes/Services/BackgroundVoiceSession.swift */,
+				DA690000000000000000000B /* Eudes/Services/BackgroundVoiceAudio.swift */,
+				F03811FA309865AB00FF8BDE /* WebSearchClient.swift */,
+				F0DBAE3830991E8A00C48281 /* HybridWebResearch.swift */,
+				A88000000000000000000001 /* AppleWebResearch.swift */,
+				F0DBAE3A30991E8C00C48281 /* WebResearchModelClient.swift */,
+				F0DBAE3C30991E8F00C48281 /* WebPageReader.swift */,
+				F0DBAE443099B5D200C48281 /* AppleSpeechTranscription.swift */,
+			);
+			name = Services;
+			sourceTree = "<group>";
+		};
+		6BCFDF74E09E3385B1DD91B6 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				F4799D477B725B3F272DBC4B /* Eudes/UI/ChatView.swift */,
+				70C40E37904BAE618682923E /* Eudes/UI/DesignSystem.swift */,
+				4B6CBD8F1A5FE972232DC2A8 /* Eudes/UI/HistoryView.swift */,
+				045112602A09B273F3266732 /* Eudes/UI/MessageView.swift */,
+				2545D0C06F3CBB59C800BD95 /* Eudes/UI/RootView.swift */,
+				D0FCE96955810CF99FFC213D /* Eudes/UI/ServerEditorView.swift */,
+				A4D1840B2D848BD4684FE994 /* Eudes/UI/SettingsView.swift */,
+				BEEF00000000000000000004 /* Eudes/UI/VoiceAssistantView.swift */,
+				FACE05000000000000000021 /* Eudes/UI/VoiceActionView.swift */,
+			);
+			name = UI;
+			sourceTree = "<group>";
+		};
+		6F7199ED7B63CDA338A0FB82 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				681C948D238C526E9E3424E0 /* Eudes.app */,
+				F739566ED5280322FF98A798 /* EudesTests.xctest */,
+				DA6900000000000000000013 /* EudesVoiceWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA0596BBDB4DCC95D5D4F10C = {
+			isa = PBXGroup;
+			children = (
+				DE7200000000000000000001 /* Version.xcconfig */,
+				085ED06E573690BA3A56BC1E /* Eudes */,
+				D60409337774CCE94860379A /* EudesTests */,
+				1EB3B7CB8355B1925187BCC2 /* README.md */,
+				6F7199ED7B63CDA338A0FB82 /* Products */,
+				DA690000000000000000001B /* EudesVoiceWidget */,
+			);
+			sourceTree = "<group>";
+		};
+		D60409337774CCE94860379A /* EudesTests */ = {
+			isa = PBXGroup;
+			children = (
+				F75A93EDC15D2825D6C2080F /* EudesTests/LocalEndpointTests.swift */,
+				D611D0843D71C392E985B599 /* EudesTests/PrivateStorageTests.swift */,
+				0934F5FE32CBD99795059D50 /* EudesTests/SSEDecoderTests.swift */,
+				D1A6C0DE0000000000000003 /* EudesTests/DiagnosticLogTests.swift */,
+				EE0000000000000000000005 /* EudesTests/PocketTTSTests.swift */,
+				ACBD00000000000000000004 /* EudesTests/SiriAssistantTests.swift */,
+				ACBD00000000000000000006 /* EudesTests/SiriImportTests.swift */,
+				BEEF00000000000000000006 /* EudesTests/VoiceAssistantTests.swift */,
+				DA690000000000000000000D /* EudesTests/BackgroundVoiceSessionTests.swift */,
+				DA690000000000000000000F /* EudesTests/BackgroundVoiceAudioTests.swift */,
+				F03811FC309865AD00FF8BDE /* WebSearchTests.swift */,
+				F03811FE309865B400FF8BDE /* WebSearchPolicyTests.swift */,
+				F0381200309865B600FF8BDE /* WebSearchStoreTests.swift */,
+				F0DBAE3E30991E9000C48281 /* WebResearchModelClientTests.swift */,
+				F0DBAE4030991E9200C48281 /* WebPageReaderTests.swift */,
+				F0DBAE4230991EF100C48281 /* HybridWebResearchTests.swift */,
+				A88000000000000000000003 /* AppleWebResearchTests.swift */,
+			);
+			name = EudesTests;
+			sourceTree = "<group>";
+		};
+		DA690000000000000000001B /* EudesVoiceWidget */ = {
+			isa = PBXGroup;
+			children = (
+				DA6900000000000000000011 /* EudesVoiceWidget/EudesVoiceWidget.swift */,
+				DA690000000000000000001D /* EudesVoiceWidget/Info.plist */,
+			);
+			name = EudesVoiceWidget;
+			sourceTree = "<group>";
+		};
+		DA690000000000000000001C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				DA6900000000000000000001 /* Eudes/Shared/VoiceActivityAttributes.swift */,
+				DA6900000000000000000004 /* Eudes/Shared/StopEudesVoiceIntent.swift */,
+			);
+			name = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9805CBD60EB4F66728D5D195 /* EudesTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F406D491D9318B38D3C33F3B /* Build configuration list for PBXNativeTarget "EudesTests" */;
+			buildPhases = (
+				DEE94446A282611C16F7781C /* Sources */,
+				B10CDED79664567B030B2B4F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F9A94CEF8CF7D85CE881E703 /* PBXTargetDependency */,
+			);
+			name = EudesTests;
+			productName = EudesTests;
+			productReference = F739566ED5280322FF98A798 /* EudesTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C1E9827DB735CA9BAA54A540 /* Eudes */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6795AA1E502B5E6EC50E8E4A /* Build configuration list for PBXNativeTarget "Eudes" */;
+			buildPhases = (
+				AFF87A50730392B6633ACECE /* Sources */,
+				7A4C2DC8FCA657188648E999 /* Frameworks */,
+				F9187E824FE171A6F0EFAE28 /* Resources */,
+				DA690000000000000000001F /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DA6900000000000000000021 /* PBXTargetDependency */,
+			);
+			name = Eudes;
+			packageProductDependencies = (
+				BF3400000000000000000012 /* EudesLlama */,
+			);
+			productName = Eudes;
+			productReference = 681C948D238C526E9E3424E0 /* Eudes.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DA6900000000000000000014 /* EudesVoiceWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DA6900000000000000000015 /* Build configuration list for PBXNativeTarget "EudesVoiceWidget" */;
+			buildPhases = (
+				DA6900000000000000000016 /* Sources */,
+				DA6900000000000000000017 /* Frameworks */,
+				DA6900000000000000000018 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = EudesVoiceWidget;
+			productName = EudesVoiceWidget;
+			productReference = DA6900000000000000000013 /* EudesVoiceWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		244210E48437B6556980A702 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					9805CBD60EB4F66728D5D195 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = C1E9827DB735CA9BAA54A540;
+					};
+					C1E9827DB735CA9BAA54A540 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					DA6900000000000000000014 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = FB7322C6EF0D899F04056893 /* Build configuration list for PBXProject "Eudes" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = fr;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				fr,
+				en,
+				Base,
+			);
+			mainGroup = AA0596BBDB4DCC95D5D4F10C;
+			packageReferences = (
+				BF3400000000000000000013 /* XCLocalSwiftPackageReference "Packages/EudesLlama" */,
+			);
+			productRefGroup = 6F7199ED7B63CDA338A0FB82 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DA6900000000000000000014 /* EudesVoiceWidget */,
+				C1E9827DB735CA9BAA54A540 /* Eudes */,
+				9805CBD60EB4F66728D5D195 /* EudesTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DA6900000000000000000018 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F9187E824FE171A6F0EFAE28 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2838A4D60DAD9C4BA3EAAC48 /* Eudes/Assets.xcassets in Resources */,
+				B1C08CEBEF431487E13DD719 /* Eudes/PrivacyInfo.xcprivacy in Resources */,
+				CAFE00000000000000000004 /* Eudes/Resources/Licenses in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AFF87A50730392B6633ACECE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				362E57431EBF8D80EAC95A8C /* Eudes/App/AppStore.swift in Sources */,
+				0A55EDE78B1EAD7BC2AA06C5 /* Eudes/App/EudesApp.swift in Sources */,
+				F0DBAE3930991E8A00C48281 /* HybridWebResearch.swift in Sources */,
+				A88000000000000000000002 /* AppleWebResearch.swift in Sources */,
+				0BA972FEEF43E5ACA97E402F /* Eudes/Core/LocalEndpoint.swift in Sources */,
+				2620198005FCED2FF3181E8D /* Eudes/Core/Models.swift in Sources */,
+				D1A6C0DE0000000000000002 /* Eudes/Core/DiagnosticLog.swift in Sources */,
+				20357A64B1AC8F2B9165A2FA /* Eudes/Core/SSEDecoder.swift in Sources */,
+				F0DBAE3D30991E8F00C48281 /* WebPageReader.swift in Sources */,
+				17DF3832B661E529E3E7D201 /* Eudes/Services/LocalAPIClient.swift in Sources */,
+				AA1616161616161616161601 /* Eudes/Services/AppleModelClient.swift in Sources */,
+				BF3400000000000000000001 /* LocalModelCatalog.swift in Sources */,
+				BF3400000000000000000003 /* LocalModelFileStore.swift in Sources */,
+				BF3400000000000000000005 /* LocalModelDownloads.swift in Sources */,
+				BF3400000000000000000021 /* LocalLlamaEngine.swift in Sources */,
+				BF3400000000000000000031 /* LocalModelClient.swift in Sources */,
+				2482AB39702F0648A047FAA5 /* Eudes/Services/PrivateStorage.swift in Sources */,
+				1CB145524D3AE6B9782F5096 /* Eudes/UI/ChatView.swift in Sources */,
+				5BC1563BBA5197C59FE230D7 /* Eudes/UI/DesignSystem.swift in Sources */,
+				A7E0650EFFE7DA3BB61C5CF8 /* Eudes/UI/HistoryView.swift in Sources */,
+				C0CF018B6F6DCA4857B98F19 /* Eudes/UI/MessageView.swift in Sources */,
+				0DBD19FA00E702E581585D9C /* Eudes/UI/RootView.swift in Sources */,
+				F0DBAE453099B5D200C48281 /* AppleSpeechTranscription.swift in Sources */,
+				067120A7E842BC6F80F761AA /* Eudes/UI/ServerEditorView.swift in Sources */,
+				1AA7437EB71E617924F8D510 /* Eudes/UI/SettingsView.swift in Sources */,
+				CA1100000000000000000002 /* Eudes/Services/PocketCoreML/PocketCoreMLEngine.swift in Sources */,
+				CA1100000000000000000012 /* Eudes/Services/PocketCoreML/PocketTtsLayerKeys.swift in Sources */,
+				CA1100000000000000000022 /* Eudes/Services/PocketCoreML/PocketTtsMimiKeys.swift in Sources */,
+				CA1100000000000000000032 /* Eudes/Services/PocketCoreML/SentencePieceProto.swift in Sources */,
+				CA1100000000000000000042 /* Eudes/Services/PocketCoreML/SentencePieceTokenizer.swift in Sources */,
+				EE0000000000000000000001 /* Eudes/Services/PocketTTS.swift in Sources */,
+				ACBD00000000000000000001 /* Eudes/Services/SiriAssistant.swift in Sources */,
+				BEEF00000000000000000001 /* Eudes/Services/VoiceAssistant.swift in Sources */,
+				FACE05000000000000000012 /* Eudes/Services/VoiceActions.swift in Sources */,
+				BEEF00000000000000000003 /* Eudes/UI/VoiceAssistantView.swift in Sources */,
+				FACE05000000000000000022 /* Eudes/UI/VoiceActionView.swift in Sources */,
+				F03811F9309865A800FF8BDE /* WebSearchPolicy.swift in Sources */,
+				DA6900000000000000000002 /* Eudes/Shared/VoiceActivityAttributes.swift in Sources */,
+				F03811FB309865AB00FF8BDE /* WebSearchClient.swift in Sources */,
+				DA6900000000000000000005 /* Eudes/Shared/StopEudesVoiceIntent.swift in Sources */,
+				DA6900000000000000000008 /* Eudes/Services/VoiceActivityController.swift in Sources */,
+				DA690000000000000000000A /* Eudes/Services/BackgroundVoiceSession.swift in Sources */,
+				F0DBAE3B30991E8C00C48281 /* WebResearchModelClient.swift in Sources */,
+				DA690000000000000000000C /* Eudes/Services/BackgroundVoiceAudio.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DA6900000000000000000016 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA6900000000000000000003 /* Eudes/Shared/VoiceActivityAttributes.swift in Sources */,
+				DA6900000000000000000006 /* Eudes/Shared/StopEudesVoiceIntent.swift in Sources */,
+				DA6900000000000000000012 /* EudesVoiceWidget/EudesVoiceWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DEE94446A282611C16F7781C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0381201309865B600FF8BDE /* WebSearchStoreTests.swift in Sources */,
+				42B6A222A95F1571ABD47F54 /* EudesTests/LocalEndpointTests.swift in Sources */,
+				81BCCB00A0460D5366E46209 /* EudesTests/PrivateStorageTests.swift in Sources */,
+				EF3B3812E247F20060112D9A /* EudesTests/SSEDecoderTests.swift in Sources */,
+				D1A6C0DE0000000000000004 /* EudesTests/DiagnosticLogTests.swift in Sources */,
+				F03811FF309865B400FF8BDE /* WebSearchPolicyTests.swift in Sources */,
+				EE0000000000000000000002 /* EudesTests/PocketTTSTests.swift in Sources */,
+				F03811FD309865AD00FF8BDE /* WebSearchTests.swift in Sources */,
+				ACBD00000000000000000003 /* EudesTests/SiriAssistantTests.swift in Sources */,
+				F0DBAE4130991E9200C48281 /* WebPageReaderTests.swift in Sources */,
+				ACBD00000000000000000005 /* EudesTests/SiriImportTests.swift in Sources */,
+				BEEF00000000000000000005 /* EudesTests/VoiceAssistantTests.swift in Sources */,
+				F0DBAE3F30991E9000C48281 /* WebResearchModelClientTests.swift in Sources */,
+				DA690000000000000000000E /* EudesTests/BackgroundVoiceSessionTests.swift in Sources */,
+				DA6900000000000000000010 /* EudesTests/BackgroundVoiceAudioTests.swift in Sources */,
+				F0DBAE4330991EF100C48281 /* HybridWebResearchTests.swift in Sources */,
+				A88000000000000000000004 /* AppleWebResearchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DA6900000000000000000021 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DA6900000000000000000014 /* EudesVoiceWidget */;
+			targetProxy = DA6900000000000000000020 /* PBXContainerItemProxy */;
+		};
+		F9A94CEF8CF7D85CE881E703 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C1E9827DB735CA9BAA54A540 /* Eudes */;
+			targetProxy = DAB01D73CBBCF1FEDE84E2D6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		07CA1E69F6068DEA30A4DA6B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1E2E67F111F111E446D58E6C /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DE7200000000000000000001 /* Version.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIconWhite;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Eudes/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = fr.eudes.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		2B23A31EEC75B029432F2445 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AA9B1D3BE1353EBD76471D11 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DE7200000000000000000001 /* Version.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIconWhite;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Eudes/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.eudes.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DA6900000000000000000019 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DE7200000000000000000001 /* Version.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EudesVoiceWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.eudes.app.voice-widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited) EUDES_WIDGET_EXTENSION";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DA690000000000000000001A /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DE7200000000000000000001 /* Version.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = EudesVoiceWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "fr.eudes.app.voice-widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) EUDES_WIDGET_EXTENSION";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E34EE53A3E62A34779B371CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = fr.eudes.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Eudes.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Eudes";
+			};
+			name = Debug;
+		};
+		E97F71539C04187DB94DC132 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = fr.eudes.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Eudes.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Eudes";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6795AA1E502B5E6EC50E8E4A /* Build configuration list for PBXNativeTarget "Eudes" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA9B1D3BE1353EBD76471D11 /* Debug */,
+				1E2E67F111F111E446D58E6C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DA6900000000000000000015 /* Build configuration list for PBXNativeTarget "EudesVoiceWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA6900000000000000000019 /* Debug */,
+				DA690000000000000000001A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F406D491D9318B38D3C33F3B /* Build configuration list for PBXNativeTarget "EudesTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E34EE53A3E62A34779B371CD /* Debug */,
+				E97F71539C04187DB94DC132 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FB7322C6EF0D899F04056893 /* Build configuration list for PBXProject "Eudes" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B23A31EEC75B029432F2445 /* Debug */,
+				07CA1E69F6068DEA30A4DA6B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		BF3400000000000000000013 /* XCLocalSwiftPackageReference "Packages/EudesLlama" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/EudesLlama; };
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BF3400000000000000000012 /* EudesLlama */ = {isa = XCSwiftPackageProductDependency; productName = EudesLlama; };
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 244210E48437B6556980A702 /* Project object */;
+}
+

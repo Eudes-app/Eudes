@@ -1,0 +1,68 @@
+name: Proposer une amélioration
+description: Un manque, une idée d'usage, une amélioration d'un écran existant.
+title: "[Amélioration] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Décris le besoin avant la solution. Les conversations de ce dépôt sont publiques :
+        ne joins aucune donnée personnelle. Voir AGENTS.md.
+
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Besoin
+      description: Ce que tu cherches à faire, et pourquoi l'app ne le permet pas aujourd'hui.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposition
+    attributes:
+      label: Solution proposée
+      description: Où cela se passerait dans l'interface, et à quoi ressemblerait le résultat.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées
+      description: Une autre piste, un contournement actuel, une app qui le fait déjà.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: zone
+    attributes:
+      label: Zone concernée
+      options:
+        - Chat et saisie
+        - Modèles et réglages de génération
+        - Serveurs et connexions
+        - Voix, Siri et Raccourcis
+        - Recherche Web
+        - Confidentialité et stockage
+        - Livraison, CI ou documentation
+        - Autre
+    validations:
+      required: true
+
+  - type: textarea
+    id: confidentialite
+    attributes:
+      label: Impact sur la confidentialité
+      description: Nouvel appel réseau, nouvelle donnée stockée, nouveau service tiers ? Laisse vide si aucun.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: verifications
+    attributes:
+      label: Avant d'envoyer
+      options:
+        - label: J'ai vérifié qu'aucune issue ouverte ne propose déjà cette idée.
+          required: true
+        - label: Mon message ne contient aucune donnée personnelle.
+          required: true

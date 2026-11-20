@@ -1,0 +1,3 @@
+interface:
+  display_name: "Eudes Development Cycle"
+  short_description: "Report verified Eudes workflow stages and results"

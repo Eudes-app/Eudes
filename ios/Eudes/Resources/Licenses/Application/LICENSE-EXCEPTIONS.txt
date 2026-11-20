@@ -1,0 +1,35 @@
+Additional permissions — GNU GPL version 3, section 7
+
+Eudes is released under the GNU General Public License, version 3 (see LICENSE.txt). The
+copyright holders of Eudes — the Eudes authors — grant the additional permission below,
+under section 7 of that licence.
+
+DISTRIBUTION THROUGH APPLICATION STORES
+
+You may convey Eudes, and works based on it, in object code form through the Apple App
+Store, TestFlight, and comparable application distribution services, and you may accept
+the standard terms those services impose on distributed applications, notwithstanding any
+term of the GPLv3 that would otherwise conflict with that distribution — including
+device- and account-based usage limits, restrictions on redistribution of the store
+binary, signing and review requirements, and the absence of Installation Information as
+defined in GPLv3 section 6.
+
+This permission is conditional on:
+
+1. the complete Corresponding Source of the conveyed version remaining publicly
+   available, free of charge, under the GPLv3;
+2. the conveyed work identifying where that source can be obtained — about screen, store
+   listing or accompanying documentation;
+3. no further restriction being imposed on the rights granted by the GPLv3 beyond what
+   the store operator's terms unavoidably impose.
+
+SCOPE
+
+This permission is additional to the GPLv3 and does not replace it: the program remains
+free software, and every other condition of the licence still applies.
+
+As section 7 of the GPLv3 provides, anyone conveying a copy may remove this additional
+permission from their own copy. It may not be replaced by a further restriction.
+
+Nothing here changes the terms of the application store itself, which remain between the
+store operator and the person distributing the application.

@@ -1,0 +1,40 @@
+name: Signaler des corrections
+run-name: 'Corrections PR #${{ inputs.pr_number }} · ${{ inputs.commit_sha }}'
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Numéro de PR concernée par le problème constaté'
+        required: true
+        type: string
+      commit_sha:
+        description: 'Commit concerné (SHA complet)'
+        required: true
+        type: string
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  corrections:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PR_NUMBER: ${{ inputs.pr_number }}
+      REVIEWED_SHA: ${{ inputs.commit_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Invalidate review validation for this revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/delivery_control.py corrections
+      - name: Return linked issues to Corrections
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_AUTOMATION_TOKEN }}
+        run: |
+          python3 tools/update-project-workflow.py Corrections
+          python3 tools/update-project-workflow.py 'À refaire' --field 'Validation iPhone'
+          python3 tools/update-project-workflow.py 'À valider' --field 'Livraison finale'

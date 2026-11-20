@@ -1,0 +1,5 @@
+// Development baseline and initial floor for the delivery registry.
+// 1.111 (113) is the rename and publication baseline (see CHANGELOG.md).
+// New deliveries are allocated by tools/delivery_version.py, not by editing this file.
+MARKETING_VERSION = 1.111
+CURRENT_PROJECT_VERSION = 113
