@@ -55,6 +55,13 @@ Tout le code est dans [ios/](ios/). Ouvrir `ios/Eudes.xcodeproj`, pas un fichier
 - Copie explicite, presse-papiers local uniquement, expiration après deux minutes.
 - Protection des données à l'écran lorsque l'app devient inactive.
 
+## Captures
+
+[La galerie](docs/GALLERY.md) rassemble les captures de l'application, ajoutées au fur et à mesure
+des livraisons. Son tableau de couverture indique les écrans déjà publiés et ceux qui restent à
+capturer ; les images sont des captures réelles, avec des données de démonstration, sans
+conversation personnelle, sans adresse réseau réelle et sans clé.
+
 ## Installer sans Mac
 
 Aucune version signée n'est publiée : l'app se compile sur GitHub Actions et se signe avec ton propre identifiant Apple.

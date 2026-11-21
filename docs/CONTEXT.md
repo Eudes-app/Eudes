@@ -53,7 +53,7 @@ En cas de dépassement estimé ou de coût image inconnu avec budget défini : d
 
 ## Validation
 
-Tests synthétiques : migration sans nouveaux champs, persistance/isolation par destination/protocole/modèle, valeurs invalides et entrées dupliquées, plafonds contradictoires, réserve de sortie, Unicode, coût image inconnu, correspondance des deux payloads et plafond Apple, annulation puis confirmation périmée/refaite, découverte retardée après changement de modèle ou enregistrement de la connexion. Aucun service réel ni clé utilisateur utilisé. Les contrôles visuels sont détaillés dans la galerie.
+Tests synthétiques : migration sans nouveaux champs, persistance/isolation par destination/protocole/modèle, valeurs invalides et entrées dupliquées, plafonds contradictoires, réserve de sortie, Unicode, coût image inconnu, correspondance des deux payloads et plafond Apple, annulation puis confirmation périmée/refaite, découverte retardée après changement de modèle ou enregistrement de la connexion. Aucun service réel ni clé utilisateur utilisé. Les contrôles visuels sont consignés dans [la galerie](GALLERY.md), qui indique les écrans capturés et ceux qui restent à vérifier.
 
 Références officielles consultées le 27 octobre 2026 :
 - [OpenAI — liste des modèles](https://developers.openai.com/api/reference/resources/models/methods/list)
