@@ -23,10 +23,13 @@ def graphql(query, **variables):
     command = ["gh", "api", "graphql", "-f", "query=" + query]
     for key, value in variables.items():
         command += ["-F", f"{key}={value}"]
-    output = subprocess.run(command, check=True, text=True, capture_output=True)
+    output = subprocess.run(command, text=True, capture_output=True)
+    if output.returncode:
+        detail = (output.stderr or output.stdout).strip()
+        raise RuntimeError(f"GraphQL request failed: {detail[:800]}")
     data = json.loads(output.stdout)
     if data.get("errors"):
-        raise RuntimeError("GraphQL request failed")
+        raise RuntimeError("GraphQL request failed: " + json.dumps(data["errors"], ensure_ascii=False)[:800])
     return data["data"]
 
 
