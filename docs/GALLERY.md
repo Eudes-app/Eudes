@@ -4,9 +4,11 @@ Captures réelles de l'application sur iPhone, avec des données de démonstrati
 conversation personnelle, aucune adresse réseau réelle, aucune clé : les règles de publication
 sont celles de [AGENTS.md](../AGENTS.md#never-publish-personal-data).
 
-La galerie se remplit au fur et à mesure des livraisons. Le tableau de couverture dit ce qui est
-déjà publié et ce qui reste à capturer ; une section sans image est une section encore vide, pas
-une capture manquante par oubli.
+La galerie se remplit **au fil des pull requests** : une capture s'ajoute quand une PR touche un
+écran, quand une issue en fournit une, ou quand une vérification visuelle est faite de toute façon.
+Il n'y a pas de campagne de captures dédiée. Le tableau de couverture dit ce qui est déjà publié et
+ce qui n'a pas encore d'image ; une section vide est simplement un écran qu'aucune PR n'a encore
+documenté, ce n'est pas une tâche en attente.
 
 Les images de cette galerie remplacent celles publiées avant le renommage : elles montraient
 l'ancien nom de l'application et ont été retirées du dépôt.
@@ -28,14 +30,14 @@ l'ancien nom de l'application et ont été retirées du dépôt.
 
 | # | Écran | Fichier attendu | État |
 |---|---|---|---|
-| 1 | Accueil, conversation vide | `accueil-clair-<issue>.png` | à capturer |
-| 2 | Accueil en thème sombre | `accueil-sombre-<issue>.png` | à capturer |
-| 3 | Conversation et réponse en streaming | `conversation-clair-<issue>.png` | à capturer |
-| 4 | Recherche Web et sources citées | `recherche-web-clair-<issue>.png` | à capturer |
-| 5 | Réglages : modèles installés | `modeles-clair-<issue>.png` | à capturer |
-| 6 | Réglages : serveur et connexion | `serveur-clair-<issue>.png` | à capturer |
-| 7 | Réglages en thème sombre | `reglages-sombre-<issue>.png` | à capturer |
-| 8 | Assistant vocal et Live Activity | `voix-clair-<issue>.png` | à capturer |
+| 1 | Accueil, conversation vide | `accueil-clair-<issue>.png` | en attente |
+| 2 | Accueil en thème sombre | `accueil-sombre-<issue>.png` | en attente |
+| 3 | Conversation et réponse en streaming | `conversation-clair-<issue>.png` | en attente |
+| 4 | Recherche Web et sources citées | `recherche-web-clair-<issue>.png` | en attente |
+| 5 | Réglages : modèles installés | `modeles-clair-<issue>.png` | en attente |
+| 6 | Réglages : serveur et connexion | `serveur-clair-<issue>.png` | en attente |
+| 7 | Réglages en thème sombre | `reglages-sombre-<issue>.png` | en attente |
+| 8 | Assistant vocal et Live Activity | `voix-clair-<issue>.png` | en attente |
 
 ## 1. Accueil
 

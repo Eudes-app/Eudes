@@ -1,6 +1,7 @@
 # Captures de la galerie
 
-Ce dossier reçoit les captures de l'application publiées dans [la galerie](../GALLERY.md).
+Ce dossier reçoit les captures de l'application publiées dans [la galerie](../GALLERY.md),
+au fil des pull requests qui touchent un écran. Pas de campagne de captures dédiée.
 
 - Nommage : `<écran>-<clair|sombre>-<issue>.png`, minuscules et tirets.
 - Données de démonstration uniquement : aucune conversation personnelle, aucune adresse réseau
