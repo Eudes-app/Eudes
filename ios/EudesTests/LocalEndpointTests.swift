@@ -1,3 +1,5 @@
+// personal-data: allow-file — les tests d'endpoint citent des adresses RFC 1918
+// (10.0.0.1, 172.16.0.1) parce que la politique réseau doit les accepter ou les refuser.
 import XCTest
 import UIKit
 import Network

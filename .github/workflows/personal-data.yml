@@ -1,0 +1,43 @@
+name: Personal data check
+
+# Deuxième filet, après le hook de commit : le texte d'une issue ou d'une PR ne
+# peut pas être bloqué avant publication, mais il peut être signalé en quelques
+# secondes. Le journal n'affiche jamais la valeur trouvée, seulement sa nature.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Contrôler le texte publié
+        env:
+          TITRE: ${{ github.event.pull_request.title || github.event.issue.title }}
+          CORPS: ${{ github.event.pull_request.body || github.event.issue.body }}
+        run: |
+          set -eu
+          printf '%s\n\n%s\n' "${TITRE:-}" "${CORPS:-}" > "$RUNNER_TEMP/texte.txt"
+          python3 tools/check_personal_data.py --text "$RUNNER_TEMP/texte.txt"
+
+      - name: Contrôler les fichiers modifiés
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          TETE: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          git diff --name-only "$BASE...$TETE" > "$RUNNER_TEMP/fichiers.txt"
+          if [ -s "$RUNNER_TEMP/fichiers.txt" ]; then
+            python3 tools/check_personal_data.py --files $(cat "$RUNNER_TEMP/fichiers.txt")
+          fi
