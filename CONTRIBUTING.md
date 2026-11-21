@@ -12,6 +12,21 @@ Lire d'abord [AGENTS.md](AGENTS.md) : il contient la règle sur les données per
 
 Un lot = une issue = une branche = une pull request. Si une dépendance technique oblige à empiler deux changements, le second part d'une base non fusionnée et le dit dans sa description.
 
+## Garde-fou automatique
+
+Un contrôle refuse les données personnelles avant qu'elles n'entrent dans le dépôt.
+
+```bash
+# une fois par clone, après avoir cloné
+git config core.hooksPath .githooks
+```
+
+Le hook `pre-commit` analyse les lignes ajoutées à l'index et refuse le commit s'il y trouve un nom de personne réel, une adresse e-mail, un identifiant d'appareil, un Team ID Apple, une adresse réseau privée ou un jeton. Il n'affiche jamais la valeur, seulement sa nature et sa position. `git commit --no-verify` passe outre : c'est une décision à assumer, pas une habitude.
+
+Les valeurs d'exemple documentées passent sans bruit : `192.168.1.20`, les plages de documentation RFC 5737 (`192.0.2.0/24` et voisines) et les adresses `noreply.github.com`. Un fichier de tests qui doit citer des adresses privées le déclare en tête, par la ligne `personal-data: allow-file` suivie de sa justification.
+
+Le même contrôle tourne en intégration continue sur le texte des issues et des pull requests (`Personal data check`), où rien ne peut être bloqué avant publication. Il ne remplace pas la relecture : il signale en secondes ce qu'une relecture aurait vu en minutes.
+
 ## Branches et commits
 
 - Nomme la branche d'après le sujet : `pseudo/sujet-court`, par exemple `adrienn/renommage-eudes`.

@@ -40,6 +40,18 @@ comments, discussions, labels, screenshots or build artifacts.
   ("the UDID of the test iPhone") instead of quoting it. Quoting it in a bug
   report reopens the leak the report is supposed to close.
 
+The rule is enforced, not only written. `tools/check_personal_data.py` scans added
+lines, whole files and free text; `.githooks/pre-commit` runs it before a commit
+exists, and `.github/workflows/personal-data.yml` runs it on issue and pull request
+text. Both report the category and the position, never the value found. Never bypass
+the hook with `--no-verify` to publish a value the rule forbids; if a check is wrong,
+fix the pattern in `tools/check_personal_data.py` and add a test instead.
+
+Documented example values are allowed on purpose: `192.168.1.20`, RFC 5737 ranges
+(`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`) and `users.noreply.github.com`.
+A test file that must list private addresses declares `personal-data: allow-file` in
+its first lines, with a reason.
+
 ## Language
 
 User-facing text is French. `README.md` and `docs/` are French. This file and

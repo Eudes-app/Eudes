@@ -1,0 +1,24 @@
+#!/bin/sh
+# Refuse un commit qui introduit une donnée personnelle ou un secret.
+#
+# Installation, une fois par clone :  git config core.hooksPath .githooks
+# Le contrôle porte sur les lignes ajoutées à l'index, donc rien n'existe encore
+# dans l'historique quand il refuse. Voir AGENTS.md, « Never publish personal data ».
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "garde-fou données personnelles : python3 introuvable, contrôle ignoré." >&2
+    exit 0
+fi
+
+if ! python3 "$root/tools/check_personal_data.py" --staged; then
+    echo "" >&2
+    echo "Commit refusé : une valeur ci-dessus ne doit pas être publiée." >&2
+    echo "Remplacer par un libellé neutre (« l'iPhone de test », une adresse d'exemple)" >&2
+    echo "ou lire AGENTS.md, section « Never publish personal data »." >&2
+    echo "Contrôle ponctuel : git commit --no-verify" >&2
+    exit 1
+fi
+
+exit 0

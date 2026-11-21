@@ -1,3 +1,5 @@
+// personal-data: allow-file — les tests de la politique d'adresses énumèrent des plages
+// privées et réservées pour vérifier qu'elles sont refusées.
 import XCTest
 import Network
 @testable import Eudes

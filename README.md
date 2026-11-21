@@ -16,6 +16,9 @@ Ce dépôt est public : **aucun nom, prénom, adresse, adresse e-mail, identifia
 réseau privée réelle, jeton ou clé ne doit être écrit** dans le code, les documents, les commits,
 les issues, les pull requests, les commentaires de revue, les captures ou les artefacts. Les règles
 et les formulations neutres attendues sont dans [AGENTS.md](AGENTS.md#never-publish-personal-data).
+La règle est aussi outillée : un hook `pre-commit` refuse le commit qui introduit une telle valeur,
+et le workflow `Personal data check` contrôle le texte des issues et des pull requests. Mise en
+place du hook et valeurs d'exemple admises : [CONTRIBUTING.md](CONTRIBUTING.md#garde-fou-automatique).
 
 ## Structure du dépôt
 
