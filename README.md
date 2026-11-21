@@ -167,7 +167,7 @@ Pour proposer du code : [CONTRIBUTING.md](CONTRIBUTING.md) — une issue par suj
 
 ## Licence
 
-Eudes est distribué sous **GNU General Public License v3.0** — voir [LICENSE](LICENSE). Tu peux utiliser, modifier et redistribuer l'application, à condition de publier tes modifications sous la même licence et de conserver la mention de copyright.
+Eudes est distribué sous **GNU General Public License, version 3** — ni « ou ultérieure », la version 3 seule. Le texte intégral est dans [LICENSE](LICENSE), conservé tel que publié par la Free Software Foundation ; le titulaire du copyright et la portée exacte sont dans [NOTICE](NOTICE). Tu peux utiliser, modifier et redistribuer l'application, à condition de publier tes modifications sous la même licence et de conserver la mention de copyright.
 
 Une **permission supplémentaire**, prévue par la section 7 de la GPL, autorise en plus la distribution de l'application par les magasins d'applications (App Store, TestFlight) : voir [LICENSE-EXCEPTIONS.md](LICENSE-EXCEPTIONS.md). Elle ajoute un droit, ne retire rien, et chacun peut la retirer de sa propre copie.
 

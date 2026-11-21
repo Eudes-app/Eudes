@@ -1,6 +1,6 @@
 # Additional permissions — GNU GPL version 3, section 7
 
-Eudes is released under the GNU General Public License, version 3 (see [LICENSE](LICENSE)).
+Eudes is released under the GNU General Public License, version 3 — and version 3 only (see [LICENSE](LICENSE); copyright and scope in [NOTICE](NOTICE)).
 The copyright holders of Eudes — the Eudes authors — grant the additional permission
 below, under section 7 of that licence.
 

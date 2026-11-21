@@ -1,0 +1,14 @@
+Eudes — native iOS client for talking with local LLMs
+Copyright (C) 2026 The Eudes authors
+
+This program is free software, released under the GNU General Public License,
+version 3 — and version 3 only, not any later version.
+
+The complete licence text is in LICENSE, kept verbatim so that it can be
+verified against the Free Software Foundation's own copy.
+
+The additional permission granted under section 7 of that licence, which
+allows distribution through application stores, is in LICENSE-EXCEPTIONS.md.
+
+The complete corresponding source of every distributed build is this
+repository, free of charge, at https://github.com/Eudes-app/Eudes.

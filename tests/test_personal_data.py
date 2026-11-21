@@ -32,7 +32,7 @@ class PatternsTests(unittest.TestCase):
         for line in ("http://192.168.1.20:8000/v1",
                      "http://192.168.1.5:8000/v1",
                      "http://192.0.2.7/",
-                     "268676963+adrienncl@users.noreply.github.com",
+                     "12345+example@users.noreply.github.com",
                      "contact@example.com"):
             self.assertEqual(guard.findings(line), [], line)
 
@@ -100,7 +100,7 @@ class StagedTests(unittest.TestCase):
                                capture_output=True, text=True)
 
             git("init", "-q")
-            git("config", "user.email", "268676963+adrienncl@users.noreply.github.com")
+            git("config", "user.email", "12345+example@users.noreply.github.com")
             git("config", "user.name", "guard")
             with open(os.path.join(directory, "notes.md"), "w", encoding="utf-8") as handle:
                 handle.write("serveur http://10.4.12.7:8000\n")
