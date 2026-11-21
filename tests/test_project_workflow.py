@@ -106,6 +106,22 @@ class ProjectWorkflowTests(unittest.TestCase):
         self.assertEqual(workflow.event_stage("pull_request_review", {"action": "submitted", "review": {"state": "changes_requested"}}), "Corrections")
         self.assertIsNone(workflow.event_stage("pull_request_review", {"action": "submitted", "review": {"state": "approved"}}))
 
+    def test_graphql_failure_reports_the_gh_diagnostic(self):
+        failure = subprocess.CompletedProcess(args=[], returncode=1, stdout="",
+                                             stderr="gh: Resource not accessible by personal access token\n")
+        with patch.object(workflow.subprocess, "run", return_value=failure):
+            with self.assertRaises(RuntimeError) as raised:
+                workflow.graphql("query { viewer { login } }")
+        self.assertIn("Resource not accessible by personal access token", str(raised.exception))
+
+    def test_graphql_errors_are_reported_with_their_message(self):
+        answer = subprocess.CompletedProcess(args=[], returncode=0, stderr="",
+                                             stdout=json.dumps({"errors": [{"message": "Could not resolve to a node with the global id"}]}))
+        with patch.object(workflow.subprocess, "run", return_value=answer):
+            with self.assertRaises(RuntimeError) as raised:
+                workflow.graphql("query { viewer { login } }")
+        self.assertIn("Could not resolve to a node", str(raised.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
