@@ -81,7 +81,7 @@ final class WebPageReaderTests: XCTestCase {
         }
     }
 
-    func testRejectsAmbiguousTruncatedAndOversizedHTTPBodies() {
+    func testRejectsAmbiguousTruncatedAndMalformedHTTPBodies() {
         for wire in [
             "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nHi",
             "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nContent-Length: 2\r\n\r\nHi",
@@ -92,11 +92,14 @@ final class WebPageReaderTests: XCTestCase {
         ] {
             XCTAssertThrowsError(try WebPageHTTP.parse(Data(wire.utf8))) { XCTAssertEqual($0 as? WebPageError, .invalidResponse) }
         }
-        XCTAssertThrowsError(try WebPageHTTP.parse(Data(repeating: 65, count: WebPageHTTP.maximumWireBytes + 1))) {
-            XCTAssertEqual($0 as? WebPageError, .responseTooLarge)
-        }
-        let oversized = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 1048577\r\n\r\n"
-        XCTAssertThrowsError(try WebPageHTTP.parse(Data(oversized.utf8))) { XCTAssertEqual($0 as? WebPageError, .responseTooLarge) }
+    }
+
+    func testAcceptsBodiesOfAnySize() throws {
+        let body = Data(repeating: 65, count: 2 * 1_048_576)
+        let header = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: \(body.count)\r\n\r\n"
+        let response = try WebPageHTTP.parse(Data(header.utf8) + body)
+        XCTAssertEqual(response.body, body)
+        XCTAssertEqual(response.contentType, "text/plain")
     }
 
     func testHTMLExtractionPrefersArticleAndRemovesNonContent() throws {
@@ -111,11 +114,10 @@ final class WebPageReaderTests: XCTestCase {
         XCTAssertEqual(text, "Climat & météo Température : 21 °C. Détails établis.")
     }
 
-    func testTextExtractionDoesNotTreatTextAsHTMLAndBoundsEvidence() throws {
+    func testTextExtractionDoesNotTreatTextAsHTMLAndKeepsFullText() throws {
         let plain = "A < B &amp; C.\n\n" + String(repeating: "x", count: 7_000)
         let result = try DirectWebPageReader.extract(WebPageResponse(body: Data(plain.utf8), contentType: "text/plain"))
-        XCTAssertTrue(result.hasPrefix("A < B &amp; C. "))
-        XCTAssertEqual(result.count, 6_000)
+        XCTAssertEqual(result, "A < B &amp; C. " + String(repeating: "x", count: 7_000))
         XCTAssertThrowsError(try DirectWebPageReader.extract(WebPageResponse(body: Data("<script>hidden</script>".utf8), contentType: "text/html"))) {
             XCTAssertEqual($0 as? WebPageError, .emptyPage)
         }
