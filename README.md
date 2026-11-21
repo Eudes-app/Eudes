@@ -57,10 +57,10 @@ Tout le code est dans [ios/](ios/). Ouvrir `ios/Eudes.xcodeproj`, pas un fichier
 
 ## Captures
 
-[La galerie](docs/GALLERY.md) rassemble les captures de l'application, ajoutées au fur et à mesure
-des livraisons. Son tableau de couverture indique les écrans déjà publiés et ceux qui restent à
-capturer ; les images sont des captures réelles, avec des données de démonstration, sans
-conversation personnelle, sans adresse réseau réelle et sans clé.
+[La galerie](docs/GALLERY.md) rassemble les captures de l'application, ajoutées au fil des pull
+requests qui touchent un écran. Son tableau de couverture indique les écrans déjà documentés et
+ceux qui n'ont pas encore d'image ; les captures sont réelles, avec des données de démonstration,
+sans conversation personnelle, sans adresse réseau réelle et sans clé.
 
 ## Installer sans Mac
 
