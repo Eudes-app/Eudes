@@ -262,6 +262,15 @@ struct ChatView: View {
             }
     }
 
+    /// Le composeur annonce ce qu'il attend : une question sur la photo jointe, sinon un message.
+    private var composerPlaceholder: String {
+        switch store.draftImages.count {
+        case 0: return "Écris ton message…"
+        case 1: return "Pose ta question sur cette photo…"
+        default: return "Pose ta question sur ces photos…"
+        }
+    }
+
     private var pasteHelpCanPresent: Bool {
         store.pasteHelpPending && scenePhase == .active && !covered && !showKeyboardIntroduction
         && !showPhotoPicker && !showCamera && !importingImages && attachmentExplanation == nil
@@ -375,16 +384,18 @@ struct ChatView: View {
         VStack(spacing: 9) {
             if !store.draftImages.isEmpty {
                 ScrollView(.horizontal) {
-                    HStack {
+                    HStack(spacing: 10) {
                         ForEach(store.draftImages) { attachment in
-                            VStack {
+                            ZStack(alignment: .topTrailing) {
                                 if let image = UIImage(data: attachment.data) {
                                     Image(uiImage: image).resizable().scaledToFit().frame(width: 72, height: 72)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                                         .accessibilityLabel("Image jointe")
                                 }
                                 Button { store.removeImage(attachment.id) } label: {
-                                    Image(systemName: "xmark.circle.fill").font(.title3)
-                                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                                    Image(systemName: "xmark.circle.fill").font(.system(size: 21))
+                                        .foregroundStyle(Palette.ink)
+                                        .frame(width: 34, height: 34).contentShape(Rectangle())
                                 }
                                 .accessibilityLabel("Retirer cette image du brouillon")
                                 .accessibilityIdentifier("attachment.remove")
@@ -505,8 +516,8 @@ struct ChatView: View {
                     .overlay(alignment: .topLeading) {
                         if draft.isEmpty {
                             ViewThatFits(in: .horizontal) {
-                                Text("Écris ton message…").fixedSize(horizontal: true, vertical: false)
-                                Text("Message…").lineLimit(1)
+                                Text(composerPlaceholder).fixedSize(horizontal: true, vertical: false)
+                                Text(store.draftImages.isEmpty ? "Message…" : "Ta question…").lineLimit(1)
                             }
                             .foregroundStyle(Palette.muted)
                             .padding(.top, 11).padding(.leading, 5)
