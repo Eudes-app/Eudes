@@ -77,6 +77,8 @@
 	</dict>
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 	<string>Eudes ajoute les événements que tu as vérifiés et confirmés dans ton calendrier.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Eudes utilise l’appareil photo pour joindre une photo à ton message. La photo reste sur cet appareil et n’est envoyée qu’au serveur ou au modèle que tu as choisi.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Eudes se connecte uniquement aux serveurs LLM privés que vous configurez, pour charger leurs modèles et échanger des messages.</string>
 	<key>NSMicrophoneUsageDescription</key>

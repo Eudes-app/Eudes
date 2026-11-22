@@ -18,6 +18,7 @@ struct ChatView: View {
     @State private var improvementResult: String?
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var showPhotoPicker = false
+    @State private var showCamera = false
     @State private var attachmentExplanation: String?
     @State private var showContextSummary = false
     @State private var editingSummary = ""
@@ -245,7 +246,7 @@ struct ChatView: View {
             .onEnded { value in
                 guard scenePhase == .active, !covered, store.notice == nil,
                       !showKeyboardIntroduction, !showContextSummary, !showContextDetails,
-                      !showPasteHelp, !showPhotoPicker, !importingImages,
+                      !showPasteHelp, !showPhotoPicker, !showCamera, !importingImages,
                       attachmentExplanation == nil, store.contextOverflowConversationID == nil,
                       value.startLocation.y > topControlsHeight else { return }
                 let action = ConversationEdgeSwipe.action(
@@ -263,7 +264,7 @@ struct ChatView: View {
 
     private var pasteHelpCanPresent: Bool {
         store.pasteHelpPending && scenePhase == .active && !covered && !showKeyboardIntroduction
-        && !showPhotoPicker && !importingImages && attachmentExplanation == nil
+        && !showPhotoPicker && !showCamera && !importingImages && attachmentExplanation == nil
     }
 
     private func refreshClipboardPresence() {
@@ -516,6 +517,19 @@ struct ChatView: View {
                     .padding(.horizontal, 12).padding(.top, 4)
                 HStack(spacing: 8) {
                     Menu {
+                        if CameraPicker.isAvailable {
+                            Button("Prendre une photo", systemImage: "camera") {
+                                if !store.canAttachImages {
+                                    attachmentExplanation = store.selectedServer?.imageUnavailableReason(store.currentModel) ?? "Choisis une connexion et un modèle compatibles avec les images."
+                                } else if store.draftImages.count >= ImageAttachment.maxCount {
+                                    attachmentExplanation = ImageAttachmentError.limit.localizedDescription
+                                } else {
+                                    composerFocused = false
+                                    showCamera = true
+                                }
+                            }
+                            .disabled(store.selectedServer?.isLocalLFM == true && !store.canAttachImages)
+                        }
                         Button("Ajouter une image", systemImage: "paperclip") {
                             if !store.canAttachImages {
                                 attachmentExplanation = store.selectedServer?.imageUnavailableReason(store.currentModel) ?? "Choisis une connexion et un modèle compatibles avec les images."
@@ -542,11 +556,20 @@ struct ChatView: View {
                             .frame(width: 44, height: 44)
                             .contentShape(Circle())
                     }
-                    .accessibilityLabel("Ajouter une image ou ouvrir les réglages du serveur")
+                    .accessibilityLabel("Ajouter une photo ou une image, ou ouvrir les réglages du serveur")
                     .accessibilityIdentifier("composer.actions")
                     .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotos,
                                   maxSelectionCount: max(1, ImageAttachment.maxCount - store.draftImages.count),
                                   matching: .images, preferredItemEncoding: .current)
+                    .fullScreenCover(isPresented: $showCamera) {
+                        CameraPicker { data in
+                            showCamera = false
+                            guard let data else { return }
+                            do { store.addImage(try ImageAttachment.importData(data)) }
+                            catch { store.notice = error.localizedDescription }
+                        }
+                        .ignoresSafeArea()
+                    }
                     .alert("Pièces jointes", isPresented: Binding(get: { attachmentExplanation != nil }, set: { if !$0 { attachmentExplanation = nil } })) {
                         Button("OK", role: .cancel) { attachmentExplanation = nil }
                     } message: { Text(attachmentExplanation ?? "") }
