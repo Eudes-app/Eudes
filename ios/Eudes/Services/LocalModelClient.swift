@@ -93,9 +93,15 @@ actor LocalModelRuntime {
     private var loadedGPU = false
     private var loadedContextTokens: Int?
     private var busy = false
-    private var verificationCache = LocalModelFileStore.VerificationCache()
+    private var verificationCache: LocalModelFileStore.VerificationCache
 
-    init(root: URL = LocalModelDownloads.root) { self.root = root }
+    /// `verificationStore` garde les empreintes d'un lancement à l'autre : sans lui,
+    /// chaque ouverture de l'app re-hache le fichier du modèle (plus d'un gigaoctet).
+    init(root: URL = LocalModelDownloads.root,
+         verificationStore: URL? = LocalModelFileStore.VerificationCache.defaultStoreURL) {
+        self.root = root
+        self.verificationCache = LocalModelFileStore.VerificationCache(storeURL: verificationStore)
+    }
 
     private func model(_ id: String) throws -> LocalModelCatalog.Model {
         guard let result = LocalModelCatalog.models.first(where: { $0.id == id }) else {

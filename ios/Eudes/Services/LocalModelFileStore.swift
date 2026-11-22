@@ -24,10 +24,16 @@ struct LocalModelFileStore {
         guard actualDigest == sha256.lowercased() else { throw StoreError.invalidDigest }
     }
 
-    /// Cache only an unchanged file within the current process. Replacement,
-    /// modification, removal or a different expected digest forces a rehash.
+    /// Cache only an unchanged file within the current process, and across launches
+    /// when a store is provided. Replacement, modification, removal or a different
+    /// expected digest forces a rehash.
+    ///
+    /// L'empreinte est liée au fichier par son inode et son `ctime` : un remplacement
+    /// change l'inode, une réécriture change le `ctime`, que l'espace utilisateur ne
+    /// peut pas antidater. Écrire ce cache demande le même accès au conteneur que
+    /// remplacer le modèle, donc il n'ouvre aucune capacité nouvelle.
     struct VerificationCache {
-        private struct Stamp: Equatable {
+        private struct Stamp: Codable, Equatable {
             let device: UInt64
             let inode: UInt64
             let size: Int64
@@ -35,12 +41,43 @@ struct LocalModelFileStore {
             let changedSeconds: Int64
             let changedNanoseconds: Int64
         }
-        private struct Entry {
+        private struct Entry: Codable {
             let stamp: Stamp
             let size: Int64
             let sha256: String
         }
-        private var entries: [URL: Entry] = [:]
+        /// Clé = chemin absolu. Le fichier de cache ne contient que des empreintes.
+        private var entries: [String: Entry] = [:]
+        private let storeURL: URL?
+        private var didLoad = false
+
+        init(storeURL: URL? = nil) { self.storeURL = storeURL }
+
+        /// Emplacement partagé entre lancements, à côté des modèles téléchargés.
+        static var defaultStoreURL: URL {
+            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("Eudes/model-verification.json")
+        }
+
+        private mutating func loadIfNeeded() {
+            guard !didLoad else { return }
+            didLoad = true
+            guard let storeURL, let data = try? Data(contentsOf: storeURL),
+                  let stored = try? JSONDecoder().decode([String: Entry].self, from: data) else { return }
+            entries = stored
+        }
+
+        /// Le cache est une optimisation : un échec d'écriture ne doit jamais faire
+        /// échouer une vérification. Les entrées dont le fichier a disparu sont retirées.
+        private mutating func persist() {
+            guard let storeURL else { return }
+            entries = entries.filter { FileManager.default.fileExists(atPath: $0.key) }
+            guard let data = try? JSONEncoder().encode(entries) else { return }
+            try? FileManager.default.createDirectory(at: storeURL.deletingLastPathComponent(),
+                                                     withIntermediateDirectories: true)
+            try? data.write(to: storeURL, options: .atomic)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: storeURL.path)
+        }
 
         private func stamp(_ url: URL) throws -> Stamp? {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
@@ -60,18 +97,25 @@ struct LocalModelFileStore {
                          changedNanoseconds: Int64(info.st_ctimespec.tv_nsec))
         }
 
-        mutating func verify(_ url: URL, size: Int64, sha256: String) throws {
+        /// Renvoie vrai quand l'empreinte enregistrée a été réutilisée sans relire
+        /// le fichier : c'est la mesure du gain au lancement.
+        @discardableResult
+        mutating func verify(_ url: URL, size: Int64, sha256: String) throws -> Bool {
             try Task.checkCancellation()
+            loadIfNeeded()
+            let key = url.path
             let before = try stamp(url)
-            if let before, let cached = entries[url], cached.stamp == before,
-               cached.size == size, cached.sha256 == sha256.lowercased() { return }
-            entries[url] = nil
+            if let before, let cached = entries[key], cached.stamp == before,
+               cached.size == size, cached.sha256 == sha256.lowercased() { return true }
+            if entries.removeValue(forKey: key) != nil { persist() }
             try LocalModelFileStore.verify(url, size: size, sha256: sha256)
             let after = try stamp(url)
             if let before, let after {
                 guard before == after else { throw StoreError.changedDuringVerification }
-                entries[url] = Entry(stamp: before, size: size, sha256: sha256.lowercased())
+                entries[key] = Entry(stamp: before, size: size, sha256: sha256.lowercased())
+                persist()
             }
+            return false
         }
     }
 
