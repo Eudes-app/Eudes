@@ -39,6 +39,21 @@ jobs:
       - name: Test delivery versioning and project automation
         run: python3 -m unittest discover -s tests -v
 
+      - name: Read toolchain version
+        id: toolchain
+        run: echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+
+      # La tranche simulateur d'EudesLlama est compilée depuis une révision figée de
+      # llama.cpp : les octets produits ne dépendent pas de notre code. On réutilise ce
+      # build d'un run à l'autre, jamais le code de l'app. La clé porte la version de
+      # Xcode et l'empreinte du script qui fixe la révision : toute mise à jour de l'un
+      # ou de l'autre vide le cache au lieu de réutiliser un binaire périmé.
+      - name: Restore the llama.cpp simulator build
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ios/Packages/EudesLlama/Artifacts
+          key: llama-sim-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('tools/prepare-llama-simulator.sh') }}
+
       - name: Run the complete XCTest suite
         run: bash tools/test-ios.sh
 
