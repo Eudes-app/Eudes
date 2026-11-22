@@ -19,6 +19,7 @@
 		0DBD19FA00E702E581585D9C /* Eudes/UI/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2545D0C06F3CBB59C800BD95 /* Eudes/UI/RootView.swift */; };
 		17DF3832B661E529E3E7D201 /* Eudes/Services/LocalAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C941E6104AB4FE6812946B6 /* Eudes/Services/LocalAPIClient.swift */; };
 		1AA7437EB71E617924F8D510 /* Eudes/UI/SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4D1840B2D848BD4684FE994 /* Eudes/UI/SettingsView.swift */; };
+		CA4E0A0000000000000002 /* Eudes/UI/CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4E0A0000000000000001 /* Eudes/UI/CameraPicker.swift */; };
 		1CB145524D3AE6B9782F5096 /* Eudes/UI/ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4799D477B725B3F272DBC4B /* Eudes/UI/ChatView.swift */; };
 		20357A64B1AC8F2B9165A2FA /* Eudes/Core/SSEDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A87946A941EC8D425CCBF532 /* Eudes/Core/SSEDecoder.swift */; };
 		2482AB39702F0648A047FAA5 /* Eudes/Services/PrivateStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5682E994F93DF85DFE2B30F /* Eudes/Services/PrivateStorage.swift */; };
@@ -26,6 +27,7 @@
 		D1A6C0DE0000000000000002 /* Eudes/Core/DiagnosticLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A6C0DE0000000000000001 /* Eudes/Core/DiagnosticLog.swift */; };
 		2838A4D60DAD9C4BA3EAAC48 /* Eudes/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A4FF486DACFC029802E7AED6 /* Eudes/Assets.xcassets */; };
 		362E57431EBF8D80EAC95A8C /* Eudes/App/AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FA2F47F3E7EC43D47ECE54 /* Eudes/App/AppStore.swift */; };
+		CA4E0A0000000000000004 /* EudesTests/PrivacyUsageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4E0A0000000000000003 /* EudesTests/PrivacyUsageTests.swift */; };
 		42B6A222A95F1571ABD47F54 /* EudesTests/LocalEndpointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F75A93EDC15D2825D6C2080F /* EudesTests/LocalEndpointTests.swift */; };
 		5BC1563BBA5197C59FE230D7 /* Eudes/UI/DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70C40E37904BAE618682923E /* Eudes/UI/DesignSystem.swift */; };
 		81BCCB00A0460D5366E46209 /* EudesTests/PrivateStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D611D0843D71C392E985B599 /* EudesTests/PrivateStorageTests.swift */; };
@@ -170,9 +172,11 @@
 		F0DBAE4230991EF100C48281 /* HybridWebResearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HybridWebResearchTests.swift; sourceTree = "<group>"; };
 		A88000000000000000000003 /* AppleWebResearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleWebResearchTests.swift; sourceTree = "<group>"; };
 		F0DBAE443099B5D200C48281 /* AppleSpeechTranscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSpeechTranscription.swift; sourceTree = "<group>"; };
+		CA4E0A0000000000000001 /* Eudes/UI/CameraPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/CameraPicker.swift; sourceTree = SOURCE_ROOT; };
 		F4799D477B725B3F272DBC4B /* Eudes/UI/ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/ChatView.swift; sourceTree = SOURCE_ROOT; };
 		F64F86472E206717BCA61D9F /* Eudes/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Eudes/PrivacyInfo.xcprivacy; sourceTree = SOURCE_ROOT; };
 		F739566ED5280322FF98A798 /* EudesTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EudesTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CA4E0A0000000000000003 /* EudesTests/PrivacyUsageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/PrivacyUsageTests.swift; sourceTree = SOURCE_ROOT; };
 		F75A93EDC15D2825D6C2080F /* EudesTests/LocalEndpointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EudesTests/LocalEndpointTests.swift; sourceTree = SOURCE_ROOT; };
 		FACE05000000000000000011 /* Eudes/Services/VoiceActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/Services/VoiceActions.swift; sourceTree = SOURCE_ROOT; };
 		FACE05000000000000000021 /* Eudes/UI/VoiceActionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Eudes/UI/VoiceActionView.swift; sourceTree = SOURCE_ROOT; };
@@ -284,6 +288,7 @@
 			isa = PBXGroup;
 			children = (
 				F4799D477B725B3F272DBC4B /* Eudes/UI/ChatView.swift */,
+				CA4E0A0000000000000001 /* Eudes/UI/CameraPicker.swift */,
 				70C40E37904BAE618682923E /* Eudes/UI/DesignSystem.swift */,
 				4B6CBD8F1A5FE972232DC2A8 /* Eudes/UI/HistoryView.swift */,
 				045112602A09B273F3266732 /* Eudes/UI/MessageView.swift */,
@@ -322,6 +327,7 @@
 			isa = PBXGroup;
 			children = (
 				F75A93EDC15D2825D6C2080F /* EudesTests/LocalEndpointTests.swift */,
+				CA4E0A0000000000000003 /* EudesTests/PrivacyUsageTests.swift */,
 				D611D0843D71C392E985B599 /* EudesTests/PrivateStorageTests.swift */,
 				0934F5FE32CBD99795059D50 /* EudesTests/SSEDecoderTests.swift */,
 				D1A6C0DE0000000000000003 /* EudesTests/DiagnosticLogTests.swift */,
@@ -507,6 +513,7 @@
 				BF3400000000000000000031 /* LocalModelClient.swift in Sources */,
 				2482AB39702F0648A047FAA5 /* Eudes/Services/PrivateStorage.swift in Sources */,
 				1CB145524D3AE6B9782F5096 /* Eudes/UI/ChatView.swift in Sources */,
+				CA4E0A0000000000000002 /* Eudes/UI/CameraPicker.swift in Sources */,
 				5BC1563BBA5197C59FE230D7 /* Eudes/UI/DesignSystem.swift in Sources */,
 				A7E0650EFFE7DA3BB61C5CF8 /* Eudes/UI/HistoryView.swift in Sources */,
 				C0CF018B6F6DCA4857B98F19 /* Eudes/UI/MessageView.swift in Sources */,
@@ -552,6 +559,7 @@
 			files = (
 				F0381201309865B600FF8BDE /* WebSearchStoreTests.swift in Sources */,
 				42B6A222A95F1571ABD47F54 /* EudesTests/LocalEndpointTests.swift in Sources */,
+				CA4E0A0000000000000004 /* EudesTests/PrivacyUsageTests.swift in Sources */,
 				81BCCB00A0460D5366E46209 /* EudesTests/PrivateStorageTests.swift in Sources */,
 				EF3B3812E247F20060112D9A /* EudesTests/SSEDecoderTests.swift in Sources */,
 				D1A6C0DE0000000000000004 /* EudesTests/DiagnosticLogTests.swift in Sources */,

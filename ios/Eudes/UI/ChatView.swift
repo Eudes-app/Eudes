@@ -18,6 +18,7 @@ struct ChatView: View {
     @State private var improvementResult: String?
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var showPhotoPicker = false
+    @State private var showCamera = false
     @State private var attachmentExplanation: String?
     @State private var showContextSummary = false
     @State private var editingSummary = ""
@@ -245,7 +246,7 @@ struct ChatView: View {
             .onEnded { value in
                 guard scenePhase == .active, !covered, store.notice == nil,
                       !showKeyboardIntroduction, !showContextSummary, !showContextDetails,
-                      !showPasteHelp, !showPhotoPicker, !importingImages,
+                      !showPasteHelp, !showPhotoPicker, !showCamera, !importingImages,
                       attachmentExplanation == nil, store.contextOverflowConversationID == nil,
                       value.startLocation.y > topControlsHeight else { return }
                 let action = ConversationEdgeSwipe.action(
@@ -261,9 +262,18 @@ struct ChatView: View {
             }
     }
 
+    /// Le composeur annonce ce qu'il attend : une question sur la photo jointe, sinon un message.
+    private var composerPlaceholder: String {
+        switch store.draftImages.count {
+        case 0: return "Écris ton message…"
+        case 1: return "Pose ta question sur cette photo…"
+        default: return "Pose ta question sur ces photos…"
+        }
+    }
+
     private var pasteHelpCanPresent: Bool {
         store.pasteHelpPending && scenePhase == .active && !covered && !showKeyboardIntroduction
-        && !showPhotoPicker && !importingImages && attachmentExplanation == nil
+        && !showPhotoPicker && !showCamera && !importingImages && attachmentExplanation == nil
     }
 
     private func refreshClipboardPresence() {
@@ -374,17 +384,25 @@ struct ChatView: View {
         VStack(spacing: 9) {
             if !store.draftImages.isEmpty {
                 ScrollView(.horizontal) {
-                    HStack {
+                    HStack(spacing: 10) {
                         ForEach(store.draftImages) { attachment in
-                            VStack {
+                            ZStack(alignment: .topTrailing) {
                                 if let image = UIImage(data: attachment.data) {
                                     Image(uiImage: image).resizable().scaledToFit().frame(width: 72, height: 72)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                                         .accessibilityLabel("Image jointe")
                                 }
                                 Button { store.removeImage(attachment.id) } label: {
-                                    Image(systemName: "xmark.circle.fill").font(.title3)
-                                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(Palette.ink)
+                                        .frame(width: 24, height: 24)
+                                        .background(Circle().fill(Palette.background))
+                                        .overlay(Circle().strokeBorder(Palette.border, lineWidth: 0.5))
+                                        .frame(width: 44, height: 44)
+                                        .contentShape(Circle())
                                 }
+                                .offset(x: 8, y: -8)
                                 .accessibilityLabel("Retirer cette image du brouillon")
                                 .accessibilityIdentifier("attachment.remove")
                                 .disabled(store.isGenerating)
@@ -504,8 +522,8 @@ struct ChatView: View {
                     .overlay(alignment: .topLeading) {
                         if draft.isEmpty {
                             ViewThatFits(in: .horizontal) {
-                                Text("Écris ton message…").fixedSize(horizontal: true, vertical: false)
-                                Text("Message…").lineLimit(1)
+                                Text(composerPlaceholder).fixedSize(horizontal: true, vertical: false)
+                                Text(store.draftImages.isEmpty ? "Message…" : "Ta question…").lineLimit(1)
                             }
                             .foregroundStyle(Palette.muted)
                             .padding(.top, 11).padding(.leading, 5)
@@ -516,6 +534,19 @@ struct ChatView: View {
                     .padding(.horizontal, 12).padding(.top, 4)
                 HStack(spacing: 8) {
                     Menu {
+                        if CameraPicker.isAvailable {
+                            Button("Prendre une photo", systemImage: "camera") {
+                                if !store.canAttachImages {
+                                    attachmentExplanation = store.selectedServer?.imageUnavailableReason(store.currentModel) ?? "Choisis une connexion et un modèle compatibles avec les images."
+                                } else if store.draftImages.count >= ImageAttachment.maxCount {
+                                    attachmentExplanation = ImageAttachmentError.limit.localizedDescription
+                                } else {
+                                    composerFocused = false
+                                    showCamera = true
+                                }
+                            }
+                            .disabled(store.selectedServer?.isLocalLFM == true && !store.canAttachImages)
+                        }
                         Button("Ajouter une image", systemImage: "paperclip") {
                             if !store.canAttachImages {
                                 attachmentExplanation = store.selectedServer?.imageUnavailableReason(store.currentModel) ?? "Choisis une connexion et un modèle compatibles avec les images."
@@ -542,11 +573,20 @@ struct ChatView: View {
                             .frame(width: 44, height: 44)
                             .contentShape(Circle())
                     }
-                    .accessibilityLabel("Ajouter une image ou ouvrir les réglages du serveur")
+                    .accessibilityLabel("Ajouter une photo ou une image, ou ouvrir les réglages du serveur")
                     .accessibilityIdentifier("composer.actions")
                     .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhotos,
                                   maxSelectionCount: max(1, ImageAttachment.maxCount - store.draftImages.count),
                                   matching: .images, preferredItemEncoding: .current)
+                    .fullScreenCover(isPresented: $showCamera) {
+                        CameraPicker { data in
+                            showCamera = false
+                            guard let data else { return }
+                            do { store.addImage(try ImageAttachment.importData(data)) }
+                            catch { store.notice = error.localizedDescription }
+                        }
+                        .ignoresSafeArea()
+                    }
                     .alert("Pièces jointes", isPresented: Binding(get: { attachmentExplanation != nil }, set: { if !$0 { attachmentExplanation = nil } })) {
                         Button("OK", role: .cancel) { attachmentExplanation = nil }
                     } message: { Text(attachmentExplanation ?? "") }
