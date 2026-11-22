@@ -393,10 +393,16 @@ struct ChatView: View {
                                         .accessibilityLabel("Image jointe")
                                 }
                                 Button { store.removeImage(attachment.id) } label: {
-                                    Image(systemName: "xmark.circle.fill").font(.system(size: 21))
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 11, weight: .bold))
                                         .foregroundStyle(Palette.ink)
-                                        .frame(width: 34, height: 34).contentShape(Rectangle())
+                                        .frame(width: 24, height: 24)
+                                        .background(Circle().fill(Palette.background))
+                                        .overlay(Circle().strokeBorder(Palette.border, lineWidth: 0.5))
+                                        .frame(width: 44, height: 44)
+                                        .contentShape(Circle())
                                 }
+                                .offset(x: 8, y: -8)
                                 .accessibilityLabel("Retirer cette image du brouillon")
                                 .accessibilityIdentifier("attachment.remove")
                                 .disabled(store.isGenerating)
