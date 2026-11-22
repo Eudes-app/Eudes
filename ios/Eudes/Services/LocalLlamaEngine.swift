@@ -46,6 +46,19 @@ enum LocalReasoningBoundary {
     }
 }
 
+/// Réutilise le contexte déjà décodé quand deux prompts partagent leur début.
+enum LocalPromptCache {
+    /// Plus long préfixe commun. Les tokens conservés sont identiques à ceux du
+    /// nouveau prompt, donc la réponse ne dépend pas du cache : un contexte neuf
+    /// produirait le même résultat, seulement plus lentement.
+    static func reusablePrefix(cached: [Int32], prompt: [Int32]) -> Int {
+        let limit = min(cached.count, prompt.count)
+        var count = 0
+        while count < limit, cached[count] == prompt[count] { count += 1 }
+        return count
+    }
+}
+
 /// A single engine owns the model, context and optional vision projector.
 /// Its callers must not retain native pointers beyond its lifetime.
 actor LocalLlamaEngine {
@@ -73,6 +86,12 @@ actor LocalLlamaEngine {
     private let vision: OpaquePointer?
     let supportsImages: Bool
     private var generating = false
+    /// Tokens réellement présents dans le contexte, dans l'ordre : c'est la
+    /// référence pour savoir quelle partie d'un nouveau prompt est déjà décodée.
+    private var cacheTokens: [llama_token] = []
+    /// Nombre de tokens envoyés au décodeur au dernier appel : 0 après une
+    /// réutilisation intégrale, la longueur du prompt après un contexte vidé.
+    private(set) var lastPrefillTokenCount = 0
 
     static func contextParameters(useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens) -> llama_context_params {
         var parameters = llama_context_default_params()
@@ -166,22 +185,31 @@ actor LocalLlamaEngine {
         return Int(-needed)
     }
 
+    /// The prompt must already be formatted using the model's conversation template.
+    /// Le contexte n'est plus vidé à chaque réponse : la partie du prompt déjà
+    /// décodée est conservée, et seuls les tokens qui suivent sont envoyés au
+    /// décodeur. Ce qui reste décodé est toujours une suite de tokens identiques,
+    /// donc une autre conversation (préfixe différent, voire inverse) repart d'un
+    /// contexte vide et aucune réponse d'une requête interrompue ne peut se
+    /// retrouver dans une autre : la garantie ne venait pas de l'effacement, mais
+    /// de l'identité des tokens conservés.
     func generate(prompt: String, images: [Data] = [], maxTokens: Int, reasoningTokens: Int? = nil,
                   onUsage: @Sendable (TokenUsage) async -> Void = { _ in },
                   onText: @Sendable (String) async -> Void) async throws -> String {
         guard !generating else { throw EngineError.busy }
         generating = true
-        defer {
-            llama_memory_clear(llama_get_memory(context), true)
-            generating = false
-        }
+        defer { generating = false }
         try Task.checkCancellation()
         let vocab = llama_model_get_vocab(model)
         let answerLimit = max(1, min(maxTokens, 1024))
-        llama_memory_clear(llama_get_memory(context), true)
         let inputTokens: Int
         if !images.isEmpty {
             guard let vision else { throw EngineError.imagesUnsupported }
+            // Les tokens d'une évaluation multimodale ne sont pas comparables à
+            // ceux d'un prompt texte : le contexte repart vide.
+            cacheTokens.removeAll(keepingCapacity: true)
+            lastPrefillTokenCount = 0
+            llama_memory_clear(llama_get_memory(context), true)
             inputTokens = try prepareVision(prompt: prompt, images: images, vision: vision, outputLimit: answerLimit + (reasoningTokens == nil ? 0 : 16))
         } else {
             let bytes = Array(prompt.utf8)
@@ -202,17 +230,7 @@ actor LocalLlamaEngine {
             guard count > 0 else { throw EngineError.tokenization }
             inputTokens = Int(count)
             guard Int(count) + answerLimit + (reasoningTokens == nil ? 0 : 16) <= Int(llama_n_ctx(context)) else { throw EngineError.contextLimit }
-            llama_memory_clear(llama_get_memory(context), true)
-            var offset = 0
-            while offset < Int(count) {
-                try Task.checkCancellation()
-                let length = min(512, Int(count) - offset)
-                let result = tokens.withUnsafeMutableBufferPointer { buffer in
-                    llama_decode(context, llama_batch_get_one(buffer.baseAddress!.advanced(by: offset), Int32(length)))
-                }
-                guard result == 0 else { throw EngineError.decoding }
-                offset += length
-            }
+            try primeContext(tokens: &tokens, count: Int(count))
         }
         let remaining = Int(llama_n_ctx(context)) - inputTokens
         let reasoningLimit = reasoningTokens.map { LocalModelCatalog.reasoningSize($0) }
@@ -253,6 +271,7 @@ actor LocalLlamaEngine {
             try Task.checkCancellation()
             var next = token
             guard llama_decode(context, llama_batch_get_one(&next, 1)) == 0 else { throw EngineError.decoding }
+            cacheTokens.append(next)
             if let limit = effectiveReasoning, !closedThinking {
                 let trimmed = output.drop(while: { $0.isWhitespace })
                 if trimmed.hasPrefix("<think>") {
@@ -278,6 +297,7 @@ actor LocalLlamaEngine {
                             var nextForced = forcedToken
                             llama_sampler_accept(sampler, forcedToken)
                             guard llama_decode(context, llama_batch_get_one(&nextForced, 1)) == 0 else { throw EngineError.decoding }
+                            cacheTokens.append(nextForced)
                         }
                         outputTokens += Int(count)
                         output += marker
@@ -297,6 +317,43 @@ actor LocalLlamaEngine {
         guard !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw EngineError.emptyResponse }
         await onUsage(TokenUsage(input: inputTokens, output: outputTokens))
         return output
+    }
+
+    /// Alimente le contexte du prompt, en réutilisant le préfixe déjà décodé.
+    /// La fin du cache est libérée puis seul le suffixe est envoyé au décodeur :
+    /// `llama_batch_get_one` reprend les positions après la dernière conservée.
+    private func primeContext(tokens: inout [llama_token], count: Int) throws {
+        let memory = llama_get_memory(context)
+        var reused = LocalPromptCache.reusablePrefix(cached: cacheTokens, prompt: tokens)
+        if reused > 0, reused < cacheTokens.count {
+            if !llama_memory_seq_rm(memory, 0, llama_pos(reused), -1) {
+                // Troncature refusée : on repart d'un contexte vide plutôt que
+                // de décoder par-dessus un état incertain.
+                reused = 0
+            }
+        }
+        if reused == 0 {
+            llama_memory_clear(memory, true)
+        }
+        if reused < cacheTokens.count {
+            cacheTokens.removeSubrange(reused...)
+        }
+        lastPrefillTokenCount = count - reused
+        var offset = reused
+        while offset < count {
+            try Task.checkCancellation()
+            let length = min(512, count - offset)
+            let result = tokens.withUnsafeMutableBufferPointer { buffer in
+                llama_decode(context, llama_batch_get_one(buffer.baseAddress!.advanced(by: offset), Int32(length)))
+            }
+            guard result == 0 else {
+                cacheTokens.removeAll(keepingCapacity: true)
+                llama_memory_clear(memory, true)
+                throw EngineError.decoding
+            }
+            cacheTokens.append(contentsOf: tokens[offset..<(offset + length)])
+            offset += length
+        }
     }
 
     private func prepareVision(prompt: String, images: [Data], vision: OpaquePointer,
