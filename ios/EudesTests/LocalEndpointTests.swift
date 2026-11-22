@@ -517,6 +517,52 @@ final class LocalModelFileStoreTests: XCTestCase {
         XCTAssertThrowsError(try cache.verify(file, size: 3, sha256: sha))
     }
 
+    func testVerificationCacheReusesPersistedDigestAcrossLaunches() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("model.gguf")
+        let store = root.appendingPathComponent("verification.json")
+        let sha = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        try Data("abc".utf8).write(to: file)
+
+        var first = LocalModelFileStore.VerificationCache(storeURL: store)
+        let hashed = try first.verify(file, size: 3, sha256: sha)
+        XCTAssertFalse(hashed)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.path))
+
+        // Nouvelle instance = nouveau lancement : l'empreinte vient du disque.
+        var second = LocalModelFileStore.VerificationCache(storeURL: store)
+        let reused = try second.verify(file, size: 3, sha256: sha)
+        XCTAssertTrue(reused)
+
+        // Un contenu modifié à taille et date identiques change le ctime : re-hachage.
+        let originalDate = try XCTUnwrap(FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate] as? Date)
+        try Data("xyz".utf8).write(to: file)
+        try FileManager.default.setAttributes([.modificationDate: originalDate], ofItemAtPath: file.path)
+        var third = LocalModelFileStore.VerificationCache(storeURL: store)
+        XCTAssertThrowsError(try third.verify(file, size: 3, sha256: sha))
+    }
+
+    func testVerificationCacheIgnoresCorruptStoreAndForeignDigest() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("model.gguf")
+        let store = root.appendingPathComponent("verification.json")
+        let sha = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        try Data("abc".utf8).write(to: file)
+        try Data("pas du json".utf8).write(to: store)
+
+        var cache = LocalModelFileStore.VerificationCache(storeURL: store)
+        let hashed = try cache.verify(file, size: 3, sha256: sha)
+        XCTAssertFalse(hashed)
+
+        // Un digest attendu différent ne doit jamais être satisfait par le cache.
+        var foreign = LocalModelFileStore.VerificationCache(storeURL: store)
+        XCTAssertThrowsError(try foreign.verify(file, size: 3, sha256: String(repeating: "0", count: 64)))
+    }
+
     func testVerifiedInstallRejectsCorruptionAndKeepsExistingFile() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
