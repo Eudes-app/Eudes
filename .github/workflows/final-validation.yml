@@ -88,6 +88,7 @@ jobs:
       - name: Compile Release for iPhone
         env:
           SOURCE_DIR: ${{ github.workspace }}/source
+          SIGNED_BUILD: "false"
         run: bash control/tools/build-device.sh
       - name: Recheck approval after compilation
         env:
