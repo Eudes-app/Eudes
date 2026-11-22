@@ -1874,8 +1874,10 @@ struct ModelOutputCapacityView: View {
 /// en mémoire, le temps d'être copiées au moment du problème.
 private struct DiagnosticsSettingsView: View {
     @StateObject private var log = DiagnosticLog.shared
+    @StateObject private var report = LocalEngineReport.shared
     @State private var copied = false
     @State private var filter: DiagnosticCategory?
+    @AppStorage(LocalEngineDiagnostics.traceKey) private var traceEngine = false
 
     private var visibleEntries: [DiagnosticEntry] {
         let entries = filter.map { category in log.entries.filter { $0.category == category } } ?? log.entries
@@ -1890,6 +1892,36 @@ private struct DiagnosticsSettingsView: View {
 
     var body: some View {
         SettingsForm {
+            Section {
+                if let generation = report.generation {
+                    LabeledContent("Modèle", value: generation.modelTitle)
+                    LabeledContent("Décodage", value: String(format: "%.1f tok/s", generation.decodeRate))
+                    LabeledContent("Prefill", value: String(format: "%.1f tok/s", generation.prefillRate))
+                    LabeledContent("Cache de prompt", value: generation.cachedTokens > 0
+                                   ? "\(generation.cachedTokens) tokens réutilisés"
+                                   : "aucun")
+                    LabeledContent("Dernière réponse", value: String(format: "%d tokens en %.1f s",
+                                                                     generation.answerTokens, generation.decodeSeconds))
+                    LabeledContent("Téléphone", value: generation.lowPower
+                                   ? "\(generation.thermal) · économie d’énergie"
+                                   : generation.thermal)
+                } else {
+                    Text("Aucune réponse du modèle local depuis l’ouverture de l’app.")
+                        .foregroundStyle(.secondary)
+                }
+                if let verification = report.verification {
+                    LabeledContent("Vérification d’empreinte",
+                                   value: String(format: "%.2f s%@", verification.seconds,
+                                                 verification.reused ? " (cache)" : " (hachage)"))
+                }
+                Toggle("Tracer chaque génération", isOn: $traceEngine)
+            } header: {
+                Text("Moteur local")
+            } footer: {
+                Text(traceEngine
+                     ? "Chaque réponse écrit ses mesures dans le journal ci-dessous."
+                     : "Le journal ne retient que les mesures anormales : décodage lent, téléphone chaud ou mode économie d’énergie.")
+            }
             if !log.entries.isEmpty {
                 Section {
                     Picker("Catégorie", selection: $filter) {

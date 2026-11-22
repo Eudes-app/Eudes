@@ -92,6 +92,14 @@ actor LocalLlamaEngine {
     /// Nombre de tokens envoyés au décodeur au dernier appel : 0 après une
     /// réutilisation intégrale, la longueur du prompt après un contexte vidé.
     private(set) var lastPrefillTokenCount = 0
+    /// Tokens de prompt déjà présents dans le contexte au dernier appel.
+    private(set) var lastCachedTokenCount = 0
+    /// Identifiant du catalogue, utilisé pour nommer les mesures dans le diagnostic.
+    private let modelID: String
+
+    private var modelTitle: String {
+        LocalModelCatalog.models.first { $0.id == modelID }?.title ?? modelID
+    }
 
     static func contextParameters(useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens) -> llama_context_params {
         var parameters = llama_context_default_params()
@@ -106,7 +114,9 @@ actor LocalLlamaEngine {
         return parameters
     }
 
-    init(modelURL: URL, projectorURL: URL?, useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens) throws {
+    init(modelURL: URL, projectorURL: URL?, useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens,
+         modelID: String = "") throws {
+        self.modelID = modelID
         _ = Self.backend
         var modelParameters = llama_model_default_params()
         #if targetEnvironment(simulator)
@@ -202,6 +212,7 @@ actor LocalLlamaEngine {
         try Task.checkCancellation()
         let vocab = llama_model_get_vocab(model)
         let answerLimit = max(1, min(maxTokens, 1024))
+        let prefillStart = Date()
         let inputTokens: Int
         if !images.isEmpty {
             guard let vision else { throw EngineError.imagesUnsupported }
@@ -209,6 +220,7 @@ actor LocalLlamaEngine {
             // ceux d'un prompt texte : le contexte repart vide.
             cacheTokens.removeAll(keepingCapacity: true)
             lastPrefillTokenCount = 0
+            lastCachedTokenCount = 0
             llama_memory_clear(llama_get_memory(context), true)
             inputTokens = try prepareVision(prompt: prompt, images: images, vision: vision, outputLimit: answerLimit + (reasoningTokens == nil ? 0 : 16))
         } else {
@@ -232,6 +244,7 @@ actor LocalLlamaEngine {
             guard Int(count) + answerLimit + (reasoningTokens == nil ? 0 : 16) <= Int(llama_n_ctx(context)) else { throw EngineError.contextLimit }
             try primeContext(tokens: &tokens, count: Int(count))
         }
+        let prefillSeconds = Date().timeIntervalSince(prefillStart)
         let remaining = Int(llama_n_ctx(context)) - inputTokens
         let reasoningLimit = reasoningTokens.map { LocalModelCatalog.reasoningSize($0) }
         // Leave space for an answer and the forced closing tag when a long
@@ -245,6 +258,7 @@ actor LocalLlamaEngine {
         var outputTokens = 0
         var thinkingTokens = 0
         var closedThinking = false
+        let decodeStart = Date()
         for _ in 0..<outputLimit {
             try Task.checkCancellation()
             let token = llama_sampler_sample(sampler, context, -1)
@@ -310,13 +324,36 @@ actor LocalLlamaEngine {
             }
             if outputTokens >= remaining { break }
         }
+        let decodeSeconds = Date().timeIntervalSince(decodeStart)
         if !pending.isEmpty {
             output += String(decoding: pending, as: UTF8.self)
             await onText(output)
         }
         guard !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw EngineError.emptyResponse }
         await onUsage(TokenUsage(input: inputTokens, output: outputTokens))
+        await record(metricsForGeneration: LocalGenerationMetrics(
+            modelID: modelID,
+            modelTitle: modelTitle,
+            promptTokens: inputTokens,
+            cachedTokens: lastCachedTokenCount,
+            prefillSeconds: prefillSeconds,
+            answerTokens: outputTokens,
+            decodeSeconds: decodeSeconds,
+            thermal: ProcessInfo.processInfo.thermalState.localLabel,
+            lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled,
+            date: Date()))
         return output
+    }
+
+    /// Publie les mesures de la dernière réponse. Le journal ne reçoit une ligne que
+    /// si quelque chose sort de la normale, ou si le traçage complet est activé :
+    /// le tampon du journal est plafonné et ne doit pas être saturé par des mesures.
+    private func record(metricsForGeneration metrics: LocalGenerationMetrics) async {
+        await MainActor.run { LocalEngineReport.shared.record(generation: metrics) }
+        guard metrics.needsAttention || LocalEngineDiagnostics.tracesEveryGeneration else { return }
+        DiagnosticStore.shared.append(category: .model,
+                                      level: metrics.needsAttention ? .warning : .info,
+                                      message: metrics.journalMessage)
     }
 
     /// Alimente le contexte du prompt, en réutilisant le préfixe déjà décodé.
@@ -339,6 +376,7 @@ actor LocalLlamaEngine {
             cacheTokens.removeSubrange(reused...)
         }
         lastPrefillTokenCount = count - reused
+        lastCachedTokenCount = reused
         var offset = reused
         while offset < count {
             try Task.checkCancellation()
