@@ -652,6 +652,46 @@ final class LocalLlamaEngineTests: XCTestCase {
         XCTAssertTrue(chat.text.hasSuffix("<|im_start|>assistant\n"))
         XCTAssertTrue(web.text.hasSuffix("<|im_start|>assistant\n<think></think>"))
     }
+    func testPromptCacheKeepsOnlyIdenticalLeadingTokens() {
+        XCTAssertEqual(LocalPromptCache.reusablePrefix(cached: [], prompt: [1, 2, 3]), 0)
+        XCTAssertEqual(LocalPromptCache.reusablePrefix(cached: [1, 2, 3], prompt: []), 0)
+        XCTAssertEqual(LocalPromptCache.reusablePrefix(cached: [1, 2, 3], prompt: [1, 2, 3]), 3)
+        XCTAssertEqual(LocalPromptCache.reusablePrefix(cached: [1, 2, 3], prompt: [1, 2, 9]), 2)
+        XCTAssertEqual(LocalPromptCache.reusablePrefix(cached: [1, 2, 3, 4], prompt: [1, 2]), 2)
+        XCTAssertEqual(LocalPromptCache.reusablePrefix(cached: [1, 2, 3], prompt: [1, 2, 3, 4]), 3)
+        XCTAssertEqual(LocalPromptCache.reusablePrefix(cached: [9, 1, 2], prompt: [1, 2, 3]), 0)
+    }
+
+    func testOptInSecondTurnReusesTheDecodedPrefix() async throws {
+        guard let root = ProcessInfo.processInfo.environment["EUDES_LFM3_FIXTURES"] else {
+            throw XCTSkip("Set EUDES_LFM3_FIXTURES to a verified local LFM3 fixture directory.")
+        }
+        let directory = URL(fileURLWithPath: root, isDirectory: true)
+        let engine = try LocalLlamaEngine(modelURL: directory.appendingPathComponent("text.gguf"),
+                                          projectorURL: nil, useGPU: false)
+        let first = "<|im_start|>user\nQuelle est la capitale de la France ?<|im_end|>\n<|im_start|>assistant\n"
+        let sink = TestTextSink()
+        _ = try await engine.generate(prompt: first, maxTokens: 16) { await sink.set($0) }
+        let answer = await sink.value
+        let firstPrefill = await engine.lastPrefillTokenCount
+        let firstPromptTokens = try await engine.tokenCount(prompt: first)
+        XCTAssertEqual(firstPrefill, firstPromptTokens)
+
+        let second = first + answer + "<|im_end|>\n<|im_start|>user\nEt de l'Italie ?<|im_end|>\n<|im_start|>assistant\n"
+        let secondPromptTokens = try await engine.tokenCount(prompt: second)
+        _ = try await engine.generate(prompt: second, maxTokens: 8) { _ in }
+        let secondPrefill = await engine.lastPrefillTokenCount
+        XCTAssertGreaterThan(secondPrefill, 0)
+        XCTAssertLessThan(secondPrefill, secondPromptTokens)
+
+        // Une conversation sans préfixe commun ne réutilise rien.
+        let other = "<|im_start|>user\nBonjour<|im_end|>\n<|im_start|>assistant\n"
+        let otherPromptTokens = try await engine.tokenCount(prompt: other)
+        _ = try await engine.generate(prompt: other, maxTokens: 8) { _ in }
+        let otherPrefill = await engine.lastPrefillTokenCount
+        XCTAssertEqual(otherPrefill, otherPromptTokens)
+    }
+
     func testMissingModelDoesNotInitialize() throws {
         let missing = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         XCTAssertThrowsError(try LocalLlamaEngine(modelURL: missing, projectorURL: nil, useGPU: false))
@@ -711,6 +751,11 @@ private actor RecoveryFixture {
 private actor TestLocalUsage {
     private(set) var value: TokenUsage?
     func set(_ usage: TokenUsage) { value = usage }
+}
+
+private actor TestTextSink {
+    private(set) var value = ""
+    func set(_ text: String) { value = text }
 }
 
 final class LocalModelPromptTests: XCTestCase {
