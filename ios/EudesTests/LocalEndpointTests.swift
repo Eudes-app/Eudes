@@ -1374,4 +1374,63 @@ final class ContextSizingTests: XCTestCase {
         _ = LocalModelCatalog.automaticTokens(for: LocalModelCatalog.text, root: root, readMetadata: read)
         XCTAssertEqual(reads, 2)
     }
+    // MARK: - Catalogue lisible
+
+    func testEveryModelBelongsToExactlyOneFamily() {
+        let ids = LocalModelCatalog.families.flatMap { $0.models.map(\.id) }
+        XCTAssertEqual(ids.count, LocalModelCatalog.models.count)
+        XCTAssertEqual(Set(ids), Set(LocalModelCatalog.models.map(\.id)))
+    }
+
+    func testFamiliesFollowTheDeclaredOrderAndEveryOneHasASummary() {
+        let present = Set(LocalModelCatalog.models.map(\.family))
+        XCTAssertEqual(LocalModelCatalog.families.map(\.name),
+                       LocalModelCatalog.familyOrder.filter { present.contains($0) })
+        for family in LocalModelCatalog.families {
+            XCTAssertFalse(family.summary.isEmpty, family.name)
+            XCTAssertFalse(family.models.isEmpty, family.name)
+            XCTAssertTrue(family.models.allSatisfy { $0.family == family.name }, family.name)
+        }
+    }
+
+    func testFamilySizesLabelCountsRealFiles() {
+        let qwen = LocalModelCatalog.families.first { $0.name == "Qwen3.5" }
+        XCTAssertEqual(qwen?.models.map(\.title), ["Qwen3.5 2B", "Qwen3.5 4B"])
+        XCTAssertEqual(qwen?.sizesLabel.hasPrefix("2 tailles · "), true)
+        let single = LocalModelCatalog.families.first { $0.name == "Phi-4" }
+        XCTAssertEqual(single?.sizesLabel.hasPrefix("1 taille · "), true)
+    }
+
+    func testRecommendationsOnARecentPhoneCoverTheThreeUses() {
+        let device = DeviceProfile(machineIdentifier: "iPhone17,1", physicalMemory: 8_000_000_000)
+        let recommendations = LocalModelCatalog.recommendations(device: device)
+        XCTAssertEqual(recommendations.map(\.role), [.conversation, .reasoning, .vision])
+        XCTAssertEqual(recommendations.first { $0.role == .conversation }?.model.id, "qwen35_2b")
+        XCTAssertEqual(recommendations.first { $0.role == .reasoning }?.model.id, "qwen35_4b")
+        XCTAssertEqual(recommendations.first { $0.role == .vision }?.model.id, "lfm3-vision")
+    }
+
+    func testRecommendationsNeverOfferAModelThePhoneCannotHold() {
+        for memory in [1_000_000_000, 2_000_000_000, 3_000_000_000, 4_000_000_000] {
+            let device = DeviceProfile(machineIdentifier: "iPhone12,1", physicalMemory: memory)
+            for recommendation in LocalModelCatalog.recommendations(device: device) {
+                XCTAssertTrue(recommendation.model.compatibility(device: device).isSupported,
+                              "\(recommendation.model.title) sur \(memory)")
+            }
+        }
+        // Un iPhone de 2 Go ne peut tenir aucun modèle du catalogue : plutôt que de
+        // proposer un échec, les raccourcis disparaissent.
+        let tiny = DeviceProfile(machineIdentifier: "iPhone12,1", physicalMemory: 2_000_000_000)
+        XCTAssertTrue(LocalModelCatalog.recommendations(device: tiny).isEmpty)
+    }
+
+    func testPreferenceListsOnlyReferenceCatalogueModels() {
+        let ids = Set(LocalModelCatalog.models.map(\.id))
+        for role in LocalModelCatalog.Role.allCases {
+            XCTAssertFalse(LocalModelCatalog.preference(for: role).isEmpty, role.rawValue)
+            for model in LocalModelCatalog.preference(for: role) {
+                XCTAssertTrue(ids.contains(model.id), "\(role.rawValue) → \(model.id)")
+            }
+        }
+    }
 }
