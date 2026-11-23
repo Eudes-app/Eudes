@@ -11,4 +11,4 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
 ## Fichiers
 
 - `catalogue-familles.png` — catalogue rangé par familles, avec trois raccourcis par
-  usage en tête (issue : catalogue des modèles).
+  usage en tête (issue #31).
