@@ -84,7 +84,7 @@ enum LocalModelCatalog {
             Asset(filename: "LFM3-1.7B-Q4_K_M.gguf", size: 1_099_627_808,
                   sha256: "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 262_144,
-        usesEmbeddedTemplate: true,
+        kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
         strength: "Pensé pour l'edge : 1 Go en 4 bits, contexte 256k, entraîné pour les agents.")
     static let vision = Model(id: "lfm3-vision", title: "LFM3 VL 2B", supportsImages: true,
         repository: "LFM3-VL-2B-GGUF", revision: "1add221a5ea6c047fcf1eaaf2d247939d7cf8849", assets: [
@@ -93,7 +93,7 @@ enum LocalModelCatalog {
             Asset(filename: "mmproj-LFM3-VL-2B-Q8_0.gguf", size: 203_031_872,
                   sha256: "c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 128_000,
-        usesEmbeddedTemplate: true,
+        kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
         strength: "Version vision du modèle edge de Liquid AI.")
     static let qwen35_2b = Model(id: "qwen35_2b", title: "Qwen3.5 2B", supportsImages: false,
         repository: "unsloth/Qwen3.5-2B-GGUF", revision: "f6d5376be1edb4d416d56da11e5397a961aca8ae", assets: [
@@ -109,20 +109,6 @@ enum LocalModelCatalog {
         ], family: "Qwen3.5", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
         strength: "Même famille en plus capable : meilleur raisonnement, un peu plus lent.")
-    static let qwen3_17b = Model(id: "qwen3_17b", title: "Qwen3 1,7B", supportsImages: false,
-        repository: "unsloth/Qwen3-1.7B-GGUF", revision: "d7f544eead698dbd1f15126ef60b45a1e1933222", assets: [
-            Asset(filename: "Qwen3-1.7B-Q4_K_M.gguf", size: 1107409472,
-                  sha256: "b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897")
-        ], family: "Qwen3", licence: "Apache-2.0", nativeContext: 40960,
-        kvBytesPerToken: 114688, usesEmbeddedTemplate: true,
-        strength: "Suivi d'instructions solide, raisonnement activable, bon avec les outils.")
-    static let qwen3_4b = Model(id: "qwen3_4b", title: "Qwen3 4B", supportsImages: false,
-        repository: "unsloth/Qwen3-4B-GGUF", revision: "22c9fc8a8c7700b76a1789366280a6a5a1ad1120", assets: [
-            Asset(filename: "Qwen3-4B-Q4_K_M.gguf", size: 2497281312,
-                  sha256: "f6f851777709861056efcdad3af01da38b31223a3ba26e61a4f8bf3a2195813a")
-        ], family: "Qwen3", licence: "Apache-2.0", nativeContext: 40960,
-        kvBytesPerToken: 92160, usesEmbeddedTemplate: true,
-        strength: "Raisonnement renforcé, très bon suivi d'instructions.")
     static let gemma4_e2b = Model(id: "gemma4_e2b", title: "Gemma 4 E2B", supportsImages: false,
         repository: "unsloth/gemma-4-E2B-it-GGUF", revision: "0314792d7f1f7e229411f620751375812bb9faf2", assets: [
             Asset(filename: "gemma-4-E2B-it-Q4_K_M.gguf", size: 3106738272,
@@ -137,13 +123,6 @@ enum LocalModelCatalog {
         ], family: "Gemma 4", licence: "Apache-2.0", nativeContext: 131072,
         kvBytesPerToken: 107520, usesEmbeddedTemplate: true,
         strength: "Même famille en plus capable ; demande beaucoup de mémoire vive.")
-    static let smollm3_3b = Model(id: "smollm3_3b", title: "SmolLM3 3B", supportsImages: false,
-        repository: "unsloth/SmolLM3-3B-GGUF", revision: "a7bc17204c8a326d6bd6e466e076959eddae2025", assets: [
-            Asset(filename: "SmolLM3-3B-Q4_K_M.gguf", size: 1915306528,
-                  sha256: "4de907d2d388a5508fb7cb443a06effe14cce3518b0a78d3bdd9e74d9edce989")
-        ], family: "SmolLM3", licence: "Apache-2.0", nativeContext: 65536,
-        kvBytesPerToken: 73728, usesEmbeddedTemplate: true,
-        strength: "Multilingue (6 langues dont le français), raisonnement activable, entièrement ouvert.")
     static let phi4_mini = Model(id: "phi4_mini", title: "Phi-4 mini", supportsImages: false,
         repository: "unsloth/Phi-4-mini-instruct-GGUF", revision: "78eb92a46fc37e6b524df991ed9aca9bc6aa7b80", assets: [
             Asset(filename: "Phi-4-mini-instruct-Q4_K_M.gguf", size: 2491874272,
@@ -152,30 +131,69 @@ enum LocalModelCatalog {
         kvBytesPerToken: 131072, usesEmbeddedTemplate: true,
         strength: "Raisonnement dense pour sa taille, licence MIT très permissive.")
 
-    static let qwen3vl_2b = Model(id: "qwen3vl_2b", title: "Qwen3-VL 2B", supportsImages: true,
-        repository: "unsloth/Qwen3-VL-2B-Instruct-GGUF", revision: "8dcb98e52a1d1d02dce9249e5ab15bae8121c666", assets: [
-            Asset(filename: "Qwen3-VL-2B-Instruct-Q4_K_M.gguf", size: 1107410624,
-                  sha256: "858fcf2a39dc73b26dd86592cb0a5f949b59d1edb365d1dea98e46b02e955e56"),
-            Asset(filename: "mmproj-F16.gguf", size: 819395232,
-                  sha256: "cd5a851d3928697fa1bd76d459d2cc409b6cf40c9d9682b2f5c8e7c6a9f9630f")
-        ], family: "Qwen3-VL", licence: "Apache-2.0", nativeContext: 262144,
-        kvBytesPerToken: 114688, usesEmbeddedTemplate: true,
-        strength: "Lit les images autant que le texte : capture d'écran, photo, page scannée.")
+    static let qwen35_08b = Model(id: "qwen35_08b", title: "Qwen3.5 0,8B", supportsImages: false,
+        repository: "unsloth/Qwen3.5-0.8B-GGUF", revision: "6ab461498e2023f6e3c1baea90a8f0fe38ab64d0", assets: [
+            Asset(filename: "Qwen3.5-0.8B-Q4_K_M.gguf", size: 532_517_120,
+                  sha256: "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517")
+        ], family: "Qwen3.5", licence: "Apache-2.0", nativeContext: 262144,
+        kvBytesPerToken: 24576, usesEmbeddedTemplate: true,
+        strength: "Le plus léger du catalogue : répond vite et tient sur les vieux iPhone.")
 
-    static let qwen3vl_4b = Model(id: "qwen3vl_4b", title: "Qwen3-VL 4B", supportsImages: true,
-        repository: "unsloth/Qwen3-VL-4B-Instruct-GGUF", revision: "00c00da0690c4b14b5539b02c4ea5d7c9102b35e", assets: [
-            Asset(filename: "Qwen3-VL-4B-Instruct-Q4_K_M.gguf", size: 2497282336,
-                  sha256: "d4dcd426bfba75752a312b266b80fec8136fbaca13c62d93b7ac41fa67f0492b"),
-            Asset(filename: "mmproj-F16.gguf", size: 836180640,
-                  sha256: "1b9f4e92f0fbda14d7d7b58baed86039b8a980fe503d9d6a9393f25c0028f1fc")
-        ], family: "Qwen3-VL", licence: "Apache-2.0", nativeContext: 262144,
-        kvBytesPerToken: 92160, usesEmbeddedTemplate: true,
-        strength: "Même famille vision en plus capable ; un peu plus lente et plus gourmande.")
+    static let bonsai_2b = Model(id: "bonsai_2b", title: "Bonsai 2B", supportsImages: true,
+        repository: "prism-ml/Ternary-Bonsai-2-2B-gguf", revision: "a6032a5089ac27e96be3a80c7b42d1ad0bd89887", assets: [
+            Asset(filename: "Ternary-Bonsai-2-2B-Q2_0.gguf", size: 546_689_504,
+                  sha256: "c2893fa6f951daee8b7263d5f49b455e57989ef56417a22125b03566dc560650"),
+            Asset(filename: "Ternary-Bonsai-2-2B-mmproj-Q8_0.gguf", size: 364_664_352,
+                  sha256: "ac9934e8d7966d0d62442c202ec8fdad99a045dea79366c1a4a246a46f5c0533")
+        ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
+        kvBytesPerToken: 49152, usesEmbeddedTemplate: true,
+        strength: "Un 2B en 0,55 Go qui lit aussi les images.")
+
+    static let bonsai_4b = Model(id: "bonsai_4b", title: "Bonsai 4B", supportsImages: true,
+        repository: "prism-ml/Ternary-Bonsai-2-4B-gguf", revision: "50ebba61be85e5be07e8083db468ace0fc1bac43", assets: [
+            Asset(filename: "Ternary-Bonsai-2-4B-Q2_0.gguf", size: 1_212_103_520,
+                  sha256: "64a5183b44921bdb5ac4a6f5f92007821d6ebe5c66997d3c147fd214ab9433d4"),
+            Asset(filename: "Ternary-Bonsai-2-4B-mmproj-Q8_0.gguf", size: 366_894_624,
+                  sha256: "db939d5f9b7014137810205e91d05e5f54afd72b0b3af9d33bd7d82f7906a55d")
+        ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
+        kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
+        strength: "La capacité d'un 4B dans la mémoire d'un 2B, images comprises.")
+
+    static let bonsai_8b = Model(id: "bonsai_8b", title: "Bonsai 8B", supportsImages: false,
+        repository: "prism-ml/Ternary-Bonsai-8B-gguf", revision: "c2aefbeb4b24469cd11579c3384b990404c17a30", assets: [
+            Asset(filename: "Ternary-Bonsai-8B-Q2_0.gguf", size: 2_182_184_672,
+                  sha256: "3c8d70470a5d97e5a2b9410ddd899cb740116591462626c60cb2fead6448f60b")
+        ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 65536,
+        kvBytesPerToken: 147456, usesEmbeddedTemplate: true,
+        strength: "Le plus capable des modèles légers, déjà éprouvé sur iPhone.")
+
+    static let granite42_3b = Model(id: "granite42_3b", title: "Granite 4.2 3B", supportsImages: false,
+        repository: "ibm-granite/granite-4.2-3b-GGUF", revision: "c40945d71cd90f249a56985e8155551a9188dc30", assets: [
+            Asset(filename: "granite-4.2-3b-Q4_K_M.gguf", size: 2_244_011_552,
+                  sha256: "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5")
+        ], family: "Granite 4.2", licence: "Apache-2.0", nativeContext: 131072,
+        kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
+        strength: "131 000 mots de mémoire et un suivi d'instructions soigné.")
+
+    static let ministral3_3b = Model(id: "ministral3_3b", title: "Ministral 3 3B", supportsImages: true,
+        repository: "mistralai/Ministral-3-3B-Instruct-2512-GGUF", revision: "eb599d408350ea2bb60452cb86be7c7b2fc28227", assets: [
+            Asset(filename: "Ministral-3-3B-Instruct-2512-Q4_K_M.gguf", size: 2_147_023_008,
+                  sha256: "9ed150d4367e68df0ac8e1540f6ddc65b42d0ee26378329d1ecbca60f93fc5f8"),
+            Asset(filename: "Ministral-3-3B-Instruct-2512-BF16-mmproj.gguf", size: 841_501_856,
+                  sha256: "70ca26e41ecea9da997e2887462ad68b848fbf64da011ff4107bbe7353519ee0")
+        ], family: "Ministral 3", licence: "Apache-2.0", nativeContext: 262144,
+        kvBytesPerToken: 79872, usesEmbeddedTemplate: true,
+        strength: "Lit les images et garde 262 000 mots de mémoire.")
 
     static let models = [text, vision] + extended
 
     /// Modèles ajoutés au catalogue d'origine, dans l'ordre des familles et des tailles.
-    static let extended: [Model] = [qwen3vl_2b, qwen3vl_4b, qwen35_2b, qwen35_4b, qwen3_17b, qwen3_4b, gemma4_e2b, gemma4_e4b, smollm3_3b, phi4_mini]
+    static let extended: [Model] = [
+        qwen35_08b, qwen35_2b, qwen35_4b,
+        gemma4_e2b, gemma4_e4b,
+        bonsai_2b, bonsai_4b, bonsai_8b,
+        granite42_3b, phi4_mini, ministral3_3b,
+    ]
 
     // MARK: - Catalogue lisible
 
@@ -199,18 +217,18 @@ enum LocalModelCatalog {
     /// Ordre d'affichage voulu : la famille la plus polyvalente d'abord, puis les plus
     /// spécialisées. Toute famille absente de cette liste passe après, par ordre
     /// alphabétique : ajouter un modèle ne peut pas le faire disparaître du catalogue.
-    static let familyOrder = ["Qwen3.5", "Qwen3", "Qwen3-VL", "LFM3", "Gemma 4", "SmolLM3", "Phi-4"]
+    static let familyOrder = ["Qwen3.5", "LFM3", "Gemma 4", "Bonsai", "Granite 4.2", "Phi-4", "Ministral 3"]
 
     /// Un nom de famille ne dit rien à qui découvre les modèles : chaque ligne porte
     /// donc une phrase qui décrit l'usage, pas l'architecture.
     static let familySummaries = [
-        "Qwen3.5": "Polyvalente et rapide, bon français, deux tailles.",
-        "Qwen3": "Réfléchit avant de répondre quand on le lui demande.",
-        "Qwen3-VL": "Lit les captures, les photos et les pages scannées.",
+        "Qwen3.5": "Polyvalente et rapide, bon français, trois tailles.",
         "LFM3": "La plus légère, avec une version qui lit les images.",
         "Gemma 4": "Réfléchit avant de répondre, efficace par paramètre actif.",
-        "SmolLM3": "Entièrement ouvert, six langues dont le français.",
+        "Bonsai": "Beaucoup de capacité dans très peu de mémoire, images comprises.",
+        "Granite 4.2": "131 000 mots de mémoire, bon suivi d'instructions.",
         "Phi-4": "Raisonnement dense pour sa taille, licence très permissive.",
+        "Ministral 3": "Lit les images et garde 262 000 mots de mémoire.",
     ]
 
     static var families: [Family] {
@@ -262,9 +280,9 @@ enum LocalModelCatalog {
     /// Ordre de préférence par usage, du plus adapté au plus lourd.
     static func preference(for role: Role) -> [Model] {
         switch role {
-        case .conversation: [qwen35_2b, qwen3_17b, phi4_mini, smollm3_3b]
-        case .reasoning: [qwen35_4b, qwen3_4b, gemma4_e2b, qwen3_17b]
-        case .vision: [vision, qwen3vl_2b, qwen3vl_4b]
+        case .conversation: [qwen35_2b, qwen35_08b, phi4_mini, text]
+        case .reasoning: [qwen35_4b, gemma4_e2b, granite42_3b, phi4_mini]
+        case .vision: [vision, bonsai_2b, bonsai_4b, ministral3_3b]
         }
     }
 
