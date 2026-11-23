@@ -1896,7 +1896,8 @@ private struct DiagnosticsSettingsView: View {
                 if let generation = report.generation {
                     LabeledContent("Modèle", value: generation.modelTitle)
                     LabeledContent("Décodage", value: String(format: "%.1f tok/s", generation.decodeRate))
-                    LabeledContent("Prefill", value: String(format: "%.1f tok/s", generation.prefillRate))
+                    LabeledContent("Prefill", value: String(format: "%.0f tok/s en %.1f s",
+                                                             generation.prefillRate, generation.prefillSeconds))
                     LabeledContent("Cache de prompt", value: generation.cachedTokens > 0
                                    ? "\(generation.cachedTokens) tokens réutilisés"
                                    : "aucun")

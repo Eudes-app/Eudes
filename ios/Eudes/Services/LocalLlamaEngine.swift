@@ -244,6 +244,10 @@ actor LocalLlamaEngine {
             guard Int(count) + answerLimit + (reasoningTokens == nil ? 0 : 16) <= Int(llama_n_ctx(context)) else { throw EngineError.contextLimit }
             try primeContext(tokens: &tokens, count: Int(count))
         }
+        // Avec Metal, llama_decode rend la main avant que le GPU ait fini : sans
+        // synchronisation, la durée du prefill est comptée à zéro et l'attente
+        // réelle est imputée au premier token décodé.
+        llama_synchronize(context)
         let prefillSeconds = Date().timeIntervalSince(prefillStart)
         let remaining = Int(llama_n_ctx(context)) - inputTokens
         let reasoningLimit = reasoningTokens.map { LocalModelCatalog.reasoningSize($0) }
@@ -324,6 +328,7 @@ actor LocalLlamaEngine {
             }
             if outputTokens >= remaining { break }
         }
+        llama_synchronize(context)
         let decodeSeconds = Date().timeIntervalSince(decodeStart)
         if !pending.isEmpty {
             output += String(decoding: pending, as: UTF8.self)
