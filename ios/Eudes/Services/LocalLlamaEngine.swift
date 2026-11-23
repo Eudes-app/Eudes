@@ -92,6 +92,39 @@ actor LocalLlamaEngine {
     /// Nombre de tokens envoyés au décodeur au dernier appel : 0 après une
     /// réutilisation intégrale, la longueur du prompt après un contexte vidé.
     private(set) var lastPrefillTokenCount = 0
+    /// Threads actuellement appliqués au contexte : la politique thermique ne les
+    /// modifie qu'en cas de changement d'état du téléphone.
+    private var activeThreads = LocalLlamaEngine.baseThreads
+
+    /// Réglages réduits quand le téléphone chauffe ou que le mode économie d'énergie
+    /// est actif : moins de threads et réponse plus courte, donc moins de courant
+    /// tiré et moins de chaleur produite.
+    struct ThermalPolicy: Equatable {
+        let threads: Int32
+        let answerCap: Int
+        let reduced: Bool
+
+        static func make(thermal: ProcessInfo.ThermalState, lowPower: Bool, baseThreads: Int32) -> ThermalPolicy {
+            let hot: Bool
+            switch thermal {
+            case .serious, .critical: hot = true
+            default: hot = false
+            }
+            let reduced = hot || lowPower
+            return ThermalPolicy(threads: reduced ? max(1, baseThreads / 2) : baseThreads,
+                                 answerCap: reduced ? 256 : 1024,
+                                 reduced: reduced)
+        }
+    }
+
+    /// Threads du contexte tel qu'il a été ouvert, avant toute réduction thermique.
+    static var baseThreads: Int32 { Int32(max(1, min(4, ProcessInfo.processInfo.processorCount - 1))) }
+
+    static func currentPolicy() -> ThermalPolicy {
+        ThermalPolicy.make(thermal: ProcessInfo.processInfo.thermalState,
+                           lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled,
+                           baseThreads: baseThreads)
+    }
 
     static func contextParameters(useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens) -> llama_context_params {
         var parameters = llama_context_default_params()
@@ -101,7 +134,7 @@ actor LocalLlamaEngine {
         }
         parameters.n_ctx = UInt32(LocalModelCatalog.contextSize(contextTokens))
         parameters.n_batch = 512
-        parameters.n_threads = Int32(max(1, min(4, ProcessInfo.processInfo.processorCount - 1)))
+        parameters.n_threads = baseThreads
         parameters.n_threads_batch = parameters.n_threads
         return parameters
     }
@@ -201,7 +234,19 @@ actor LocalLlamaEngine {
         defer { generating = false }
         try Task.checkCancellation()
         let vocab = llama_model_get_vocab(model)
-        let answerLimit = max(1, min(maxTokens, 1024))
+        let policy = Self.currentPolicy()
+        if policy.threads != activeThreads {
+            // Le contexte garde ses threads tant que l'état du téléphone ne change
+            // pas : inutile de le solliciter à chaque réponse.
+            llama_set_n_threads(context, policy.threads, policy.threads)
+            activeThreads = policy.threads
+            if policy.reduced {
+                // Sans cette ligne, une réponse plus courte passerait pour un bug.
+                DiagnosticStore.shared.append(category: .model, level: .warning,
+                                              message: "Réglages réduits (\(policy.threads) threads, réponses plafonnées à \(policy.answerCap) tokens) : téléphone chaud ou mode économie d’énergie.")
+            }
+        }
+        let answerLimit = max(1, min(maxTokens, policy.answerCap))
         let inputTokens: Int
         if !images.isEmpty {
             guard let vision else { throw EngineError.imagesUnsupported }

@@ -563,6 +563,32 @@ final class LocalModelFileStoreTests: XCTestCase {
         XCTAssertThrowsError(try foreign.verify(file, size: 3, sha256: String(repeating: "0", count: 64)))
     }
 
+    func testThermalPolicyOnlyReducesWhenHotOrLowPower() {
+        let nominal = LocalLlamaEngine.ThermalPolicy.make(thermal: .nominal, lowPower: false, baseThreads: 4)
+        XCTAssertEqual(nominal.threads, 4)
+        XCTAssertEqual(nominal.answerCap, 1024)
+        XCTAssertFalse(nominal.reduced)
+
+        let halved = LocalLlamaEngine.ThermalPolicy.make(thermal: .serious, lowPower: false, baseThreads: 4)
+        XCTAssertEqual(halved.threads, 2)
+        XCTAssertEqual(halved.answerCap, 256)
+        XCTAssertTrue(halved.reduced)
+
+        let critical = LocalLlamaEngine.ThermalPolicy.make(thermal: .critical, lowPower: false, baseThreads: 4)
+        XCTAssertEqual(critical.threads, 2)
+
+        let lowPower = LocalLlamaEngine.ThermalPolicy.make(thermal: .nominal, lowPower: true, baseThreads: 4)
+        XCTAssertTrue(lowPower.reduced)
+
+        let warm = LocalLlamaEngine.ThermalPolicy.make(thermal: .fair, lowPower: false, baseThreads: 4)
+        XCTAssertEqual(warm.threads, 4)
+        XCTAssertFalse(warm.reduced)
+
+        // Jamais zéro thread, même sur un appareil à deux cœurs déjà chaud.
+        let tiny = LocalLlamaEngine.ThermalPolicy.make(thermal: .critical, lowPower: true, baseThreads: 2)
+        XCTAssertEqual(tiny.threads, 1)
+    }
+
     func testVerifiedInstallRejectsCorruptionAndKeepsExistingFile() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
