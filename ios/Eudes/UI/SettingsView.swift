@@ -630,7 +630,7 @@ private struct ModelCatalogView: View {
                         .multilineTextAlignment(.leading)
                     }
                 }
-            } header: { Text("Toutes les familles") }
+            } header: { Text("Tous les modèles") }
             footer: { Text("Un modèle téléchargé fonctionne sans réseau et reste sur l’iPhone. Les modèles trop lourds pour cet appareil restent visibles, avec la mémoire nécessaire.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
