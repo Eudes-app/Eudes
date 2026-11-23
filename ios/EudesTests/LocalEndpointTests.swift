@@ -599,6 +599,22 @@ final class LocalModelFileStoreTests: XCTestCase {
         XCTAssertTrue(throttled.journalMessage.contains("économie d’énergie"))
     }
 
+    @MainActor
+    func testDiagnosticLogPublishesEntriesWrittenOutsideTheUi() async {
+        DiagnosticLog.shared.clear()
+        // Reproduit l'appel du moteur : écrire dans le journal doit rendre l'entrée
+        // visible dans l'écran Diagnostic, pas seulement dans le tampon.
+        DiagnosticLog.log(.model, "prefill 10 tok · décodage 12,0 tok/s")
+        for _ in 0..<20 where DiagnosticLog.shared.entries.isEmpty {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertEqual(DiagnosticLog.shared.entries.count, 1)
+        XCTAssertEqual(DiagnosticLog.shared.entries.first?.category, .model)
+        XCTAssertEqual(DiagnosticLog.shared.entries.first?.level, .info)
+        DiagnosticLog.shared.clear()
+        XCTAssertTrue(DiagnosticLog.shared.entries.isEmpty)
+    }
+
     func testVerifiedInstallRejectsCorruptionAndKeepsExistingFile() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

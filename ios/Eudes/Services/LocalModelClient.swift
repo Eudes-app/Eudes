@@ -137,11 +137,10 @@ actor LocalModelRuntime {
                                               seconds: seconds, reused: reused, date: Date())
         Task { @MainActor in LocalEngineReport.shared.record(verification: metrics) }
         guard !reused || seconds > 10 || LocalEngineDiagnostics.tracesEveryGeneration else { return }
-        DiagnosticStore.shared.append(category: .model,
-                                      level: seconds > 10 ? .warning : .info,
-                                      message: String(format: "vérification d’empreinte %@ : %.1f s%@",
-                                                      selected.title, seconds,
-                                                      reused ? " (cache)" : " (hachage complet)"))
+        DiagnosticLog.log(.model,
+                          String(format: "vérification d’empreinte %@ : %.1f s%@",
+                                 selected.title, seconds, reused ? " (cache)" : " (hachage complet)"),
+                          level: seconds > 10 ? .warning : .info)
     }
 
     func prepare(modelID: String, useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens) throws {

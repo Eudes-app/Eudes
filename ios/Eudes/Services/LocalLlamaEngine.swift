@@ -351,9 +351,10 @@ actor LocalLlamaEngine {
     private func record(metricsForGeneration metrics: LocalGenerationMetrics) async {
         await MainActor.run { LocalEngineReport.shared.record(generation: metrics) }
         guard metrics.needsAttention || LocalEngineDiagnostics.tracesEveryGeneration else { return }
-        DiagnosticStore.shared.append(category: .model,
-                                      level: metrics.needsAttention ? .warning : .info,
-                                      message: metrics.journalMessage)
+        // Passer par DiagnosticLog, jamais par le tampon seul : c'est lui qui
+        // prévient l'écran Diagnostic qu'une entrée vient d'arriver.
+        DiagnosticLog.log(.model, metrics.journalMessage,
+                          level: metrics.needsAttention ? .warning : .info)
     }
 
     /// Alimente le contexte du prompt, en réutilisant le préfixe déjà décodé.
