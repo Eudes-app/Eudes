@@ -176,6 +176,107 @@ enum LocalModelCatalog {
 
     /// Modèles ajoutés au catalogue d'origine, dans l'ordre des familles et des tailles.
     static let extended: [Model] = [qwen3vl_2b, qwen3vl_4b, qwen35_2b, qwen35_4b, qwen3_17b, qwen3_4b, gemma4_e2b, gemma4_e4b, smollm3_3b, phi4_mini]
+
+    // MARK: - Catalogue lisible
+
+    /// Une famille telle qu'elle s'affiche : un nom, une phrase compréhensible sans
+    /// connaître les modèles, et ses tailles dans l'ordre du catalogue.
+    struct Family: Identifiable, Equatable, Sendable {
+        let name: String
+        let summary: String
+        let models: [Model]
+
+        var id: String { name }
+
+        /// « 2 tailles · 1,2 Go et 2,5 Go », jamais un total inventé.
+        var sizesLabel: String {
+            let sizes = models.map(\.sizeLabel)
+            guard models.count > 1 else { return "1 taille · \(sizes.first ?? "")" }
+            return "\(models.count) tailles · \(sizes.joined(separator: " et "))"
+        }
+    }
+
+    /// Ordre d'affichage voulu : la famille la plus polyvalente d'abord, puis les plus
+    /// spécialisées. Toute famille absente de cette liste passe après, par ordre
+    /// alphabétique : ajouter un modèle ne peut pas le faire disparaître du catalogue.
+    static let familyOrder = ["Qwen3.5", "Qwen3", "Qwen3-VL", "LFM3", "Gemma 4", "SmolLM3", "Phi-4"]
+
+    /// Un nom de famille ne dit rien à qui découvre les modèles : chaque ligne porte
+    /// donc une phrase qui décrit l'usage, pas l'architecture.
+    static let familySummaries = [
+        "Qwen3.5": "Polyvalente et rapide, bon français, deux tailles.",
+        "Qwen3": "Réfléchit avant de répondre quand on le lui demande.",
+        "Qwen3-VL": "Lit les captures, les photos et les pages scannées.",
+        "LFM3": "La plus légère, avec une version qui lit les images.",
+        "Gemma 4": "Réfléchit avant de répondre, efficace par paramètre actif.",
+        "SmolLM3": "Entièrement ouvert, six langues dont le français.",
+        "Phi-4": "Raisonnement dense pour sa taille, licence très permissive.",
+    ]
+
+    static var families: [Family] {
+        let grouped = Dictionary(grouping: models, by: \.family)
+        let ordered = familyOrder.filter { grouped[$0] != nil }
+        let remaining = grouped.keys.filter { !familyOrder.contains($0) }.sorted()
+        return (ordered + remaining).map { name in
+            Family(name: name, summary: familySummaries[name] ?? "", models: grouped[name] ?? [])
+        }
+    }
+
+    /// Les trois raccourcis du catalogue : un usage, un modèle. L'ordre de préférence
+    /// est fixe, mais le choix dépend de la mémoire de l'appareil — un modèle trop
+    /// lourd n'est jamais proposé parce qu'il serait le plus capable.
+    enum Role: String, CaseIterable, Sendable {
+        case conversation, reasoning, vision
+
+        var headline: String {
+            switch self {
+            case .conversation: "Discuter tous les jours"
+            case .reasoning: "Réfléchir sur un problème"
+            case .vision: "Comprendre une image"
+            }
+        }
+
+        var detail: String {
+            switch self {
+            case .conversation: "Questions, rédaction, résumés : le modèle à garder par défaut."
+            case .reasoning: "Calculs, textes longs, problèmes en plusieurs étapes."
+            case .vision: "Captures d’écran, photos, documents photographiés."
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .conversation: "bubble.left"
+            case .reasoning: "sparkles"
+            case .vision: "photo"
+            }
+        }
+    }
+
+    struct Recommendation: Identifiable, Equatable, Sendable {
+        let role: Role
+        let model: Model
+        var id: String { role.rawValue }
+    }
+
+    /// Ordre de préférence par usage, du plus adapté au plus lourd.
+    static func preference(for role: Role) -> [Model] {
+        switch role {
+        case .conversation: [qwen35_2b, qwen3_17b, phi4_mini, smollm3_3b]
+        case .reasoning: [qwen35_4b, qwen3_4b, gemma4_e2b, qwen3_17b]
+        case .vision: [vision, qwen3vl_2b, qwen3vl_4b]
+        }
+    }
+
+    /// Un raccourci par usage qui a un candidat sur cet appareil. Un usage sans modèle
+    /// assez léger disparaît de l'écran plutôt que d'être proposé en échouant.
+    static func recommendations(device: DeviceProfile = .current) -> [Recommendation] {
+        Role.allCases.compactMap { role in
+            guard let model = preference(for: role).first(where: { $0.compatibility(device: device).isSupported })
+            else { return nil }
+            return Recommendation(role: role, model: model)
+        }
+    }
 }
 
 

@@ -359,42 +359,125 @@ private enum PendingModelAction: Equatable {
     }
 }
 
+/// Inventaire partagé par les écrans du catalogue. Sorti de la vue parce que la liste
+/// des familles et la fiche d'un modèle lisent le même état : un téléchargement lancé
+/// sur une fiche doit apparaître dans la liste, et une empreinte déjà vérifiée ne doit
+/// pas être recalculée à chaque retour.
+private final class LocalModelInventory: ObservableObject {
+    @Published private(set) var tasks: [String: [LocalModelDownloadSnapshot]] = [:]
+    @Published private(set) var verified: Set<String> = []
+    @Published private(set) var checking: Set<String> = []
+    @Published private(set) var loadedID: String?
+    @Published private(set) var loadedContext: Int?
+    @Published private(set) var presentOnDisk: Set<String> = []
+    @Published private(set) var invalidFiles: Set<String> = []
+    @Published private(set) var hasScanned = false
+    @Published var errorMessage: String?
+
+    func isInstalled(_ model: LocalModelCatalog.Model) -> Bool {
+        presentOnDisk.contains(model.id)
+    }
+
+    func activeTasks(_ model: LocalModelCatalog.Model) -> [LocalModelDownloadSnapshot] {
+        tasks[model.id] ?? []
+    }
+
+    /// Nombre de modèles dont les fichiers sont sur l'appareil, sans attendre la
+    /// vérification d'empreinte : une empreinte en cours ne rend pas le fichier absent.
+    var installedCount: Int {
+        LocalModelCatalog.models.filter { presentOnDisk.contains($0.id) }.count
+    }
+
+    @MainActor func markLoaded(_ id: String, context: Int) {
+        loadedID = id
+        loadedContext = context
+    }
+
+    @MainActor func clearLoaded() {
+        loadedID = nil
+        loadedContext = nil
+    }
+
+    @MainActor func reloadLoadedState() async {
+        loadedID = await LocalModelRuntime.shared.loadedModelID()
+        loadedContext = await LocalModelRuntime.shared.loadedContextSize()
+    }
+
+    @MainActor func refresh() async {
+        let current = await LocalModelDownloads.shared.tasks()
+        let snapshots = current.map(LocalModelDownloadSnapshot.init).sorted { $0.taskIdentifier < $1.taskIdentifier }
+        tasks = Dictionary(grouping: snapshots.filter { LocalModelDownloads.resolve($0.taskDescription) != nil }, by: { LocalModelDownloads.resolve($0.taskDescription)!.0.id })
+        loadedID = await LocalModelRuntime.shared.loadedModelID()
+        loadedContext = await LocalModelRuntime.shared.loadedContextSize()
+        for model in LocalModelCatalog.models {
+            let onDisk = LocalModelDownloads.isInstalled(model)
+            if onDisk {
+                presentOnDisk.insert(model.id)
+            } else {
+                presentOnDisk.remove(model.id)
+                invalidFiles.remove(model.id)
+                // Un modèle supprimé ne doit pas garder sa validation : sinon l'écran
+                // proposerait encore de charger un fichier absent.
+                verified.remove(model.id)
+            }
+            // Un modèle chargé par le moteur prouve que ses fichiers sont bons : inutile de rehasher.
+            if onDisk, loadedID == model.id { verified.insert(model.id); invalidFiles.remove(model.id) }
+            guard onDisk, !verified.contains(model.id), !checking.contains(model.id),
+                  tasks[model.id, default: []].isEmpty else { continue }
+            checking.insert(model.id)
+            Task {
+                do { try await LocalModelRuntime.shared.verify(modelID: model.id); verified.insert(model.id); invalidFiles.remove(model.id) }
+                catch is CancellationError {
+                    // rien : une nouvelle vérification reprendra
+                } catch {
+                    // Une suppression ou une annulation pendant la vérification ne doit pas
+                    // être présentée comme une empreinte fausse.
+                    if LocalModelDownloads.isInstalled(model) {
+                        invalidFiles.insert(model.id)
+                        errorMessage = "L’empreinte de \(model.title) ne correspond pas au fichier attendu. Relance le téléchargement."
+                    }
+                }
+                checking.remove(model.id)
+            }
+        }
+        hasScanned = true
+    }
+}
+
+/// Entrée des Réglages : le catalogue vit désormais sur son propre écran, parce que
+/// onze modèles à plat ne se lisent pas. Ici ne restent que le raccourci et les
+/// réglages qui ne dépendent pas d'un modèle précis.
 private struct LocalModelSettingsSection: View {
     @EnvironmentObject private var store: AppStore
     /// Même clé que `AppStore.loadAtStartupKey` : la garde du préchargement et la case
     /// des Réglages doivent lire exactement la même préférence.
     @AppStorage("lfm.loadAtStartup") private var loadAtStartup = false
-    @State private var tasks: [String: [LocalModelDownloadSnapshot]] = [:]
-    @State private var verified: Set<String> = []
-    @State private var checking: Set<String> = []
-    @State private var loadedID: String?
-    @State private var loadedContext: Int?
+    @StateObject private var inventory = LocalModelInventory()
     @State private var loadingID: String?
-    @State private var presentOnDisk: Set<String> = []
-    @State private var invalidFiles: Set<String> = []
-    @State private var pendingAction: PendingModelAction?
-    @State private var errorMessage: String?
-    /// Faux jusqu'au premier balayage du disque : afficher « aucun modèle » avant
-    /// d'avoir regardé serait un mensonge visible au lancement.
-    @State private var hasScanned = false
 
     var body: some View {
-        // Les sections sont groupées pour que l'alerte porte sur la vue entière :
-        // accrochée à une Section, sa présentation attendait un re-rendu (un scroll).
+        // Les sections sont groupées pour que l'état partagé de l'inventaire reste
+        // unique : deux écrans distincts reliraient le disque chacun de leur côté.
         Group {
         Section {
-            if installedModels.isEmpty {
-                if hasScanned {
-                    Text(hasActiveDownloads
-                         ? "Téléchargement en cours : le modèle apparaîtra ici une fois installé."
-                         : "Aucun modèle téléchargé. Choisis un modèle dans la liste ci-dessous.")
-                        .font(.caption).foregroundStyle(Palette.muted)
+            NavigationLink {
+                ModelCatalogView(inventory: inventory)
+            } label: {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Catalogue des modèles")
+                        Text(catalogSummary).font(.caption).foregroundStyle(Palette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    if let selected = selectedModelTitle {
+                        Text(selected).font(.caption).foregroundStyle(Palette.muted)
+                    }
                 }
-            } else {
-                ForEach(installedModels) { model in modelRow(model) }
             }
+            .accessibilityIdentifier("lfm.catalog")
         } header: { Text("Modèles sur cet iPhone") }
-        footer: { Text("Le modèle sélectionné reste utilisé pour les messages. Les images sont disponibles uniquement avec le modèle texte et images.") }
+        footer: { Text("Le modèle sélectionné reste utilisé pour les messages. Les images sont disponibles uniquement avec un modèle texte et images.") }
         .listRowBackground(Palette.surface)
         .listRowSeparatorTint(Palette.border)
 
@@ -442,35 +525,241 @@ private struct LocalModelSettingsSection: View {
                         do {
                             try await LocalModelRuntime.shared.prepare(modelID: model.id, useGPU: true,
                                                                        contextTokens: selectedContext)
-                            loadedID = model.id
-                            loadedContext = selectedContext
-                            errorMessage = nil
+                            inventory.markLoaded(model.id, context: selectedContext)
+                            inventory.errorMessage = nil
                         } catch {
-                            loadedID = await LocalModelRuntime.shared.loadedModelID()
-                            loadedContext = await LocalModelRuntime.shared.loadedContextSize()
-                            errorMessage = error.localizedDescription
+                            await inventory.reloadLoadedState()
+                            inventory.errorMessage = error.localizedDescription
                         }
                         loadingID = nil
                     }
                 } label: {
                     if loadingID == model.id { Label("Chargement…", systemImage: "hourglass") }
-                    else if loadedID == model.id && loadedContext == store.localContextTokens { Label("Modèle chargé", systemImage: "checkmark.circle") }
-                    else if loadedID == model.id { Label("Recharger avec le contexte choisi", systemImage: "arrow.clockwise") }
+                    else if inventory.loadedID == model.id && inventory.loadedContext == store.localContextTokens { Label("Modèle chargé", systemImage: "checkmark.circle") }
+                    else if inventory.loadedID == model.id { Label("Recharger avec le contexte choisi", systemImage: "arrow.clockwise") }
                     else { Label("Charger le modèle sélectionné", systemImage: "play.circle") }
-                }.disabled(!verified.contains(model.id) || loadingID != nil || (loadedID == model.id && loadedContext == store.localContextTokens))
+                }.disabled(!inventory.verified.contains(model.id) || loadingID != nil || (inventory.loadedID == model.id && inventory.loadedContext == store.localContextTokens))
             }
-            if let errorMessage { Text(errorMessage).font(.caption).foregroundStyle(.red) }
+            if let message = inventory.errorMessage { Text(message).font(.caption).foregroundStyle(.red) }
         } footer: { Text("Le contexte choisi s’applique au prochain chargement du modèle. Le raisonnement partage ce contexte avec la réponse et peut être écourté si la place manque. Les grandes valeurs utilisent davantage de mémoire et peuvent ralentir ou dépasser les ressources de l’iPhone.") }
         .listRowBackground(Palette.surface)
+        }
+        .task { await inventory.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
+            if let message = note.userInfo?["error"] as? String { inventory.errorMessage = message }
+            Task { await inventory.refresh() }
+        }
+    }
 
-        if hasScanned && !downloadableModels.isEmpty {
+    /// Ce que le raccourci annonce sans mentir : le nombre de modèles réellement sur
+    /// l'appareil, jamais un total qui ferait croire à une installation.
+    private var catalogSummary: String {
+        guard inventory.hasScanned else { return "Lecture de l’iPhone…" }
+        let families = LocalModelCatalog.families.count
+        let count = inventory.installedCount
+        return count == 0
+            ? "\(families) familles, aucun modèle installé"
+            : "\(families) familles · \(count) modèle\(count > 1 ? "s" : "") installé\(count > 1 ? "s" : "")"
+    }
+
+    private var selectedModelTitle: String? {
+        guard store.selectedServer?.isLocalLFM == true,
+              let model = LocalModelCatalog.models.first(where: { $0.id == store.selectedServer?.model }),
+              inventory.isInstalled(model) else { return nil }
+        return model.title
+    }
+
+    /// Décharge le modèle quand « Charger à l'ouverture » est décoché. Une génération en
+    /// cours garde le moteur : le déchargement aura lieu au passage en arrière-plan.
+    @MainActor private func unloadSelectedModel() async {
+        guard !store.isGenerating, loadingID == nil else { return }
+        try? await LocalModelRuntime.shared.unload()
+        inventory.clearLoaded()
+    }
+}
+
+/// Le catalogue : trois raccourcis par usage, puis les familles. Les raccourcis
+/// pointent vers un modèle du catalogue, ils n'ajoutent pas d'entrée : un même modèle
+/// peut donc apparaître deux fois dans la hiérarchie sans être proposé deux fois.
+private struct ModelCatalogView: View {
+    @ObservedObject var inventory: LocalModelInventory
+
+    var body: some View {
+        SettingsForm {
+            let recommendations = LocalModelCatalog.recommendations()
+            if !recommendations.isEmpty {
+                Section {
+                    ForEach(recommendations) { recommendation in
+                        NavigationLink {
+                            ModelDetailView(model: recommendation.model, inventory: inventory,
+                                            role: recommendation.role)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: recommendation.role.symbol)
+                                    .font(.system(size: 17, weight: .regular))
+                                    .foregroundStyle(Palette.muted)
+                                    .frame(width: 26)
+                                    .accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(recommendation.role.headline)
+                                        .font(.subheadline.weight(.semibold))
+                                    Text("\(recommendation.model.title) · \(recommendation.model.sizeLabel)")
+                                        .font(.caption).foregroundStyle(Palette.muted)
+                                }
+                            }
+                            .multilineTextAlignment(.leading)
+                        }
+                        .accessibilityIdentifier("catalog.role.\(recommendation.role.rawValue)")
+                    }
+                } header: { Text("Pour ton iPhone") }
+                footer: { Text("Un seul suffit pour commencer. Ces trois choix sont recalculés à partir de la mémoire de cet iPhone : un modèle trop lourd n’y figure pas.") }
+                .listRowBackground(Palette.surface)
+                .listRowSeparatorTint(Palette.border)
+            }
             Section {
-                ForEach(downloadableModels) { model in modelRow(model) }
-            } header: { Text("Modèles à télécharger") }
-            footer: { Text("Le téléchargement installe le modèle sur l’iPhone : il reste disponible même sans réseau, qu’il soit sélectionné ou non.") }
+                ForEach(LocalModelCatalog.families) { family in
+                    NavigationLink {
+                        ModelFamilyView(family: family, inventory: inventory)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(family.name).font(.subheadline.weight(.semibold))
+                            Text(family.summary).font(.caption).foregroundStyle(Palette.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(family.sizesLabel).font(.caption2).foregroundStyle(Palette.muted)
+                        }
+                        .multilineTextAlignment(.leading)
+                    }
+                }
+            } header: { Text("Tous les modèles") }
+            footer: { Text("Un modèle téléchargé fonctionne sans réseau et reste sur l’iPhone. Les modèles trop lourds pour cet appareil restent visibles, avec la mémoire nécessaire.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
         }
+        .navigationTitle(Text("Modèles"))
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await inventory.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
+            Task { await inventory.refresh() }
+        }
+    }
+}
+
+/// Une famille : ses tailles, dans l'ordre du catalogue, avec la recommandation de
+/// l'appareil marquée par le texte plutôt que par une couleur.
+private struct ModelFamilyView: View {
+    let family: LocalModelCatalog.Family
+    @ObservedObject var inventory: LocalModelInventory
+
+    var body: some View {
+        SettingsForm {
+            Section {
+                ForEach(family.models) { model in
+                    NavigationLink {
+                        ModelDetailView(model: model, inventory: inventory)
+                    } label: {
+                        ModelSummaryRow(model: model, inventory: inventory)
+                    }
+                }
+            } footer: { Text(family.summary) }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+        }
+        .navigationTitle(Text(family.name))
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct ModelSummaryRow: View {
+    let model: LocalModelCatalog.Model
+    @ObservedObject var inventory: LocalModelInventory
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(model.title).foregroundStyle(Palette.ink)
+            Text(model.capabilityDescription).font(.caption).foregroundStyle(Palette.muted)
+            Text("\(model.sizeLabel)\(stateSuffix)").font(.caption).foregroundStyle(Palette.muted)
+            if let tooHeavy = model.compatibilityLabel() {
+                Text(tooHeavy).font(.caption).foregroundStyle(Palette.warningText)
+            }
+        }
+        .multilineTextAlignment(.leading)
+    }
+
+    private var stateSuffix: String {
+        if !inventory.activeTasks(model).isEmpty { return " · téléchargement en cours" }
+        if inventory.isInstalled(model) { return " · installé" }
+        return ""
+    }
+}
+
+/// La fiche d'un modèle : ce qu'il sait faire, ce qu'il coûte en mémoire, et les deux
+/// gestes utiles (télécharger, utiliser). Supprimer reste possible, une fois installé.
+private struct ModelDetailView: View {
+    @EnvironmentObject private var store: AppStore
+    let model: LocalModelCatalog.Model
+    @ObservedObject var inventory: LocalModelInventory
+    var role: LocalModelCatalog.Role? = nil
+    @State private var pendingAction: PendingModelAction?
+
+    private var tooHeavy: String? { model.compatibilityLabel() }
+    private var installed: Bool { inventory.isInstalled(model) }
+    private var isSelected: Bool {
+        store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
+    }
+
+    var body: some View {
+        SettingsForm {
+            Section {
+                if let role {
+                    Text(role.detail).font(.caption).foregroundStyle(Palette.muted)
+                }
+                Text(model.strength).font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+                LabeledContent("Taille", value: model.sizeLabel)
+                LabeledContent("Images", value: model.supportsImages ? "lues" : "non")
+                if let native = model.nativeContext {
+                    LabeledContent("Contexte du modèle", value: "\(native.formatted()) tokens")
+                }
+                LabeledContent("Licence", value: model.licence)
+            } header: { Text(model.title) }
+            footer: { Text("Le nom technique et la licence servent à retrouver le fichier ; c’est le seul endroit de l’app où ils apparaissent.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section {
+                if let tooHeavy {
+                    Text(tooHeavy).font(.caption).foregroundStyle(Palette.warningText)
+                }
+                if installed && isSelected {
+                    Label("Utilisé pour les messages", systemImage: "checkmark.circle")
+                        .font(.callout).foregroundStyle(Palette.muted)
+                } else if installed {
+                    Button("Utiliser ce modèle") {
+                        store.selectLocalModel(model.id)
+                    }
+                    .disabled(store.isPreparingSend || tooHeavy != nil)
+                    .accessibilityIdentifier("model.use")
+                }
+                modelControls
+                    .disabled(tooHeavy != nil)
+            } footer: { Text("Un modèle téléchargé reste disponible sans réseau, qu’il soit utilisé ou non.") }
+            .listRowBackground(Palette.surface)
+
+            if installed {
+                Section {
+                    // Un geste visible plutôt qu'un balayage, qui n'est pas découvrable.
+                    Button("Supprimer le modèle", role: .destructive) { pendingAction = .remove(model) }
+                        .accessibilityIdentifier("model.delete")
+                } footer: { Text("La suppression libère la place occupée par les fichiers. Tes conversations restent intactes.") }
+                .listRowBackground(Palette.surface)
+            }
+        }
+        .navigationTitle(Text(model.title))
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await inventory.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
+            if let message = note.userInfo?["error"] as? String { inventory.errorMessage = message }
+            Task { await inventory.refresh() }
         }
         // Une alerte au lieu d'un confirmationDialog : accroché à la section, il s'ancre
         // en bas de la page et passe inaperçu quand la ligne est loin dans la liste.
@@ -479,18 +768,18 @@ private struct LocalModelSettingsSection: View {
                 get: { pendingAction != nil }, set: { if !$0 { pendingAction = nil } })) {
             if let action = pendingAction {
                 switch action {
-                case .download(let model):
-                    Button("Télécharger \(model.title)") {
-                        errorMessage = nil
-                        Task { await LocalModelDownloads.shared.start(model: model); await refresh() }
+                case .download(let target):
+                    Button("Télécharger \(target.title)") {
+                        inventory.errorMessage = nil
+                        Task { await LocalModelDownloads.shared.start(model: target); await inventory.refresh() }
                     }
-                case .remove(let model):
-                    Button("Supprimer \(model.title)", role: .destructive) {
-                        errorMessage = nil
+                case .remove(let target):
+                    Button("Supprimer \(target.title)", role: .destructive) {
+                        inventory.errorMessage = nil
                         Task {
-                            do { try await store.deleteLocalModel(model.id) }
-                            catch { errorMessage = error.localizedDescription }
-                            await refresh()
+                            do { try await store.deleteLocalModel(target.id) }
+                            catch { inventory.errorMessage = error.localizedDescription }
+                            await inventory.refresh()
                         }
                     }
                 }
@@ -503,95 +792,17 @@ private struct LocalModelSettingsSection: View {
                 case .download:
                     Text("Taille : \(size). Le téléchargement peut continuer en arrière-plan et utiliser les données mobiles.")
                 case .remove:
-                    Text("\(size) seront libérés. Le modèle repassera dans « Modèles à télécharger » ; tes conversations restent intactes.")
+                    Text("\(size) seront libérés. Le modèle repassera dans « À télécharger » ; tes conversations restent intactes.")
                 }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
-            if let message = note.userInfo?["error"] as? String { errorMessage = message }
-            Task { await refresh() }
-        }
-        .task { await refresh() }
     }
 
-    /// Les fichiers comptent seuls : une vérification d'empreinte peut rester sans
-    /// conclusion, et déduire l'état d'autre chose ferait clignoter les sections.
-    /// Un téléchargement en cours ne fait pas remonter la ligne : elle resterait dans
-    /// cette section avant même d'être installée, et disparaîtrait sous le doigt au clic.
-    private var installedModels: [LocalModelCatalog.Model] {
-        LocalModelCatalog.models.filter { presentOnDisk.contains($0.id) }
-    }
-
-    private var hasActiveDownloads: Bool {
-        LocalModelCatalog.models.contains { !(tasks[$0.id] ?? []).isEmpty }
-    }
-
-    private var downloadableModels: [LocalModelCatalog.Model] {
-        let installed = Set(installedModels.map(\.id))
-        return LocalModelCatalog.models.filter { !installed.contains($0.id) }
-    }
-
-    @ViewBuilder private func modelRow(_ model: LocalModelCatalog.Model) -> some View {
-        let tooHeavy = model.compatibilityLabel()
-        let installed = presentOnDisk.contains(model.id)
-        VStack(alignment: .leading, spacing: 8) {
-            if installed {
-                Button {
-                    store.selectLocalModel(model.id)
-                } label: {
-                    modelTitle(model)
-                }
-                .disabled(store.isPreparingSend || tooHeavy != nil)
-            } else {
-                // Un modèle absent du disque ne se sélectionne pas : la ligne informe et
-                // seul « Télécharger » agit. Un en-tête cliquable laisserait croire que
-                // le modèle est utilisable tel quel.
-                modelTitle(model)
-            }
-            if let tooHeavy {
-                Text(tooHeavy).font(.caption).foregroundStyle(Palette.warningText)
-            }
-            modelControls(model)
-                .disabled(tooHeavy != nil)
-            if installed {
-                // Un geste visible plutôt qu'un balayage, qui n'est pas découvrable.
-                Button("Supprimer le modèle", role: .destructive) { pendingAction = .remove(model) }
-                    .font(.caption)
-            }
-        }
-        .padding(.vertical, 4).buttonStyle(.borderless)
-    }
-
-    private func modelTitle(_ model: LocalModelCatalog.Model) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(model.title).foregroundStyle(Palette.ink)
-                Text(model.capabilityDescription).font(.caption).fontWeight(.medium)
-                    .foregroundStyle(Palette.muted)
-                Text(model.strength).font(.caption).foregroundStyle(Palette.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("\(model.sizeLabel) · \(model.family)")
-                    .font(.caption).foregroundStyle(Palette.muted)
-            }
-            .layoutPriority(1)
-            // Un Text multiligne dans un Button de List se centre par défaut :
-            // on force l'alignement à gauche comme le titre.
-            .multilineTextAlignment(.leading)
-            Spacer(minLength: 8)
-            // La coche ne s'affiche que sur un modèle installé : un reste de sélection
-            // sur un fichier absent n'est pas une sélection utilisable.
-            if presentOnDisk.contains(model.id),
-               store.selectedServer?.model == model.id, store.selectedServer?.isLocalLFM == true {
-                Image(systemName: "checkmark").accessibilityLabel("Sélectionné")
-            }
-        }
-    }
-
-    @ViewBuilder private func modelControls(_ model: LocalModelCatalog.Model) -> some View {
-        let active = tasks[model.id] ?? []
-        if model.compatibilityLabel() != nil {
-            // La ligne entière est désactivée : le bouton doit le dire, sinon il
-            // ressemble à un téléchargement possible.
+    @ViewBuilder private var modelControls: some View {
+        let active = inventory.activeTasks(model)
+        if tooHeavy != nil {
+            // La fiche entière est limitée : le bouton doit le dire, sinon il ressemble
+            // à un téléchargement possible.
             Text("Indisponible sur cet iPhone").font(.caption).foregroundStyle(Palette.warningText)
         } else if !active.isEmpty {
             let bytes = active.reduce(Int64(0)) { $0 + max(0, $1.countOfBytesReceived) }
@@ -602,13 +813,13 @@ private struct LocalModelSettingsSection: View {
                 Spacer()
                 Button(active.allSatisfy { $0.state == .suspended } ? "Reprendre" : "Pause") {
                     let pause = !active.allSatisfy { $0.state == .suspended }
-                    Task { await LocalModelDownloads.shared.setPaused(pause, model: model); await refresh() }
+                    Task { await LocalModelDownloads.shared.setPaused(pause, model: model); await inventory.refresh() }
                 }
-                Button("Annuler", role: .destructive) { Task { await LocalModelDownloads.shared.cancel(model: model); await refresh() } }
+                Button("Annuler", role: .destructive) { Task { await LocalModelDownloads.shared.cancel(model: model); await inventory.refresh() } }
             }.font(.caption)
-        } else if checking.contains(model.id) {
+        } else if inventory.checking.contains(model.id) {
             Text("Vérification…").font(.caption).foregroundStyle(Palette.muted)
-        } else if invalidFiles.contains(model.id) {
+        } else if inventory.invalidFiles.contains(model.id) {
             // Le fichier est là mais son empreinte ne correspond pas : le dire, plutôt que
             // reproposer un téléchargement comme si rien n'était installé.
             HStack(spacing: 8) {
@@ -616,65 +827,17 @@ private struct LocalModelSettingsSection: View {
                 Button("Relancer le téléchargement") { pendingAction = .download(model) }
                     .font(.caption)
             }
-        } else if verified.contains(model.id) {
-            Label(loadedID == model.id && loadedContext == store.localContextTokens ? "Téléchargé · chargé" : "Téléchargé", systemImage: "checkmark.circle")
+        } else if inventory.verified.contains(model.id) {
+            Label(inventory.loadedID == model.id ? "Téléchargé · chargé" : "Téléchargé", systemImage: "checkmark.circle")
                 .font(.caption).foregroundStyle(Palette.muted)
-        } else if presentOnDisk.contains(model.id) {
+        } else if installed {
             // Le fichier occupe la bonne place : ne jamais afficher « Télécharger ».
             Text("Téléchargé · vérification en attente").font(.caption).foregroundStyle(Palette.muted)
         } else {
             Button("Télécharger · \(ByteCountFormatter.string(fromByteCount: model.downloadBytes, countStyle: .file))") { pendingAction = .download(model) }
                 .font(.caption)
+                .accessibilityIdentifier("model.download")
         }
-    }
-
-    /// Décharge le modèle quand « Charger à l'ouverture » est décoché. Une génération en
-    /// cours garde le moteur : le déchargement aura lieu au passage en arrière-plan.
-    @MainActor private func unloadSelectedModel() async {
-        guard !store.isGenerating, loadingID == nil else { return }
-        try? await LocalModelRuntime.shared.unload()
-        loadedID = nil
-        loadedContext = nil
-    }
-
-    @MainActor private func refresh() async {
-        let current = await LocalModelDownloads.shared.tasks()
-        let snapshots = current.map(LocalModelDownloadSnapshot.init).sorted { $0.taskIdentifier < $1.taskIdentifier }
-        tasks = Dictionary(grouping: snapshots.filter { LocalModelDownloads.resolve($0.taskDescription) != nil }, by: { LocalModelDownloads.resolve($0.taskDescription)!.0.id })
-        loadedID = await LocalModelRuntime.shared.loadedModelID()
-        loadedContext = await LocalModelRuntime.shared.loadedContextSize()
-        for model in LocalModelCatalog.models {
-            let onDisk = LocalModelDownloads.isInstalled(model)
-            if onDisk {
-                presentOnDisk.insert(model.id)
-            } else {
-                presentOnDisk.remove(model.id)
-                invalidFiles.remove(model.id)
-                // Un modèle supprimé ne doit pas garder sa validation : sinon l'écran
-                // proposerait encore de charger un fichier absent.
-                verified.remove(model.id)
-            }
-            // Un modèle chargé par le moteur prouve que ses fichiers sont bons : inutile de rehasher.
-            if onDisk, loadedID == model.id { verified.insert(model.id); invalidFiles.remove(model.id) }
-            guard onDisk, !verified.contains(model.id), !checking.contains(model.id),
-                  tasks[model.id, default: []].isEmpty else { continue }
-            checking.insert(model.id)
-            Task {
-                do { try await LocalModelRuntime.shared.verify(modelID: model.id); verified.insert(model.id); invalidFiles.remove(model.id) }
-                catch is CancellationError {
-                    // rien : une nouvelle vérification reprendra
-                } catch {
-                    // Une suppression ou une annulation pendant la vérification ne doit pas
-                    // être présentée comme une empreinte fausse.
-                    if LocalModelDownloads.isInstalled(model) {
-                        invalidFiles.insert(model.id)
-                        errorMessage = "L’empreinte de \(model.title) ne correspond pas au fichier attendu. Relance le téléchargement."
-                    }
-                }
-                checking.remove(model.id)
-            }
-        }
-        hasScanned = true
     }
 }
 
