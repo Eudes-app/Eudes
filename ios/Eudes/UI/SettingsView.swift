@@ -644,20 +644,22 @@ private struct ModelCatalogView: View {
     }
 }
 
-/// Une famille : ses tailles, dans l'ordre du catalogue, avec la recommandation de
-/// l'appareil marquée par le texte plutôt que par une couleur.
+/// Une famille : ses tailles, dans l'ordre du catalogue. Chaque ligne porte deux gestes
+/// explicites — télécharger à droite, ouvrir les informations par le « i » — plutôt qu'une
+/// navigation unique : sans cela, rien n'annonce qu'un modèle se télécharge depuis sa fiche.
 private struct ModelFamilyView: View {
     let family: LocalModelCatalog.Family
     @ObservedObject var inventory: LocalModelInventory
+    @State private var info: LocalModelCatalog.Model?
+    @State private var showingInfo = false
 
     var body: some View {
         SettingsForm {
             Section {
                 ForEach(family.models) { model in
-                    NavigationLink {
-                        ModelDetailView(model: model, inventory: inventory)
-                    } label: {
-                        ModelSummaryRow(model: model, inventory: inventory)
+                    ModelSummaryRow(model: model, inventory: inventory) {
+                        info = model
+                        showingInfo = true
                     }
                 }
             } footer: { Text(family.summary) }
@@ -666,28 +668,136 @@ private struct ModelFamilyView: View {
         }
         .navigationTitle(Text(family.name))
         .navigationBarTitleDisplayMode(.inline)
+        // `LocalModelCatalog.Model` n'est pas `Hashable` : la destination se pilote donc
+        // par un booléen, le modèle retenu étant gardé à côté.
+        .navigationDestination(isPresented: $showingInfo) {
+            if let info { ModelDetailView(model: info, inventory: inventory) }
+        }
+        .task { await inventory.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
+            if let message = note.userInfo?["error"] as? String { inventory.errorMessage = message }
+            Task { await inventory.refresh() }
+        }
+        .alert("Téléchargement impossible", isPresented: Binding(
+            get: { inventory.errorMessage != nil }, set: { if !$0 { inventory.errorMessage = nil } })) {
+            Button("OK", role: .cancel) { inventory.errorMessage = nil }
+        } message: {
+            Text(inventory.errorMessage ?? "")
+        }
     }
 }
 
+/// Une ligne de modèle : le résumé à gauche, puis le téléchargement et le « i ».
 private struct ModelSummaryRow: View {
     let model: LocalModelCatalog.Model
     @ObservedObject var inventory: LocalModelInventory
+    var onInfo: () -> Void
+
+    @State private var confirmingDownload = false
+
+    private var tooHeavy: String? { model.compatibilityLabel() }
+    private var active: [LocalModelDownloadSnapshot] { inventory.activeTasks(model) }
+    private var installed: Bool { inventory.isInstalled(model) }
+
+    /// Part du poids déjà reçue : un fichier terminé compte pour sa taille entière, même
+    /// si sa tâche n'apparaît plus dans la liste des téléchargements en cours.
+    private var progress: Double {
+        guard !active.isEmpty else { return 0 }
+        let received = active.reduce(Int64(0)) { $0 + max(0, $1.countOfBytesReceived) }
+            + model.assets.filter { asset in
+                !active.contains { $0.taskDescription == LocalModelDownloads.identity(model: model, asset: asset) }
+                    && FileManager.default.fileExists(atPath: LocalModelDownloads.destination(model: model, asset: asset).path)
+            }.reduce(Int64(0)) { $0 + $1.size }
+        return min(1, Double(received) / Double(max(1, model.downloadBytes)))
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(model.title).foregroundStyle(Palette.ink)
-            Text(model.capabilityDescription).font(.caption).foregroundStyle(Palette.muted)
-            Text("\(model.sizeLabel)\(stateSuffix)").font(.caption).foregroundStyle(Palette.muted)
-            if let tooHeavy = model.compatibilityLabel() {
-                Text(tooHeavy).font(.caption).foregroundStyle(Palette.warningText)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(model.title).foregroundStyle(Palette.ink)
+                Text(model.capabilityDescription).font(.caption).foregroundStyle(Palette.muted)
+                Text("\(model.sizeLabel)\(stateSuffix)").font(.caption).foregroundStyle(Palette.muted)
+                if let tooHeavy {
+                    Text(tooHeavy).font(.caption).foregroundStyle(Palette.warningText)
+                }
             }
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            downloadControl
+
+            Button(action: onInfo) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 19))
+                    .foregroundStyle(Palette.muted)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Informations sur \(model.title)")
+            .accessibilityIdentifier("model.row.info.\(model.id)")
         }
-        .multilineTextAlignment(.leading)
+        .alert("Télécharger le modèle ?", isPresented: $confirmingDownload) {
+            Button("Télécharger \(model.title)") {
+                inventory.errorMessage = nil
+                Task {
+                    await LocalModelDownloads.shared.start(model: model)
+                    await inventory.refresh()
+                }
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            let size = ByteCountFormatter.string(fromByteCount: model.downloadBytes, countStyle: .file)
+            Text("Taille : \(size). Le téléchargement peut continuer en arrière-plan et utiliser les données mobiles.")
+        }
+    }
+
+    @ViewBuilder private var downloadControl: some View {
+        if tooHeavy != nil {
+            Image(systemName: "arrow.down.circle")
+                .font(.system(size: 22))
+                .foregroundStyle(Palette.muted.opacity(0.4))
+                .frame(width: 32, height: 32)
+                .accessibilityLabel("Téléchargement indisponible sur cet iPhone")
+        } else if !active.isEmpty {
+            // Un anneau plutôt qu'un bouton : le geste utile (pause, annuler) est sur la
+            // fiche, et une icône cliquable pendant le transfert inviterait au doublon.
+            ZStack {
+                Circle().stroke(Palette.border, lineWidth: 2)
+                Circle()
+                    .trim(from: 0, to: max(0.02, progress))
+                    .stroke(Palette.ink, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+            }
+            .frame(width: 22, height: 22)
+            .frame(width: 32, height: 32)
+            .accessibilityElement()
+            .accessibilityLabel("Téléchargement de \(model.title)")
+            .accessibilityValue("\(Int(progress * 100)) %")
+            .accessibilityIdentifier("model.row.progress.\(model.id)")
+        } else if installed {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 22))
+                .foregroundStyle(Palette.muted)
+                .frame(width: 32, height: 32)
+                .accessibilityLabel("\(model.title) est téléchargé")
+        } else {
+            Button { confirmingDownload = true } label: {
+                Image(systemName: "arrow.down.circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Palette.ink)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Télécharger \(model.title)")
+            .accessibilityIdentifier("model.row.download.\(model.id)")
+        }
     }
 
     private var stateSuffix: String {
-        if !inventory.activeTasks(model).isEmpty { return " · téléchargement en cours" }
-        if inventory.isInstalled(model) { return " · installé" }
+        if !active.isEmpty { return " · téléchargement en cours" }
+        if installed { return " · installé" }
         return ""
     }
 }
