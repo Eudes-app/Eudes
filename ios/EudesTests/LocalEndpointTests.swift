@@ -641,6 +641,20 @@ final class LocalModelFileStoreTests: XCTestCase {
         XCTAssertEqual(tiny.threads, 1)
     }
 
+    func testPrefillBatchGrowsTheMicroBatchWithoutTouchingTheContext() {
+        let full = LocalLlamaEngine.contextParameters(useGPU: true, contextTokens: 8192)
+        XCTAssertEqual(full.n_batch, 1024)
+        XCTAssertEqual(full.n_ubatch, 1024)
+
+        let fallback = LocalLlamaEngine.contextParameters(useGPU: true, contextTokens: 8192,
+                                                          batchSize: LocalLlamaEngine.fallbackPrefillBatch)
+        XCTAssertEqual(fallback.n_batch, 512)
+        XCTAssertEqual(fallback.n_ubatch, 512)
+        // Le repli ne change ni la taille du contexte, ni les threads.
+        XCTAssertEqual(fallback.n_ctx, full.n_ctx)
+        XCTAssertEqual(fallback.n_threads, full.n_threads)
+    }
+
     func testVerifiedInstallRejectsCorruptionAndKeepsExistingFile() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

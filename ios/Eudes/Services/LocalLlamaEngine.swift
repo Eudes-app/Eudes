@@ -134,14 +134,23 @@ actor LocalLlamaEngine {
                            baseThreads: baseThreads)
     }
 
-    static func contextParameters(useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens) -> llama_context_params {
+    /// Taille de lot du prefill. Le modèle lit le prompt par paquets de cette taille :
+    /// un paquet plus gros amortit mieux le coût fixe de chaque appel GPU, au prix de
+    /// tampons de calcul plus gros.
+    static let prefillBatch = 1024
+    /// Repli quand le contexte refuse un lot de 1 024 (mémoire insuffisante).
+    static let fallbackPrefillBatch = 512
+
+    static func contextParameters(useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens,
+                                  batchSize: Int = prefillBatch) -> llama_context_params {
         var parameters = llama_context_default_params()
         if !useGPU {
             parameters.offload_kqv = false
             parameters.op_offload = false
         }
         parameters.n_ctx = UInt32(LocalModelCatalog.contextSize(contextTokens))
-        parameters.n_batch = 512
+        parameters.n_batch = UInt32(batchSize)
+        parameters.n_ubatch = UInt32(batchSize)
         parameters.n_threads = baseThreads
         parameters.n_threads_batch = parameters.n_threads
         return parameters
@@ -175,7 +184,15 @@ actor LocalLlamaEngine {
         }
         let expectedContext = LocalModelCatalog.contextSize(contextTokens)
         let contextParameters = Self.contextParameters(useGPU: effectiveGPU, contextTokens: expectedContext)
-        guard let context = llama_init_from_model(model, contextParameters) else {
+        var createdContext = llama_init_from_model(model, contextParameters)
+        if createdContext == nil {
+            // Lot plus petit quand la mémoire manque : un prefill moins rapide vaut
+            // mieux qu'un modèle qui ne s'ouvre pas.
+            createdContext = llama_init_from_model(
+                model, Self.contextParameters(useGPU: effectiveGPU, contextTokens: expectedContext,
+                                              batchSize: Self.fallbackPrefillBatch))
+        }
+        guard let context = createdContext else {
             llama_model_free(model)
             throw EngineError.contextLoad
         }
