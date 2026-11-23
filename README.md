@@ -42,12 +42,12 @@ Tout le code est dans [ios/](ios/). Ouvrir `ios/Eudes.xcodeproj`, pas un fichier
 
 1. **Serveur compatible OpenAI** — Chat Completions par défaut, Responses en option, protocole choisi par connexion. Les domaines de fournisseurs sont autorisés avec validation TLS et refus des redirections ; la boucle locale (`localhost`, `127.0.0.1`, `[::1]`) est acceptée. Voir [protocoles et limites](docs/PROTOCOLS.md) et [boucle locale](docs/LOCALHOST.md).
 2. **Modèle Apple** — `SystemLanguageModel` sur iOS 26+ avec Apple Intelligence activé. Aucune clé ni requête distante pour le modèle ; la recherche Web passe par les outils natifs `web_search` et `web_fetch`, décrits dans [outils natifs du modèle Apple](docs/APPLE_TOOLS.md).
-3. **Modèles GGUF sur l'iPhone** — llama.cpp compilé dans l'app, catalogue de modèles à licence compatible distribution : LFM3 1.7B et VL 2B, Qwen3.5 2B et 4B, Qwen3 1,7B et 4B, Qwen3-VL 2B et 4B, Gemma 4 E2B et E4B, SmolLM3 3B, Phi-4-mini. Les fichiers sont téléchargés depuis Hugging Face à la demande, vérifiés par SHA-256, puis exécutés en Metal au premier plan et en CPU lorsque l'app n'est plus active. La fenêtre de contexte est calculée par modèle à partir de la mémoire réellement disponible, voir [contexte et longueur de réponse](docs/CONTEXT.md).
+3. **Modèles GGUF sur l'iPhone** — llama.cpp compilé dans l'app, catalogue de modèles à licence compatible distribution : LFM3 1.7B et VL 2B, Qwen3.5 0,8B, 2B et 4B, Gemma 4 E2B et E4B, Bonsai 2B et 4B (vision) et 8B, Granite 4.2 3B, Phi-4-mini, Ministral 3 3B (vision). Les fichiers sont téléchargés depuis Hugging Face à la demande, vérifiés par SHA-256, puis exécutés en Metal au premier plan et en CPU lorsque l'app n'est plus active. La fenêtre de contexte est calculée par modèle à partir de la mémoire réellement disponible, voir [contexte et longueur de réponse](docs/CONTEXT.md).
 
 ## Ce que fait Eudes
 
 - Chat en streaming, Markdown et blocs de code, arrêt et régénération ; les réponses partielles ne sont pas réinjectées dans le contexte.
-- Images en entrée avec les modèles texte et vision (`LFM3 VL 2B`, `Qwen3-VL 2B` et `4B`) : photothèque ou presse-papiers, avec avertissement si le modèle choisi est purement textuel.
+- Images en entrée avec les modèles vision (`LFM3 VL 2B`, `Bonsai 2B` et `4B`, `Ministral 3 3B`) : photothèque ou presse-papiers, avec avertissement si le modèle choisi est purement textuel.
 - Plusieurs profils de serveurs, clé API facultative dans le trousseau, découverte via `/models`, identifiants proposés depuis le catalogue public NVIDIA Build, ou identifiant de modèle saisi à la main si la découverte n'est pas disponible.
 - Historique, recherche et suppression des conversations sur l'appareil ; le modèle est mémorisé avec chaque conversation.
 - Instruction système, température, limite de tokens et fenêtre de contexte réglables.

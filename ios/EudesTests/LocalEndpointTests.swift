@@ -1183,7 +1183,7 @@ final class ContextSizingTests: XCTestCase {
             XCTAssertGreaterThan(asset.size, 0, model.id)
             XCTAssertGreaterThan(model.kvBytesPerToken ?? 0, 0, model.id)
         }
-        XCTAssertEqual(LocalModelCatalog.extended.count, 10)
+        XCTAssertEqual(LocalModelCatalog.extended.count, 11)
         XCTAssertEqual(LocalModelCatalog.models.count, LocalModelCatalog.extended.count + 2)
         for model in LocalModelCatalog.models {
             XCTAssertFalse(model.family.isEmpty, model.id)
@@ -1197,8 +1197,8 @@ final class ContextSizingTests: XCTestCase {
     func testHeavyModelsStayVisibleWithAReason() throws {
         let phone8 = DeviceProfile(machineIdentifier: "iPhone17,1", physicalMemory: 8_000_000_000)
         let phone16 = DeviceProfile(machineIdentifier: "iPhone19,1", physicalMemory: 16_000_000_000)
-        XCTAssertNil(LocalModelCatalog.qwen3_17b.compatibilityLabel(device: phone8))
-        XCTAssertTrue(LocalModelCatalog.qwen3_17b.compatibility(device: phone8).isSupported)
+        XCTAssertNil(LocalModelCatalog.qwen35_08b.compatibilityLabel(device: phone8))
+        XCTAssertTrue(LocalModelCatalog.qwen35_08b.compatibility(device: phone8).isSupported)
         // Gemma 4 E4B (4,98 Go + cache) ne rentre pas dans 8 Go : visible, désactivé, chiffré.
         let heavy = try XCTUnwrap(LocalModelCatalog.gemma4_e4b.compatibilityLabel(device: phone8))
         XCTAssertTrue(heavy.contains("Trop lourd pour cet iPhone"), heavy)
@@ -1215,14 +1215,15 @@ final class ContextSizingTests: XCTestCase {
             XCTAssertFalse(model.strength.isEmpty, model.id)
             XCTAssertTrue(["Modèle texte", "Modèle texte + vision"].contains(model.capabilityDescription), model.id)
         }
-        // Capacité explicite : trois modèles vision (LFM3 VL, Qwen3-VL 2B et 4B).
+        // Capacité explicite : quatre modèles vision (LFM3 VL, Bonsai 2B et 4B, Ministral 3 3B).
         XCTAssertTrue(LocalModelCatalog.vision.supportsImages)
-        XCTAssertTrue(LocalModelCatalog.qwen3vl_2b.supportsImages)
-        XCTAssertTrue(LocalModelCatalog.qwen3vl_4b.supportsImages)
-        XCTAssertFalse(LocalModelCatalog.qwen3_4b.supportsImages)
-        XCTAssertEqual(LocalModelCatalog.models.filter { $0.supportsImages }.count, 3)
+        XCTAssertTrue(LocalModelCatalog.bonsai_2b.supportsImages)
+        XCTAssertTrue(LocalModelCatalog.bonsai_4b.supportsImages)
+        XCTAssertTrue(LocalModelCatalog.ministral3_3b.supportsImages)
+        XCTAssertFalse(LocalModelCatalog.granite42_3b.supportsImages)
+        XCTAssertEqual(LocalModelCatalog.models.filter { $0.supportsImages }.count, 4)
         // Un modèle vision porte deux fichiers : le modèle et son projecteur.
-        XCTAssertEqual(LocalModelCatalog.qwen3vl_2b.assets.count, 2)
+        XCTAssertEqual(LocalModelCatalog.bonsai_2b.assets.count, 2)
         XCTAssertEqual(Set(LocalModelCatalog.models.map(\.id)).count, LocalModelCatalog.models.count)
     }
 
@@ -1395,8 +1396,8 @@ final class ContextSizingTests: XCTestCase {
 
     func testFamilySizesLabelCountsRealFiles() {
         let qwen = LocalModelCatalog.families.first { $0.name == "Qwen3.5" }
-        XCTAssertEqual(qwen?.models.map(\.title), ["Qwen3.5 2B", "Qwen3.5 4B"])
-        XCTAssertEqual(qwen?.sizesLabel.hasPrefix("2 tailles · "), true)
+        XCTAssertEqual(qwen?.models.map(\.title), ["Qwen3.5 0,8B", "Qwen3.5 2B", "Qwen3.5 4B"])
+        XCTAssertEqual(qwen?.sizesLabel.hasPrefix("3 tailles · "), true)
         let single = LocalModelCatalog.families.first { $0.name == "Phi-4" }
         XCTAssertEqual(single?.sizesLabel.hasPrefix("1 taille · "), true)
     }
@@ -1418,10 +1419,14 @@ final class ContextSizingTests: XCTestCase {
                               "\(recommendation.model.title) sur \(memory)")
             }
         }
-        // Un iPhone de 2 Go ne peut tenir aucun modèle du catalogue : plutôt que de
-        // proposer un échec, les raccourcis disparaissent.
+        // Sur 2 Go, seul le plus léger du catalogue reste proposable : les autres
+        // raccourcis disparaissent plutôt que d'offrir un échec.
         let tiny = DeviceProfile(machineIdentifier: "iPhone12,1", physicalMemory: 2_000_000_000)
-        XCTAssertTrue(LocalModelCatalog.recommendations(device: tiny).isEmpty)
+        XCTAssertEqual(LocalModelCatalog.recommendations(device: tiny).map(\.role), [.conversation])
+        XCTAssertEqual(LocalModelCatalog.recommendations(device: tiny).first?.model.id, "qwen35_08b")
+        // Sur 1 Go, plus rien ne tient : aucun raccourci.
+        let minuscule = DeviceProfile(machineIdentifier: "iPhone12,1", physicalMemory: 1_000_000_000)
+        XCTAssertTrue(LocalModelCatalog.recommendations(device: minuscule).isEmpty)
     }
 
     func testPreferenceListsOnlyReferenceCatalogueModels() {

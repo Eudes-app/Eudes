@@ -3437,7 +3437,7 @@ extension PrivateStorageTests {
         XCTAssertEqual(
             LocalModelCatalog.replacement(afterRemoving: vision.id, installed: [vision.id, text.id], device: device)?.id,
             text.id)
-        let otherVision = LocalModelCatalog.qwen3vl_2b
+        let otherVision = LocalModelCatalog.bonsai_2b
         XCTAssertEqual(
             LocalModelCatalog.replacement(afterRemoving: vision.id,
                                            installed: [vision.id, otherVision.id, text.id], device: device)?.id,
