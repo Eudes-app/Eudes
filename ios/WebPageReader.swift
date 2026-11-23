@@ -8,7 +8,7 @@ protocol WebPageReading: Sendable {
 }
 
 enum WebPageError: LocalizedError, Equatable {
-    case unsafeAddress, unavailable, timedOut, redirectNotAllowed, unsupportedContent, invalidResponse, responseTooLarge, emptyPage
+    case unsafeAddress, unavailable, timedOut, redirectNotAllowed, unsupportedContent, invalidResponse, emptyPage
     case httpStatus(Int)
 
     var errorDescription: String? {
@@ -19,7 +19,6 @@ enum WebPageError: LocalizedError, Equatable {
         case .redirectNotAllowed: "Cette page redirige vers une autre adresse. Seul son extrait de recherche est disponible."
         case .unsupportedContent: "Le format de cette page ne permet pas une lecture directe."
         case .invalidResponse: "La réponse de cette page n’est pas exploitable."
-        case .responseTooLarge: "Cette page dépasse la taille autorisée pour une lecture directe."
         case .emptyPage: "Aucun texte exploitable n’a été trouvé dans cette page."
         case .httpStatus(let status): "La page Web est indisponible (HTTP \(status))."
         }
@@ -38,7 +37,6 @@ protocol WebPageTransport: Sendable {
 /// Reads only a source selected from the current turn's search results. The caller
 /// owns that allowlist; the transport additionally pins a vetted public IP address.
 struct DirectWebPageReader: WebPageReading {
-    static let maximumCharacters = 6_000
     var transport: any WebPageTransport = PinnedWebPageTransport()
 
     func read(source: WebSource) async throws -> WebSource {
@@ -66,7 +64,6 @@ struct DirectWebPageReader: WebPageReading {
     }
 
     static func extract(_ response: WebPageResponse) throws -> String {
-        guard response.body.count <= WebPageHTTP.maximumBodyBytes else { throw WebPageError.responseTooLarge }
         let parts = response.contentType.lowercased().split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) }
         guard let mime = parts.first,
               ["text/html", "application/xhtml+xml", "text/plain", "text/markdown"].contains(mime) else {
@@ -95,7 +92,7 @@ struct DirectWebPageReader: WebPageReading {
         }
         text = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         guard !text.isEmpty else { throw WebPageError.emptyPage }
-        return String(text.prefix(maximumCharacters))
+        return text
     }
 
     private static func replace(_ pattern: String, in text: String, with replacement: String) -> String {
@@ -164,9 +161,7 @@ enum WebPageAddressPolicy {
 /// A bounded HTTP/1 reader. No redirects, automatic decompression, cookies,
 /// authentication, browser execution or secondary requests are performed.
 enum WebPageHTTP {
-    static let maximumBodyBytes = 1_048_576
     static let maximumHeaderBytes = 32_768
-    static let maximumWireBytes = maximumBodyBytes + maximumHeaderBytes
 
     static func request(url: URL) throws -> (hostname: String, bytes: Data) {
         guard let safeURL = WebSearchClient.publicHTTPSURL(url),
@@ -183,7 +178,6 @@ enum WebPageHTTP {
     }
 
     static func parse(_ data: Data) throws -> WebPageResponse {
-        guard data.count <= maximumWireBytes else { throw WebPageError.responseTooLarge }
         guard let separator = data.range(of: Data("\r\n\r\n".utf8)),
               separator.lowerBound <= maximumHeaderBytes,
               let header = String(data: data[..<separator.lowerBound], encoding: .ascii) else {
@@ -220,10 +214,8 @@ enum WebPageHTTP {
             guard !length.isEmpty, length.utf8.allSatisfy({ (48...57).contains($0) }), let count = Int(length) else {
                 throw WebPageError.invalidResponse
             }
-            guard count <= maximumBodyBytes else { throw WebPageError.responseTooLarge }
             guard body.count == count else { throw WebPageError.invalidResponse }
         }
-        guard body.count <= maximumBodyBytes else { throw WebPageError.responseTooLarge }
         return WebPageResponse(body: body, contentType: contentType)
     }
 
@@ -246,7 +238,6 @@ enum WebPageHTTP {
                     trailing.suffix(4) == Data("\r\n\r\n".utf8)) else { throw WebPageError.invalidResponse }
                 return decoded
             }
-            guard size <= maximumBodyBytes - decoded.count else { throw WebPageError.responseTooLarge }
             guard size <= data.count - offset, data.count - offset - size >= 2,
                   data[(offset + size)..<(offset + size + 2)] == crlf else { throw WebPageError.invalidResponse }
             decoded.append(data[offset..<(offset + size)])
@@ -351,13 +342,10 @@ private final class PinnedWebPageOperation: @unchecked Sendable {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 16_384) { [weak self, weak connection] data, _, complete, error in
             guard let self, let connection, self.connection === connection, !self.finished else { return }
             if let data {
-                guard data.count <= WebPageHTTP.maximumWireBytes - self.received.count else {
-                    self.finish(.failure(WebPageError.responseTooLarge)); return
-                }
                 self.received.append(data)
                 if self.received.count > WebPageHTTP.maximumHeaderBytes,
                    self.received.range(of: Data("\r\n\r\n".utf8)) == nil {
-                    self.finish(.failure(WebPageError.responseTooLarge)); return
+                    self.finish(.failure(WebPageError.invalidResponse)); return
                 }
             }
             if error != nil { self.finish(.failure(WebPageError.unavailable)); return }

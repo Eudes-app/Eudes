@@ -293,3 +293,95 @@ enum DiagnosticFormatter {
         return entries.map { line($0, formatter: formatter) }.joined(separator: "\n")
     }
 }
+
+// MARK: - Mesures du moteur local
+
+/// Mesures d'une génération locale, affichées dans Réglages › Diagnostic.
+///
+/// Aucune donnée privée n'y entre : ni prompt, ni réponse, seulement des comptes de
+/// tokens, des durées et l'état thermique du téléphone.
+struct LocalGenerationMetrics: Equatable, Sendable {
+    let modelID: String
+    let modelTitle: String
+    let promptTokens: Int
+    let cachedTokens: Int
+    let prefillSeconds: Double
+    let answerTokens: Int
+    let decodeSeconds: Double
+    let thermal: String
+    let lowPower: Bool
+    let date: Date
+
+    /// Tokens de prompt réellement envoyés au décodeur : le cache fait le reste.
+    var decodedPromptTokens: Int { max(0, promptTokens - cachedTokens) }
+
+    var prefillRate: Double {
+        guard decodedPromptTokens > 0, prefillSeconds > 0 else { return 0 }
+        return Double(decodedPromptTokens) / prefillSeconds
+    }
+
+    var decodeRate: Double {
+        guard answerTokens > 0, decodeSeconds > 0 else { return 0 }
+        return Double(answerTokens) / decodeSeconds
+    }
+
+    /// Décodage sous 3 tokens/s ou prefill sous 10 : le seul cas qui écrit dans le
+    /// journal sans que la bascule de traçage soit active.
+    var isSlowerThanUsual: Bool {
+        (decodeRate > 0 && decodeRate < 3) || (prefillRate > 0 && prefillRate < 10)
+    }
+
+    var needsAttention: Bool { isSlowerThanUsual || thermal != "nominal" || lowPower }
+
+    var journalMessage: String {
+        let cached = cachedTokens > 0 ? " (\(cachedTokens) du cache)" : ""
+        let power = lowPower ? " · économie d’énergie" : ""
+        return String(format: "%@ · prefill %d tok%@ %.1f s · décodage %d tok %.1f s · %.1f tok/s · thermique %@%@",
+                      modelTitle, promptTokens, cached, prefillSeconds,
+                      answerTokens, decodeSeconds, decodeRate, thermal, power)
+    }
+}
+
+struct LocalVerificationMetrics: Equatable, Sendable {
+    let modelID: String
+    let modelTitle: String
+    let seconds: Double
+    /// `true` quand l'empreinte venait du cache : aucun hachage n'a eu lieu.
+    let reused: Bool
+    let date: Date
+}
+
+/// Réglage partagé : écrire chaque génération dans le journal au lieu de ne garder
+/// que les mesures de la dernière réponse.
+enum LocalEngineDiagnostics {
+    static let traceKey = "diagnostic.traceEngine"
+
+    static var tracesEveryGeneration: Bool {
+        UserDefaults.standard.bool(forKey: traceKey)
+    }
+}
+
+extension ProcessInfo.ThermalState {
+    /// Libellé court en français, sans jargon système.
+    var localLabel: String {
+        switch self {
+        case .nominal: return "nominal"
+        case .fair: return "tiède"
+        case .serious: return "chaud"
+        case .critical: return "critique"
+        @unknown default: return "inconnu"
+        }
+    }
+}
+
+/// Point de collecte des mesures du moteur local, lu par l'écran Diagnostic.
+@MainActor
+final class LocalEngineReport: ObservableObject {
+    static let shared = LocalEngineReport()
+
+    @Published private(set) var generation: LocalGenerationMetrics?
+    @Published private(set) var verification: LocalVerificationMetrics?
+
+    func record(generation metrics: LocalGenerationMetrics) { generation = metrics }
+    func record(verification metrics: LocalVerificationMetrics) { verification = metrics }
+}
