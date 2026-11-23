@@ -651,12 +651,16 @@ private struct ModelFamilyView: View {
     let family: LocalModelCatalog.Family
     @ObservedObject var inventory: LocalModelInventory
     @State private var info: LocalModelCatalog.Model?
+    @State private var showingInfo = false
 
     var body: some View {
         SettingsForm {
             Section {
                 ForEach(family.models) { model in
-                    ModelSummaryRow(model: model, inventory: inventory) { info = model }
+                    ModelSummaryRow(model: model, inventory: inventory) {
+                        info = model
+                        showingInfo = true
+                    }
                 }
             } footer: { Text(family.summary) }
             .listRowBackground(Palette.surface)
@@ -664,8 +668,10 @@ private struct ModelFamilyView: View {
         }
         .navigationTitle(Text(family.name))
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(item: $info) { model in
-            ModelDetailView(model: model, inventory: inventory)
+        // `LocalModelCatalog.Model` n'est pas `Hashable` : la destination se pilote donc
+        // par un booléen, le modèle retenu étant gardé à côté.
+        .navigationDestination(isPresented: $showingInfo) {
+            if let info { ModelDetailView(model: info, inventory: inventory) }
         }
         .task { await inventory.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
