@@ -134,17 +134,15 @@ Pour imposer un simulateur, utilise `EUDES_SIMULATOR_ID=<UDID> bash tools/test-i
 
 ## Tests automatiques GitHub Actions
 
-Le parcours de développement est **Issue → Development → Pull request → Review → Corrections → CI checks**. Après revue, l'étiquette `review-validée` déclenche les tests Python et XCTest sur des runners macOS hébergés par GitHub : aucun runner auto-hébergé n'est utilisé, et une pull request venue d'un fork externe exige une approbation manuelle avant l'exécution du moindre job. La suite XCTest compile ses cibles de test ; aucune compilation Release de livraison ne suit automatiquement cette CI.
+Le parcours de développement est le workflow GitHub par défaut : à chaque pull request ouverte, synchronisée ou repassée en « ready for review », les tests Python puis la suite XCTest tournent sur un runner macOS hébergé par GitHub (les brouillons ne déclenchent rien) : aucun runner auto-hébergé n'est utilisé, et une pull request venue d'un fork externe exige une approbation manuelle avant l'exécution du moindre job. La suite XCTest compile ses cibles de test ; aucune compilation Release de livraison ne suit automatiquement cette CI. Le check **iOS tests** est requis sur `main` : une suite rouge bloque la fusion.
 
-Le test sur appareil se fait à la main depuis un Mac auquel l'iPhone est connecté : `APPLE_TEAM_ID=… bash tools/build-device.sh` puis `python3 tools/install-iphone.py install`, puis on teste et on approuve la pull request sur le commit exact. Aucun runner auto-hébergé n'est nécessaire, et la CI n'a jamais accès à un appareil. La **Validation finale — compiler et fusionner** est une commande manuelle distincte ; elle exige cette approbation humaine au SHA, compile en Release puis fusionne. Un nouveau commit impose une nouvelle review, CI et validation.
+Le test sur appareil se fait à la main depuis un Mac auquel l'iPhone est connecté : `APPLE_TEAM_ID=… bash tools/build-device.sh` puis `python3 tools/install-iphone.py install`, puis on teste et on approuve la pull request sur le commit exact (étiquette `validé iPhone`). Aucun runner auto-hébergé n'est nécessaire, et la CI n'a jamais accès à un appareil. La fusion se fait via l'interface GitHub une fois la CI verte et la review approuvée. Un nouveau commit impose une nouvelle CI et une nouvelle review.
 
-Voir [le mode d'emploi des deux parcours](docs/DELIVERY_WORKFLOWS.md) et les retours vers Corrections. Les rapports XCTest sont conservés 14 jours, l'IPA 90 jours. Le contrôle léger `Workflow automation checks` vérifie les scripts dès l'ouverture de la PR, sans lancer XCTest avant la review.
+Voir [le mode d'emploi des deux parcours](docs/DELIVERY_WORKFLOWS.md). Les rapports XCTest sont conservés 14 jours, l'IPA 90 jours. Le contrôle léger `Workflow automation checks` vérifie les scripts sur les changements de `.github/workflows`, `tools` et `tests`.
 
 ## Suivi du projet GitHub
 
-Les vues **Développement** et **Validation iPhone** suivent les deux parcours ; le champ **Livraison finale** affiche la validation humaine, la compilation et la fusion. La vue **Historique livraison** conserve les anciennes étapes et les cartes.
-
-Les transitions sont exécutées par GitHub Actions (`project-workflow.yml` et les workflows de livraison), sans skill. Lier chaque PR avec `Closes #123` ; les événements et résultats obsolètes sont ignorés. Le suivi vit dans un projet **d'organisation**, que seul un jeton doté du droit `project` peut modifier : le secret `PROJECT_AUTOMATION_TOKEN` doit porter ce droit, car `GITHUB_TOKEN` ne suffit pas pour Projects. Ne jamais publier le jeton.
+Le suivi du test sur iPhone se porte sur la PR avec les étiquettes `à tester sur iPhone` et `validé iPhone`. Lier chaque PR avec `Closes #123`. Aucun jeton de projet n'est requis : plus de transition automatique de projet.
 
 ## Périmètre
 

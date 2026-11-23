@@ -77,7 +77,7 @@ explicite du registre ; le script refuse une divergence silencieuse.
 
 `python3 -m unittest discover -s tests -v` couvre les attributions, les courses
 concurrentes, les reprises, les erreurs, les tags et le paquet IPA. Cette suite
-s’exécute aussi après `review-validée`, avant XCTest. Le workflow Build IPA
+s’exécute aussi à chaque pull request, avant XCTest. Le workflow Build IPA
 transmet les numéros réservés à `xcodebuild` et bloque la publication si le
 widget manque, si un bundle a d’autres numéros ou si le produit conserve une
 signature/provision de livraison précédente. Le packaging utilise un dossier

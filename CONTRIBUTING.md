@@ -40,7 +40,7 @@ Le même contrôle tourne en intégration continue sur le texte des issues et de
 - Lie l'issue avec `Closes #123`. C'est ce qui met le projet de suivi à jour ; un simple « lié à » n'est pas reconnu.
 - Remplis le gabarit : ce qui change, ce qui est vérifié, si le parcours iPhone est nécessaire.
 - Pour tout changement d'interface, joins un visuel avant/après à l'issue liée.
-- Les tests automatiques ne partent pas à l'ouverture : ils attendent l'étiquette `review-validée` posée par un mainteneur après relecture. Un push supplémentaire la retire, il faut la reposer.
+- Les tests automatiques partent à l'ouverture de la PR (et à chaque push) ; les brouillons ne déclenchent rien. Le check `iOS tests` est requis pour fusionner sur `main`.
 - Les pull requests venues d'un fork exigent une approbation manuelle avant le moindre job.
 
 ## Compiler et tester
