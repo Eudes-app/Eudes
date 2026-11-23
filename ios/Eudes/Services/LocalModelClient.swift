@@ -124,10 +124,23 @@ actor LocalModelRuntime {
 
     func verify(modelID: String) throws {
         let selected = try model(modelID)
+        let started = Date()
+        var reused = true
         for asset in selected.assets {
             let url = root.appendingPathComponent(selected.id, isDirectory: true).appendingPathComponent(asset.filename)
-            try verificationCache.verify(url, size: asset.size, sha256: asset.sha256)
+            reused = try verificationCache.verify(url, size: asset.size, sha256: asset.sha256) && reused
         }
+        // La vérification est la seule étape coûteuse à l'ouverture d'un modèle :
+        // c'est elle que le cache d'empreinte doit rendre négligeable.
+        let seconds = Date().timeIntervalSince(started)
+        let metrics = LocalVerificationMetrics(modelID: selected.id, modelTitle: selected.title,
+                                              seconds: seconds, reused: reused, date: Date())
+        Task { @MainActor in LocalEngineReport.shared.record(verification: metrics) }
+        guard !reused || seconds > 10 || LocalEngineDiagnostics.tracesEveryGeneration else { return }
+        DiagnosticLog.log(.model,
+                          String(format: "vérification d’empreinte %@ : %.1f s%@",
+                                 selected.title, seconds, reused ? " (cache)" : " (hachage complet)"),
+                          level: seconds > 10 ? .warning : .info)
     }
 
     func prepare(modelID: String, useGPU: Bool, contextTokens: Int = LocalModelCatalog.allocatedContextTokens) throws {
@@ -143,7 +156,8 @@ actor LocalModelRuntime {
         let directory = root.appendingPathComponent(selected.id, isDirectory: true)
         let main = directory.appendingPathComponent(selected.assets[0].filename)
         let projector = selected.supportsImages ? directory.appendingPathComponent(selected.assets[1].filename) : nil
-        let next = try LocalLlamaEngine(modelURL: main, projectorURL: projector, useGPU: useGPU, contextTokens: contextTokens)
+        let next = try LocalLlamaEngine(modelURL: main, projectorURL: projector, useGPU: useGPU,
+                                        contextTokens: contextTokens, modelID: modelID)
         engine = next
         loadedID = modelID
         loadedGPU = useGPU

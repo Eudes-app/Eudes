@@ -563,6 +563,58 @@ final class LocalModelFileStoreTests: XCTestCase {
         XCTAssertThrowsError(try foreign.verify(file, size: 3, sha256: String(repeating: "0", count: 64)))
     }
 
+    func testGenerationMetricsMeasureOnlyDecodedTokensInPrefill() {
+        let metrics = LocalGenerationMetrics(modelID: "lfm3", modelTitle: "LFM3 1,7B",
+                                             promptTokens: 1_000, cachedTokens: 900,
+                                             prefillSeconds: 2, answerTokens: 50, decodeSeconds: 5,
+                                             thermal: "nominal", lowPower: false, date: Date())
+        XCTAssertEqual(metrics.decodedPromptTokens, 100)
+        XCTAssertEqual(metrics.prefillRate, 50, accuracy: 0.001)
+        XCTAssertEqual(metrics.decodeRate, 10, accuracy: 0.001)
+        XCTAssertFalse(metrics.needsAttention)
+        XCTAssertTrue(metrics.journalMessage.contains("900 du cache"))
+        XCTAssertTrue(metrics.journalMessage.contains("LFM3 1,7B"))
+    }
+
+    func testGenerationMetricsFlagSlowDecodingAndHotPhone() {
+        let slow = LocalGenerationMetrics(modelID: "qwen", modelTitle: "Qwen3 1,7B",
+                                          promptTokens: 200, cachedTokens: 0, prefillSeconds: 1,
+                                          answerTokens: 10, decodeSeconds: 10,
+                                          thermal: "nominal", lowPower: false, date: Date())
+        XCTAssertTrue(slow.isSlowerThanUsual)
+        XCTAssertEqual(slow.decodeRate, 1, accuracy: 0.001)
+
+        let hot = LocalGenerationMetrics(modelID: "qwen", modelTitle: "Qwen3 1,7B",
+                                         promptTokens: 200, cachedTokens: 0, prefillSeconds: 1,
+                                         answerTokens: 50, decodeSeconds: 1,
+                                         thermal: "chaud", lowPower: false, date: Date())
+        XCTAssertTrue(hot.needsAttention)
+        XCTAssertFalse(hot.isSlowerThanUsual)
+
+        let throttled = LocalGenerationMetrics(modelID: "qwen", modelTitle: "Qwen3 1,7B",
+                                               promptTokens: 200, cachedTokens: 0, prefillSeconds: 1,
+                                               answerTokens: 50, decodeSeconds: 1,
+                                               thermal: "nominal", lowPower: true, date: Date())
+        XCTAssertTrue(throttled.needsAttention)
+        XCTAssertTrue(throttled.journalMessage.contains("économie d’énergie"))
+    }
+
+    @MainActor
+    func testDiagnosticLogPublishesEntriesWrittenOutsideTheUi() async {
+        DiagnosticLog.shared.clear()
+        // Reproduit l'appel du moteur : écrire dans le journal doit rendre l'entrée
+        // visible dans l'écran Diagnostic, pas seulement dans le tampon.
+        DiagnosticLog.log(.model, "prefill 10 tok · décodage 12,0 tok/s")
+        for _ in 0..<20 where DiagnosticLog.shared.entries.isEmpty {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertEqual(DiagnosticLog.shared.entries.count, 1)
+        XCTAssertEqual(DiagnosticLog.shared.entries.first?.category, .model)
+        XCTAssertEqual(DiagnosticLog.shared.entries.first?.level, .info)
+        DiagnosticLog.shared.clear()
+        XCTAssertTrue(DiagnosticLog.shared.entries.isEmpty)
+    }
+
     func testVerifiedInstallRejectsCorruptionAndKeepsExistingFile() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
