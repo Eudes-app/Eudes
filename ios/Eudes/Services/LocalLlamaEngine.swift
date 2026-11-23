@@ -242,8 +242,9 @@ actor LocalLlamaEngine {
             activeThreads = policy.threads
             if policy.reduced {
                 // Sans cette ligne, une réponse plus courte passerait pour un bug.
-                DiagnosticStore.shared.append(category: .model, level: .warning,
-                                              message: "Réglages réduits (\(policy.threads) threads, réponses plafonnées à \(policy.answerCap) tokens) : téléphone chaud ou mode économie d’énergie.")
+                DiagnosticLog.log(.model,
+                                  "Réglages réduits (\(policy.threads) threads, réponses plafonnées à \(policy.answerCap) tokens) : téléphone chaud ou mode économie d’énergie.",
+                                  level: .warning)
             }
         }
         let answerLimit = max(1, min(maxTokens, policy.answerCap))
