@@ -109,7 +109,7 @@ final class WebSearchTests: XCTestCase {
     </body></html>
     """#
 
-    func testRequestContainsOnlyBoundedQuestionAndNoCredentials() throws {
+    func testRequestContainsOnlyNormalizedQuestionAndNoCredentials() throws {
         let request = try WebSearchClient.request(query: "  Swift  & café?\nsite:apple.com  ")
         let parts = try XCTUnwrap(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false))
         XCTAssertEqual(parts.host, "html.duckduckgo.com")
@@ -122,7 +122,7 @@ final class WebSearchTests: XCTestCase {
         XCTAssertFalse(request.httpShouldHandleCookies)
         XCTAssertEqual(request.timeoutInterval, 15)
         XCTAssertNoThrow(try DirectWebSearchTransport.validateRequest(request))
-        XCTAssertEqual(WebSearchClient.normalizedQuery(String(repeating: "é", count: 600)).count, 400)
+        XCTAssertEqual(WebSearchClient.normalizedQuery(String(repeating: "é", count: 600)).count, 600)
         XCTAssertThrowsError(try WebSearchClient.request(query: " \n\t ")) { XCTAssertEqual($0 as? WebSearchError, .emptyQuery) }
     }
 
@@ -175,7 +175,7 @@ final class WebSearchTests: XCTestCase {
         XCTAssertEqual(sources[0].id, sources[0].url.absoluteString)
     }
 
-    func testBoundsAndDeduplicatesSources() throws {
+    func testLimitsToFiveSourcesAndDeduplicates() throws {
         let longSnippet = String(repeating: "a", count: 2_500)
         let duplicate = #"<a class="result__a" href="https://example.com/0#duplicate">Duplicate</a><a class="result__snippet">Duplicate snippet</a>"#
         let html = (0..<9).map { index in
@@ -184,7 +184,7 @@ final class WebSearchTests: XCTestCase {
         let sources = try WebSearchClient.parse(html)
         XCTAssertEqual(sources.count, 5)
         XCTAssertEqual(Set(sources.map(\.url)).count, 5)
-        XCTAssertTrue(sources.allSatisfy { $0.excerpt.count == 2_000 && $0.title.count == 300 && $0.kind == .searchSnippet })
+        XCTAssertTrue(sources.allSatisfy { $0.excerpt.count == 2_500 && $0.title.count == 300 && $0.kind == .searchSnippet })
     }
 
     func testRejectsPrivateUnsafeAndNonHTTPSResultLinks() {

@@ -127,7 +127,7 @@ struct WebSearchContext: Codable, Equatable, Sendable {
             let source = sources[number - 1]
             return Citation(citation: "[\(number)]", title: String(source.title.prefix(300)),
                             url: source.url.absoluteString,
-                            excerpt: String(source.excerpt.prefix(source.kind == .page ? 6_000 : 2_000)), kind: source.kind)
+                            excerpt: source.excerpt, kind: source.kind)
         }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
@@ -246,7 +246,7 @@ struct WebSearchClient: WebSearching {
     }
 
     static func normalizedQuery(_ query: String) -> String {
-        String(query.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ").prefix(400))
+        query.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
     }
 
     static func request(query: String) throws -> URLRequest {
@@ -290,7 +290,7 @@ struct WebSearchClient: WebSearching {
                 .first.map { plainText(substring(following, range: $0.range(at: 1))) } ?? ""
             guard !title.isEmpty, !snippet.isEmpty else { continue }
             seen.insert(url.absoluteString)
-            sources.append(WebSource(url: url, title: title, excerpt: String(snippet.prefix(2_000)), kind: .searchSnippet))
+            sources.append(WebSource(url: url, title: title, excerpt: snippet, kind: .searchSnippet))
             if sources.count == 5 { break }
         }
         guard !sources.isEmpty else {
