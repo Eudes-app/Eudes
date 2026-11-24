@@ -206,6 +206,10 @@ enum LocalModelCatalog {
 
         var id: String { name }
 
+        /// Le pictogramme de la carte : `familyIcons[name]`, avec un repli neutre
+        /// si une famille future n'a pas encore son symbole.
+        var icon: String { LocalModelCatalog.familyIcons[name] ?? "cube.transparent" }
+
         /// « 532,5 Mo, 1,28 Go et 2,74 Go » : les fichiers réels, sans compteur ni
         /// formule à décoder avant de savoir ce qu'on installe.
         var sizesLabel: String {
@@ -219,6 +223,18 @@ enum LocalModelCatalog {
     /// spécialisées. Toute famille absente de cette liste passe après, par ordre
     /// alphabétique : ajouter un modèle ne peut pas le faire disparaître du catalogue.
     static let familyOrder = ["Qwen3.5", "LFM3", "Gemma 4", "Bonsai", "Granite 4.2", "Phi-4", "Ministral 3"]
+
+    /// Un pictogramme par famille : l'œil identifie la carte sans lire. Un symbole
+    /// simple, pas de marque à copier.
+    static let familyIcons = [
+        "Qwen3.5": "bubble.left.and.text.bubble.right",
+        "LFM3": "eye",
+        "Gemma 4": "sparkles",
+        "Bonsai": "leaf",
+        "Granite 4.2": "doc.text",
+        "Phi-4": "brain",
+        "Ministral 3": "photo",
+    ]
 
     /// Un nom de famille ne dit rien à qui découvre les modèles : chaque ligne porte
     /// donc une phrase qui décrit l'usage, pas l'architecture. Chaque phrase doit rester

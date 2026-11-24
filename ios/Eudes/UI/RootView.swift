@@ -20,7 +20,6 @@ struct RootView: View {
     @State private var showSettings = false
     @State private var showAddServer = false
     @State private var showConnection = false
-    @State private var showModelSettings = false
     @State private var editorRoute: ServerEditorRoute?
     @State private var settingsAtServer = false
     @State private var backgroundVoice = BackgroundVoiceSession.shared
@@ -41,7 +40,7 @@ struct RootView: View {
                 ZStack(alignment: .top) {
                     ChatView(showAddServer: $showAddServer, showConnection: $showConnection,
                              topControlsHeight: headerHeight,
-                             covered: showHistory || showSettings || showAddServer || showConnection || showModelSettings || editorRoute != nil || showIntroduction || pendingDeletion != nil || store.voiceAssistantRequested || (backgroundVoice.isRunning && backgroundVoice.sessionID != hiddenVoiceSession),
+                             covered: showHistory || showSettings || showAddServer || showConnection || editorRoute != nil || showIntroduction || pendingDeletion != nil || store.voiceAssistantRequested || (backgroundVoice.isRunning && backgroundVoice.sessionID != hiddenVoiceSession),
                              openHistory: {
                                  withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { showHistory = true }
                              })
@@ -114,12 +113,6 @@ struct RootView: View {
             if requested {
                 showConnection = false
                 openServerEditor(section: .server)
-            }
-        }
-        .onChange(of: showModelSettings) { _, requested in
-            if requested {
-                showModelSettings = false
-                openServerEditor(section: .model)
             }
         }
         .sheet(item: $editorRoute) { route in
@@ -237,8 +230,9 @@ struct RootView: View {
     private var header: some View {
         HStack(spacing: 12) {
             if store.conversationMenuMode != .right { historyButton }
-            ConversationModelButton(model: store.currentModel) {
-                showModelSettings = true
+            ConversationModelButton(model: store.currentModelDisplayName) {
+                settingsAtServer = true
+                showSettings = true
             }
             .disabled(store.isGenerating || store.isPreparingSend)
             .frame(maxWidth: .infinity)
@@ -273,14 +267,48 @@ struct RootView: View {
 }
 
 private struct ConversationModelButton: View {
+    @EnvironmentObject private var store: AppStore
     let model: String
-    let action: () -> Void
+    var openAllModels: () -> Void
+
+    /// Seuls les modèles dont les fichiers sont sur l'iPhone : le menu du chat sert
+    /// à changer vite, pas à explorer le catalogue.
+    private var installedModels: [LocalModelCatalog.Model] {
+        LocalModelCatalog.models.filter { LocalModelDownloads.isInstalled($0) }
+    }
 
     var body: some View {
         let name = model.trimmingCharacters(in: .whitespacesAndNewlines)
         let compactName = name.split(separator: "/").last.map(String.init) ?? name
 
-        Button(action: action) {
+        Menu {
+            if store.connectionChoices.contains(where: { $0.isApple }) {
+                Button {
+                    store.selectServer(ServerProfile.appleID)
+                } label: {
+                    Label("Apple Intelligence",
+                          systemImage: store.selectedServer?.isApple == true ? "checkmark" : "apple.logo")
+                }
+                .disabled(store.isPreparingSend)
+            }
+            ForEach(installedModels) { model in
+                let selected = store.selectedServer?.isLocalLFM == true
+                    && store.selectedServer?.model == model.id
+                Button {
+                    store.selectLocalModel(model.id)
+                } label: {
+                    Label("\(model.title) · \(model.sizeLabel)",
+                          systemImage: selected ? "checkmark" : "iphone")
+                }
+                .disabled(store.isPreparingSend)
+            }
+            Divider()
+            Button {
+                openAllModels()
+            } label: {
+                Label("Tous les modèles", systemImage: "square.grid.2x2")
+            }
+        } label: {
             HStack(spacing: 8) {
                 if name.isEmpty {
                     Text("Choisir un modèle")
@@ -305,7 +333,7 @@ private struct ConversationModelButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel("Choisir le modèle")
         .accessibilityValue(name.isEmpty ? Text("Aucun modèle sélectionné") : Text(name))
-        .accessibilityHint("Ouvre les réglages du modèle.")
+        .accessibilityHint("Ouvre le menu des modèles installés ; « Tous les modèles » pour le catalogue complet.")
         .accessibilityIdentifier("conversation.modelPicker")
     }
 }

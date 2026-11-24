@@ -263,22 +263,25 @@ private struct ConnectionSettingsView: View {
                         info = model
                         showingInfo = true
                     } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "checkmark.circle")
-                                .font(.system(size: 20))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(model.title)
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(Palette.ink)
+                            Text("Utilisé pour les messages · \(model.sizeLabel)")
+                                .font(.subheadline)
                                 .foregroundStyle(Palette.muted)
-                                .accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(model.title).foregroundStyle(Palette.ink)
-                                Text("Utilisé pour les messages · \(model.sizeLabel)")
-                                    .font(.caption).foregroundStyle(Palette.muted)
-                            }
-                            Spacer(minLength: 0)
-                            Image(systemName: "chevron.right")
-                                .font(.caption).foregroundStyle(Palette.muted)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .accessibilityIdentifier("models.used")
+                    if let gauge = ramGauge(for: model) {
+                        gaugeRow(title: gauge.title, value: gauge.value, fraction: gauge.fraction)
+                    }
+                    if let gauge = diskGauge {
+                        gaugeRow(title: gauge.title, value: gauge.value, fraction: gauge.fraction)
+                    }
                 } else {
                     // Apple ou un serveur API : l'état se dit ici, le changement se fait
                     // dans la liste en dessous — pas de fiche à ouvrir.
@@ -310,7 +313,7 @@ private struct ConnectionSettingsView: View {
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("Modèle d'Apple").foregroundStyle(Palette.ink)
+                                Text("Apple Intelligence").foregroundStyle(Palette.ink)
                                 Text("Sur l'iPhone, sans réglage.").font(.caption).foregroundStyle(Palette.muted)
                             }
                             Spacer()
@@ -327,10 +330,18 @@ private struct ConnectionSettingsView: View {
             .listRowSeparatorTint(Palette.border)
 
             Section {
-                if let free = freeSpaceText {
-                    Label(free, systemImage: "internaldrive")
-                        .font(.caption)
-                        .foregroundStyle(Palette.muted)
+                if let storage = storageLine {
+                    HStack {
+                        Label("Stockage des modèles", systemImage: "internaldrive")
+                            .font(.subheadline)
+                            .foregroundStyle(Palette.ink)
+                        Spacer()
+                        Text("\(formatBytes(storage.used)) utilisés · \(formatBytes(storage.free)) libres")
+                            .font(.caption)
+                            .foregroundStyle(Palette.muted)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
             } header: { Text("Tous les modèles") }
             footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau. Les modèles trop lourds restent visibles ; leur fiche dit la mémoire demandée.") }
@@ -340,6 +351,7 @@ private struct ConnectionSettingsView: View {
             // Une carte par famille : chaque taille avec son état, et un seul geste.
             ForEach(LocalModelCatalog.families) { family in
                 Section {
+                    capabilityBadges(for: family)
                     ForEach(family.models) { model in
                         CatalogModelRow(model: model, inventory: inventory,
                                         recommended: recommendedIDs.contains(model.id)) {
@@ -347,7 +359,9 @@ private struct ConnectionSettingsView: View {
                             showingInfo = true
                         }
                     }
-                } header: { Text(family.name) }
+                } header: {
+                    Label(family.name, systemImage: family.icon)
+                }
                 footer: { Text(family.summary) }
             }
 
@@ -426,7 +440,7 @@ private struct ConnectionSettingsView: View {
     /// ligne d'état ne clignote pas.
     private var engineTitle: String {
         guard let selected = store.selectedServer else { return "Aucun modèle" }
-        if selected.isApple { return "Modèle d'Apple" }
+        if selected.isApple { return "Apple Intelligence" }
         if selected.isLocalLFM {
             return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun modèle"
         }
@@ -446,13 +460,96 @@ private struct ConnectionSettingsView: View {
         Set(LocalModelCatalog.recommendations().map(\.model.id))
     }
 
+    /// Ce que les modèles téléchargés pèsent, additionné : le chiffre de la ligne
+    /// « Stockage des modèles », à côté de l'espace qui reste.
+    private var storageLine: (used: Int64, free: Int64)? {
+        guard let disk = diskUsage else { return nil }
+        let used = LocalModelCatalog.models
+            .filter { inventory.isInstalled($0) }
+            .reduce(Int64(0)) { $0 + $1.downloadBytes }
+        return (used, disk.free)
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
+
+    /// Les badges d'une famille, scannés sans lire : « Vision » quand un modèle lit
+    /// les images, « Recommandé » quand le catalogue en propose un par défaut.
+    /// Aucun badge quand la famille n'a ni l'un ni l'autre.
+    @ViewBuilder private func capabilityBadges(for family: LocalModelCatalog.Family) -> some View {
+        let vision = family.models.contains { $0.supportsImages }
+        let recommended = family.models.contains { recommendedIDs.contains($0.id) }
+        if vision || recommended {
+            HStack(spacing: 6) {
+                if vision {
+                    capabilityPill("Vision", systemImage: "eye", filled: false)
+                }
+                if recommended {
+                    capabilityPill("Recommandé", systemImage: "checkmark.seal", filled: true)
+                }
+            }
+        }
+    }
+
+    private func capabilityPill(_ text: String, systemImage: String, filled: Bool) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(filled ? Palette.ink : Palette.muted)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(filled ? Palette.userBubble : Color.clear, in: Capsule())
+            .overlay(Capsule().stroke(Palette.border, lineWidth: 0.5).opacity(filled ? 0 : 1))
+            .accessibilityLabel(filled ? "\(text) : proposé par défaut" : text)
+    }
+
     /// L'espace réellement libre, lu sur le volume : c'est lui qui décide si un
     /// modèle lourd a sa place. Relu à l'ouverture de la page.
+    private var diskUsage: (free: Int64, total: Int64)? {
+        guard let values = try? URL(fileURLWithPath: "/")
+            .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeTotalCapacityKey]),
+            let total = values.volumeTotalCapacity, total > 0,
+            let free = values.volumeAvailableCapacityForImportantUsage, free >= 0 else { return nil }
+        return (free, Int64(total))
+    }
+
     private var freeSpaceText: String? {
-        guard let value = try? URL(fileURLWithPath: "/")
-            .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-            .volumeAvailableCapacityForImportantUsage, value > 0 else { return nil }
-        return ByteCountFormatter.string(fromByteCount: value, countStyle: .file) + " disponibles sur l'iPhone"
+        guard let disk = diskUsage else { return nil }
+        return ByteCountFormatter.string(fromByteCount: disk.free, countStyle: .file) + " disponibles sur l'iPhone"
+    }
+
+    /// Une jauge du héros : libellé à gauche, valeur à droite, barre fine dessous.
+    /// La barre garde un minimum visible pour rester lisible même presque vide.
+    private func gaugeRow(title: String, value: String, fraction: Double) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(title).font(.caption).foregroundStyle(Palette.muted)
+                Spacer()
+                Text(value).font(.caption.weight(.semibold)).foregroundStyle(Palette.ink)
+            }
+            ProgressView(value: min(1, max(0.02, fraction)))
+                .progressViewStyle(.linear)
+                .tint(Palette.ink)
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// La mémoire vive que le modèle exige, d'après le catalogue : fichiers plus
+    /// fenêtre de contexte, ramenés à la RAM utilisable de cet iPhone.
+    private func ramGauge(for model: LocalModelCatalog.Model) -> (title: String, value: String, fraction: Double)? {
+        let compatibility = model.compatibility()
+        guard compatibility.available > 0 else { return nil }
+        let format = { (bytes: Int) in ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory) }
+        return (title: "Mémoire vive requise",
+                value: "~\(format(compatibility.required)) sur \(format(compatibility.available))",
+                fraction: Double(compatibility.required) / Double(compatibility.available))
+    }
+
+    private var diskGauge: (title: String, value: String, fraction: Double)? {
+        guard let disk = diskUsage else { return nil }
+        return (title: "Espace disque libre",
+                value: ByteCountFormatter.string(fromByteCount: disk.free, countStyle: .file),
+                fraction: Double(disk.free) / Double(disk.total))
     }
 }
 
@@ -609,7 +706,7 @@ private struct AdvancedModelSettingsView: View {
         if selected.isLocalLFM {
             return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun"
         }
-        if selected.isApple { return "Modèle d'Apple" }
+        if selected.isApple { return "Apple Intelligence" }
         return selected.name
     }
 
