@@ -473,14 +473,22 @@ private struct ModelChoiceView: View {
         return model
     }
 
-    /// « Aucun modèle installé » n'a de sens que si rien n'est téléchargé : quand des
-    /// modèles sont là mais qu'aucun n'est utilisé, l'écran doit le dire autrement.
-    private var installedCount: Int { inventory.installedCount }
+    /// Qui répond aujourd'hui : le modèle local utilisé, sinon le moteur réel. Dérivé
+    /// du magasin seul, sans balayage du disque : la ligne d'état ne clignote pas.
+    private var engineTitle: String {
+        guard let selected = store.selectedServer else { return "Aucun moteur" }
+        if selected.isApple { return "Modèle d'Apple" }
+        if selected.isLocalLFM {
+            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun moteur"
+        }
+        return selected.name
+    }
 
-    private var suggestedFooter: String {
-        installedCount == 0
-            ? "Un seul suffit pour commencer. Ces trois choix sont recalculés à partir de la mémoire de cet iPhone : un modèle trop lourd n'y figure pas."
-            : "Un seul suffit. Ces trois choix sont recalculés à partir de la mémoire de cet iPhone : un modèle trop lourd n'y figure pas."
+    private var engineSubtitle: String {
+        guard let selected = store.selectedServer else { return "Choisis un usage ci-dessous." }
+        if selected.isApple { return "L'iPhone répond, sans téléchargement." }
+        if selected.isLocalLFM { return "Fichiers absents : télécharge-le depuis la liste ci-dessous." }
+        return "Les réponses viennent de ce serveur."
     }
 
     var body: some View {
@@ -501,20 +509,14 @@ private struct ModelChoiceView: View {
                         }
                         Spacer(minLength: 0)
                     }
-                } else if installedCount == 0 {
-                    Text("Aucun modèle installé").foregroundStyle(Palette.ink)
-                    Text("Choisis un usage ci-dessous : le modèle se télécharge, puis s'utilise tout seul.")
-                        .font(.caption).foregroundStyle(Palette.muted)
                 } else {
-                    // Des fichiers sont sur l'appareil, mais aucun ne répond aux messages :
-                    // le dire évite de contredire le compteur « N sur 13 installés ».
-                    Text("Aucun modèle utilisé").foregroundStyle(Palette.ink)
-                    Text(installedCount == 1
-                        ? "Un modèle est déjà téléchargé : touche Utiliser sur celui que tu veux garder."
-                        : "\(installedCount) modèles sont déjà téléchargés : touche Utiliser sur celui que tu veux garder.")
-                        .font(.caption).foregroundStyle(Palette.muted)
+                    // Le moteur réel, pas une absence : Apple ou un serveur API répondent
+                    // aussi, et l'écran doit le dire. Dérivé du magasin seul, donc la
+                    // ligne ne clignote pas pendant le premier balayage du disque.
+                    Text(engineTitle).foregroundStyle(Palette.ink)
+                    Text(engineSubtitle).font(.caption).foregroundStyle(Palette.muted)
                 }
-            } header: { Text("Modèle actuel") }
+            } header: { Text("Modèle utilisé") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
@@ -527,7 +529,7 @@ private struct ModelChoiceView: View {
                     }
                 }
             } header: { Text("Que veux-tu faire ?") }
-            footer: { Text(suggestedFooter) }
+            footer: { Text("Un seul suffit. Un modèle se télécharge une fois, puis fonctionne sans réseau.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
@@ -535,18 +537,15 @@ private struct ModelChoiceView: View {
                 NavigationLink {
                     ModelCatalogueView(inventory: inventory)
                 } label: {
-                    // « 13 » seul laissait croire à treize lignes de modèles : la ligne
-                    // annonce les deux niveaux qu'on traverse vraiment.
-                    LabeledContent("Tous les modèles",
-                                   value: "\(LocalModelCatalog.models.count) · \(LocalModelCatalog.families.count) familles")
+                    LabeledContent("Catalogue", value: "\(LocalModelCatalog.models.count) modèles · \(LocalModelCatalog.families.count) familles")
                 }
                 .accessibilityIdentifier("models.catalogue")
                 NavigationLink {
-                    AdvancedModelSettingsView()
+                    AdvancedModelSettingsView(inventory: inventory)
                 } label: {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Personnaliser")
-                        Text("Mémoire, raisonnement, moteur").font(.caption).foregroundStyle(Palette.muted)
+                        Text("Réglages du moteur")
+                        Text("Fenêtre, raisonnement, chargement").font(.caption).foregroundStyle(Palette.muted)
                     }
                     .multilineTextAlignment(.leading)
                 }
@@ -600,10 +599,8 @@ private struct ModelCatalogueView: View {
                         .multilineTextAlignment(.leading)
                     }
                 }
-            } header: { Text("Toutes les familles") }
-            // La mémoire demandée n'est pas affichée sur cette liste : on ne promet
-            // donc pas qu'elle y est. Elle vit dans la fiche du modèle.
-            footer: { Text("Un modèle téléchargé fonctionne sans réseau et reste sur l'iPhone. Les modèles trop lourds pour cet appareil restent visibles ; leur fiche dit la mémoire qu'ils demandent.") }
+            }
+            footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau. Les modèles trop lourds pour cet appareil restent visibles ; leur fiche dit la mémoire demandée.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
         }
@@ -632,7 +629,8 @@ private struct AdvancedModelSettingsView: View {
     /// Même clé que `AppStore.loadAtStartupKey` : la garde du préchargement et la case
     /// des Réglages doivent lire exactement la même préférence.
     @AppStorage("lfm.loadAtStartup") private var loadAtStartup = false
-    @StateObject private var inventory = LocalModelInventory()
+    /// L'inventaire reçu de l'écran Modèles : un seul état partagé, un seul balayage.
+    @ObservedObject var inventory: LocalModelInventory
     @State private var loadingID: String?
 
     private static let tiers = [ReasoningTier(tokens: 512, title: "Rapide"),
@@ -646,7 +644,9 @@ private struct AdvancedModelSettingsView: View {
 
     private var engineLabel: String {
         guard let selected = store.selectedServer else { return "Aucun" }
-        if selected.isLocalLFM { return "Sur cet iPhone" }
+        if selected.isLocalLFM {
+            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun"
+        }
         if selected.isApple { return "Modèle d'Apple" }
         return selected.name
     }
@@ -656,8 +656,8 @@ private struct AdvancedModelSettingsView: View {
     var body: some View {
         SettingsForm {
             Section {
-                LabeledContent("Moteur", value: engineLabel)
-                NavigationLink { ConnectionSettingsView() } label: { Text("Changer de moteur") }
+                LabeledContent("Modèle utilisé", value: engineLabel)
+                NavigationLink { ConnectionSettingsView() } label: { Text("Moteur et serveurs") }
             } header: { Text("Moteur") }
             footer: { Text("Sur cet iPhone, rien ne quitte l'appareil. Une API envoie les messages au serveur configuré.") }
             .listRowBackground(Palette.surface)
@@ -739,7 +739,7 @@ private struct AdvancedModelSettingsView: View {
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
         }
-        .navigationTitle(Text("Personnaliser"))
+        .navigationTitle(Text("Réglages du moteur"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await inventory.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
@@ -1039,7 +1039,7 @@ private struct ModelDetailView: View {
                 case .download:
                     Text("Taille : \(size). Le téléchargement peut continuer en arrière-plan et utiliser les données mobiles.")
                 case .remove:
-                    Text("\(size) seront libérés. Le modèle repassera dans « À télécharger » ; tes conversations restent intactes.")
+                    Text("\(size) seront libérés. Tes conversations restent intactes.")
                 }
             }
         }
