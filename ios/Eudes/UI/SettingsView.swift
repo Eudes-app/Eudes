@@ -574,7 +574,6 @@ private struct AdvancedModelSettingsView: View {
         SettingsForm {
             Section {
                 LabeledContent("Modèle utilisé", value: engineLabel)
-                NavigationLink { ConnectionSettingsView() } label: { Text("Modèles et serveurs") }
             } header: { Text("Qui répond") }
             footer: { Text("Sur cet iPhone, rien ne quitte l'appareil. Une API envoie les messages au serveur configuré.") }
             .listRowBackground(Palette.surface)
@@ -769,7 +768,7 @@ private struct ModelSummaryRow: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 19))
                     .foregroundStyle(Palette.muted)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
@@ -832,7 +831,7 @@ private struct ModelSummaryRow: View {
                 Image(systemName: "arrow.down.circle")
                     .font(.system(size: 22))
                     .foregroundStyle(Palette.ink)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
