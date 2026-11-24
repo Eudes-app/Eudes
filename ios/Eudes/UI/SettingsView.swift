@@ -798,14 +798,15 @@ private struct AdvancedModelSettingsView: View {
 }
 
 /// Une taille dans la carte de sa famille : un titre, son état, un seul geste.
-/// Le point fort du modèle s'affiche sous l'état, sur la page de décision comme
-/// dans le catalogue : ce que fait le modèle se lit d'un coup d'œil, le « i »
-/// garde les détails (mémoire demandée, licence, suppression).
+/// Le point fort du modèle s'ajoute sous l'état quand la page du catalogue le demande
+/// (`showsStrength`) ; l'écran de décision le garde compact.
+/// Le « i » ouvre la fiche (mémoire demandée, licence, suppression).
 private struct CatalogModelRow: View {
     @EnvironmentObject private var store: AppStore
     let model: LocalModelCatalog.Model
     @ObservedObject var inventory: LocalModelInventory
     let recommended: Bool
+    var showsStrength: Bool = false
     var onInfo: () -> Void
 
     /// Une seule alerte par ligne : deux `.alert` sur la même vue se remplacent.
@@ -842,7 +843,9 @@ private struct CatalogModelRow: View {
                 } else {
                     Text(stateText).font(.caption2).foregroundStyle(Palette.muted)
                 }
-                Text(model.strength).font(.caption2).foregroundStyle(Palette.muted)
+                if showsStrength {
+                    Text(model.strength).font(.caption2).foregroundStyle(Palette.muted)
+                }
             }
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1093,7 +1096,8 @@ private struct AllModelsView: View {
                     capabilityBadges(for: family)
                     ForEach(family.models) { model in
                         CatalogModelRow(model: model, inventory: inventory,
-                                        recommended: recommendedModelIDs.contains(model.id)) {
+                                        recommended: recommendedModelIDs.contains(model.id),
+                                        showsStrength: true) {
                             info = model
                             showingInfo = true
                         }
