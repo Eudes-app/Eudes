@@ -1061,6 +1061,18 @@ final class AppStore: ObservableObject {
     var currentModel: String {
         current?.model ?? selectedServer.flatMap { data.draftModels?[$0.id.uuidString] ?? $0.model } ?? ""
     }
+
+    /// Le nom que montre la pilule du chat : le libellé du catalogue pour un modèle
+    /// local, le nom officiel d'Apple sinon — l'identifiant brut (`qwen35_4b`) reste
+    /// en coulisses.
+    var currentModelDisplayName: String {
+        guard let selected = selectedServer else { return currentModel }
+        if selected.isApple { return "Apple Intelligence" }
+        if selected.isLocalLFM {
+            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? currentModel
+        }
+        return currentModel
+    }
     /// Legacy messages have no source metadata; use the conversation's current source.
     func showsReasoning(for message: ChatMessage, in conversation: Conversation) -> Bool {
         let serverID = message.reasoningServerID ?? conversation.serverID

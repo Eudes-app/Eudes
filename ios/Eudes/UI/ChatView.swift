@@ -413,7 +413,7 @@ struct ChatView: View {
                 if !store.canAttachImages {
                     Text(store.selectedServer?.isLocalLFM == true
                          ? "Images conservées. Ce modèle est textuel : choisis le modèle texte et images ou retire les images avant d’envoyer."
-                         : (store.selectedServer?.isApple == true ? "Images conservées. Le moteur Apple d'Eudes est textuel : choisis une connexion compatible ou retire les images avant d’envoyer." : "Images conservées. Active la compatibilité vision de cette connexion et de ce modèle, ou retire les images avant d’envoyer."))
+                         : (store.selectedServer?.isApple == true ? "Images conservées. Apple Intelligence est textuel : choisis une connexion compatible ou retire les images avant d'envoyer." : "Images conservées. Active la compatibilité vision de cette connexion et de ce modèle, ou retire les images avant d'envoyer."))
                         .font(.caption).foregroundStyle(Palette.muted).padding(.horizontal, 20)
                 }
             }

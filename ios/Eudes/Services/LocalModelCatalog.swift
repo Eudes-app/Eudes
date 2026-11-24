@@ -85,7 +85,7 @@ enum LocalModelCatalog {
                   sha256: "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 262_144,
         kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
-        strength: "Pensé pour l'edge : 1 Go en 4 bits, contexte 256k, entraîné pour les agents.")
+        strength: "Très léger (1 Go) : répond vite et suit de longues discussions.")
     static let vision = Model(id: "lfm3-vision", title: "LFM3 VL 2B", supportsImages: true,
         repository: "LFM3-VL-2B-GGUF", revision: "1add221a5ea6c047fcf1eaaf2d247939d7cf8849", assets: [
             Asset(filename: "LFM3-VL-2B-Q4_K_M.gguf", size: 1_099_627_808,
@@ -94,42 +94,42 @@ enum LocalModelCatalog {
                   sha256: "c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 128_000,
         kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
-        strength: "Version vision du modèle edge de Liquid AI.")
+        strength: "Un des plus compacts : 1,3 Go.")
     static let qwen35_2b = Model(id: "qwen35_2b", title: "Qwen3.5 2B", supportsImages: false,
         repository: "unsloth/Qwen3.5-2B-GGUF", revision: "f6d5376be1edb4d416d56da11e5397a961aca8ae", assets: [
             Asset(filename: "Qwen3.5-2B-Q4_K_M.gguf", size: 1280835840,
                   sha256: "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223")
         ], family: "Qwen3.5", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 49152, usesEmbeddedTemplate: true,
-        strength: "Raisonnement et compréhension multilingue, génération rapide.")
+        strength: "Comprend plusieurs langues, raisonne bien et répond vite.")
     static let qwen35_4b = Model(id: "qwen35_4b", title: "Qwen3.5 4B", supportsImages: false,
         repository: "unsloth/Qwen3.5-4B-GGUF", revision: "e87f176479d0855a907a41277aca2f8ee7a09523", assets: [
             Asset(filename: "Qwen3.5-4B-Q4_K_M.gguf", size: 2740937888,
                   sha256: "00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4")
         ], family: "Qwen3.5", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
-        strength: "Même famille en plus capable : meilleur raisonnement, un peu plus lent.")
+        strength: "Le plus capable des trois Qwen3.5 : meilleur raisonnement, un peu plus lent.")
     static let gemma4_e2b = Model(id: "gemma4_e2b", title: "Gemma 4 E2B", supportsImages: false,
         repository: "unsloth/gemma-4-E2B-it-GGUF", revision: "0314792d7f1f7e229411f620751375812bb9faf2", assets: [
             Asset(filename: "gemma-4-E2B-it-Q4_K_M.gguf", size: 3106738272,
                   sha256: "740185b21d22ceb83a11c3aa62ad5842ef32c70f6096d756bbee85a1e4ec34b8")
         ], family: "Gemma 4", licence: "Apache-2.0", nativeContext: 131072,
         kvBytesPerToken: 26880, usesEmbeddedTemplate: true,
-        strength: "Conçu multimodal, raisonnement configurable, efficace par paramètre actif.")
+        strength: "Le compact de la famille : réfléchit avant de répondre, reste vif.")
     static let gemma4_e4b = Model(id: "gemma4_e4b", title: "Gemma 4 E4B", supportsImages: false,
         repository: "unsloth/gemma-4-E4B-it-GGUF", revision: "bfc15c382204943c3a8fff0c750b94ae2364d7a3", assets: [
             Asset(filename: "gemma-4-E4B-it-Q4_K_M.gguf", size: 4977171584,
                   sha256: "85a896a047553e842f25297ee5b031d64ff30147d9c4af17b1e4b394cd1fab87")
         ], family: "Gemma 4", licence: "Apache-2.0", nativeContext: 131072,
         kvBytesPerToken: 107520, usesEmbeddedTemplate: true,
-        strength: "Même famille en plus capable ; demande beaucoup de mémoire vive.")
+        strength: "Le plus capable de la famille ; demande beaucoup de mémoire vive.")
     static let phi4_mini = Model(id: "phi4_mini", title: "Phi-4 mini", supportsImages: false,
         repository: "unsloth/Phi-4-mini-instruct-GGUF", revision: "78eb92a46fc37e6b524df991ed9aca9bc6aa7b80", assets: [
             Asset(filename: "Phi-4-mini-instruct-Q4_K_M.gguf", size: 2491874272,
                   sha256: "88c00229914083cd112853aab84ed51b87bdf6b9ce42f532d8c85c7c63b1730a")
         ], family: "Phi-4", licence: "MIT", nativeContext: 131072,
         kvBytesPerToken: 131072, usesEmbeddedTemplate: true,
-        strength: "Raisonnement dense pour sa taille, licence MIT très permissive.")
+        strength: "Très bon en maths et en logique pour sa taille.")
 
     static let qwen35_08b = Model(id: "qwen35_08b", title: "Qwen3.5 0,8B", supportsImages: false,
         repository: "unsloth/Qwen3.5-0.8B-GGUF", revision: "6ab461498e2023f6e3c1baea90a8f0fe38ab64d0", assets: [
@@ -147,7 +147,7 @@ enum LocalModelCatalog {
                   sha256: "ac9934e8d7966d0d62442c202ec8fdad99a045dea79366c1a4a246a46f5c0533")
         ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 49152, usesEmbeddedTemplate: true,
-        strength: "Un 2B en 0,55 Go qui lit aussi les images.")
+        strength: "Très léger (0,55 Go) : répond vite.")
 
     static let bonsai_4b = Model(id: "bonsai_4b", title: "Bonsai 4B", supportsImages: true,
         repository: "prism-ml/Ternary-Bonsai-2-4B-gguf", revision: "50ebba61be85e5be07e8083db468ace0fc1bac43", assets: [
@@ -157,7 +157,7 @@ enum LocalModelCatalog {
                   sha256: "db939d5f9b7014137810205e91d05e5f54afd72b0b3af9d33bd7d82f7906a55d")
         ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
-        strength: "La capacité d'un 4B dans la mémoire d'un 2B, images comprises.")
+        strength: "Léger pour sa puissance (1,2 Go).")
 
     static let bonsai_8b = Model(id: "bonsai_8b", title: "Bonsai 8B", supportsImages: false,
         repository: "prism-ml/Ternary-Bonsai-8B-gguf", revision: "c2aefbeb4b24469cd11579c3384b990404c17a30", assets: [
@@ -173,7 +173,7 @@ enum LocalModelCatalog {
                   sha256: "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5")
         ], family: "Granite 4.2", licence: "Apache-2.0", nativeContext: 131072,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
-        strength: "131 000 mots de mémoire et un suivi d'instructions soigné.")
+        strength: "Suit les consignes à la lettre.")
 
     static let ministral3_3b = Model(id: "ministral3_3b", title: "Ministral 3 3B", supportsImages: true,
         repository: "mistralai/Ministral-3-3B-Instruct-2512-GGUF", revision: "eb599d408350ea2bb60452cb86be7c7b2fc28227", assets: [
@@ -183,11 +183,11 @@ enum LocalModelCatalog {
                   sha256: "70ca26e41ecea9da997e2887462ad68b848fbf64da011ff4107bbe7353519ee0")
         ], family: "Ministral 3", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 79872, usesEmbeddedTemplate: true,
-        strength: "Lit les images et garde 262 000 mots de mémoire.")
+        strength: "Suit de longues discussions.")
 
     static let models = [text, vision] + extended
 
-    /// Modèles ajoutés au catalogue d'origine, dans l'ordre des familles et des tailles.
+    /// Modèles ajoutés au catalogue d'origine, dans l'ordre du catalogue.
     static let extended: [Model] = [
         qwen35_08b, qwen35_2b, qwen35_4b,
         gemma4_e2b, gemma4_e4b,
@@ -197,46 +197,31 @@ enum LocalModelCatalog {
 
     // MARK: - Catalogue lisible
 
-    /// Une famille telle qu'elle s'affiche : un nom, une phrase compréhensible sans
-    /// connaître les modèles, et ses tailles dans l'ordre du catalogue.
-    struct Family: Identifiable, Equatable, Sendable {
-        let name: String
-        let summary: String
+    /// Les deux catégories de l'écran « Tous les modèles » : un modèle lit les images
+    /// ou non, et c'est tout. Un modèle futur atterrit tout seul dans sa catégorie,
+    /// du plus léger au plus lourd — aucun arbitrage de famille, aucune phrase à écrire.
+    struct CapabilitySection: Identifiable, Equatable, Sendable {
+        let supportsImages: Bool
         let models: [Model]
 
-        var id: String { name }
-
-        /// « 2 tailles · 1,2 Go et 2,5 Go », jamais un total inventé.
-        var sizesLabel: String {
-            let sizes = models.map(\.sizeLabel)
-            guard models.count > 1 else { return "1 taille · \(sizes.first ?? "")" }
-            return "\(models.count) tailles · \(sizes.joined(separator: " et "))"
+        var id: Bool { supportsImages }
+        /// Le nom de la section reprend le libellé de capacité de ses modèles, au pluriel.
+        var name: String { supportsImages ? "Modèles texte + vision" : "Modèles texte" }
+        /// Les logos de l'écran : le chat pour le texte, l'œil pour la vision.
+        var icon: String { supportsImages ? "eye" : "bubble.left.and.text.bubble.right" }
+        /// Vraie par construction : la section est définie par ce qu'elle contient.
+        var summary: String {
+            supportsImages ? "Lisent aussi les images. Le plus léger d'abord."
+                           : "Ne lisent pas les images. Le plus léger d'abord."
         }
     }
 
-    /// Ordre d'affichage voulu : la famille la plus polyvalente d'abord, puis les plus
-    /// spécialisées. Toute famille absente de cette liste passe après, par ordre
-    /// alphabétique : ajouter un modèle ne peut pas le faire disparaître du catalogue.
-    static let familyOrder = ["Qwen3.5", "LFM3", "Gemma 4", "Bonsai", "Granite 4.2", "Phi-4", "Ministral 3"]
-
-    /// Un nom de famille ne dit rien à qui découvre les modèles : chaque ligne porte
-    /// donc une phrase qui décrit l'usage, pas l'architecture.
-    static let familySummaries = [
-        "Qwen3.5": "Polyvalente et rapide, bon français, trois tailles.",
-        "LFM3": "La plus légère, avec une version qui lit les images.",
-        "Gemma 4": "Réfléchit avant de répondre, efficace par paramètre actif.",
-        "Bonsai": "Beaucoup de capacité dans très peu de mémoire, images comprises.",
-        "Granite 4.2": "131 000 mots de mémoire, bon suivi d'instructions.",
-        "Phi-4": "Raisonnement dense pour sa taille, licence très permissive.",
-        "Ministral 3": "Lit les images et garde 262 000 mots de mémoire.",
-    ]
-
-    static var families: [Family] {
-        let grouped = Dictionary(grouping: models, by: \.family)
-        let ordered = familyOrder.filter { grouped[$0] != nil }
-        let remaining = grouped.keys.filter { !familyOrder.contains($0) }.sorted()
-        return (ordered + remaining).map { name in
-            Family(name: name, summary: familySummaries[name] ?? "", models: grouped[name] ?? [])
+    /// Le texte d'abord (la majorité du catalogue), puis les modèles qui lisent les images.
+    static var capabilitySections: [CapabilitySection] {
+        [false, true].map { vision in
+            CapabilitySection(supportsImages: vision,
+                              models: models.filter { $0.supportsImages == vision }
+                                            .sorted { $0.downloadBytes < $1.downloadBytes })
         }
     }
 

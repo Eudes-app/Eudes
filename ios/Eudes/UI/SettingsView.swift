@@ -55,7 +55,7 @@ private enum SettingsDestination: String, Hashable {
 
     var title: LocalizedStringResource {
         switch self {
-        case .connections: "Modèles et connexions"
+        case .connections: "Modèles et serveurs"
         case .voice: "Assistant vocal"
         case .web: "Recherche Web"
         case .appearance: "Apparence"
@@ -67,7 +67,7 @@ private enum SettingsDestination: String, Hashable {
 
     var subtitle: LocalizedStringResource? {
         switch self {
-        case .connections: "Serveurs et modèles d’IA"
+        case .connections: "Sur cet iPhone ou via une API"
         case .voice: "Voix, transcription et Siri"
         case .web: "Chat et mode vocal"
         case .appearance: "Thème, icône et transparence"
@@ -245,45 +245,120 @@ private struct SettingsForm<Content: View>: View {
 
 private struct ConnectionSettingsView: View {
     @EnvironmentObject private var store: AppStore
-    @State private var source = 0
+    @StateObject private var inventory = LocalModelInventory()
     @State private var addServer = false
     @State private var editingServer: ServerProfile?
     @State private var duplicatingServer: ServerProfile?
     @State private var deletingServer: ServerProfile?
+    /// La fiche d'un modèle, ouverte depuis un usage ou une famille.
+    @State private var info: LocalModelCatalog.Model?
+    @State private var showingInfo = false
 
     var body: some View {
         SettingsForm {
+            // Qui répond, avant tout : l'état en tête, le changement un appui plus bas.
             Section {
-                Picker("Source", selection: $source) {
-                    Text("API").tag(0)
-                    Text("Sur cet iPhone").tag(1)
-                }.pickerStyle(.segmented)
-                if let selected = store.selectedServer {
-                    Text("Sélection : \(selected.name)").font(.caption).foregroundStyle(Palette.muted)
-                }
-            }
-            if source == 1 {
-                Section {
-                    if store.connectionChoices.contains(where: { $0.isApple }) {
-                        Button {
-                            store.selectServer(ServerProfile.appleID)
-                        } label: {
-                            HStack {
-                                Label("Apple embarqué", systemImage: "iphone")
-                                Spacer()
-                                if store.selectedServer?.isApple == true {
-                                    Image(systemName: "checkmark").accessibilityLabel("Sélectionné")
-                                }
-                            }
+                if let model = usedModel {
+                    Button {
+                        info = model
+                        showingInfo = true
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(model.title)
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(Palette.ink)
+                            Text("Utilisé pour les messages · \(model.sizeLabel)")
+                                .font(.subheadline)
+                                .foregroundStyle(Palette.muted)
                         }
-                        .disabled(store.isPreparingSend)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("models.used")
+                    if let gauge = ramGauge(for: model) {
+                        gaugeRow(title: gauge.title, value: gauge.value, fraction: gauge.fraction)
+                    }
+                    if let gauge = diskGauge {
+                        gaugeRow(title: gauge.title, value: gauge.value, fraction: gauge.fraction)
+                    }
+                } else {
+                    // Apple ou un serveur API : l'état se dit ici, le changement se fait
+                    // dans la liste en dessous — pas de fiche à ouvrir.
+                    Text(engineTitle).foregroundStyle(Palette.ink)
+                    Text(engineSubtitle).font(.caption).foregroundStyle(Palette.muted)
+                }
+            } header: { Text("Modèle utilisé") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            // La décision simple : un modèle par usage, toujours du catalogue local.
+            Section {
+                ForEach(LocalModelCatalog.recommendations()) { recommendation in
+                    ModelSummaryRow(model: recommendation.model, inventory: inventory,
+                                    headline: recommendation.role.headline) {
+                        info = recommendation.model
+                        showingInfo = true
                     }
                 }
-                .listRowBackground(Palette.surface)
-                .listRowSeparatorTint(Palette.border)
-                LocalModelSettingsSection()
-            } else {
-            Section("Serveurs") {
+            } header: { Text("Que veux-tu faire ?") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            // Ce qui peut répondre ici, maintenant : Apple Intelligence et chaque modèle
+            // déjà téléchargé. C'est la seule liste où l'on voit d'un coup ce qui tient
+            // dans la poche, sans ouvrir le catalogue.
+            Section {
+                if store.connectionChoices.contains(where: { $0.isApple }) {
+                    Button {
+                        store.selectServer(ServerProfile.appleID)
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Apple Intelligence").foregroundStyle(Palette.ink)
+                                Text("Sur l'iPhone, sans réglage.").font(.caption).foregroundStyle(Palette.muted)
+                            }
+                            Spacer()
+                            if store.selectedServer?.isApple == true {
+                                Image(systemName: "checkmark").accessibilityLabel("Sélectionné")
+                            }
+                        }
+                    }
+                    .disabled(store.isPreparingSend)
+                }
+                ForEach(installedModels) { model in
+                    CatalogModelRow(model: model, inventory: inventory,
+                                    recommended: recommendedModelIDs.contains(model.id)) {
+                        info = model
+                        showingInfo = true
+                    }
+                }
+            } header: { Text("Modèles téléchargés") }
+            footer: { Text("Aucun message ne quitte l'appareil.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            // Le catalogue entier derrière une seule ligne : la page répond d'abord à
+            // « quel modèle pour quoi », elle n'annonce pas treize fois le même fichier.
+            Section {
+                NavigationLink {
+                    AllModelsView(inventory: inventory)
+                } label: {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Tous les modèles").foregroundStyle(Palette.ink)
+                        Text("\(LocalModelCatalog.models.count) modèles")
+                            .font(.caption)
+                            .foregroundStyle(Palette.muted)
+                    }
+                    .multilineTextAlignment(.leading)
+                }
+                .accessibilityIdentifier("models.all")
+            } header: { Text("Autres modèles") }
+            footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section("Serveurs API") {
                 ForEach(store.data.servers) { profile in
                     Button { editingServer = profile } label: {
                         HStack {
@@ -309,9 +384,30 @@ private struct ConnectionSettingsView: View {
             }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
+
+            Section {
+                NavigationLink {
+                    AdvancedModelSettingsView(inventory: inventory)
+                } label: {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Réglages avancés")
+                        Text("Fenêtre, raisonnement, chargement").font(.caption).foregroundStyle(Palette.muted)
+                    }
+                    .multilineTextAlignment(.leading)
+                }
+                .accessibilityIdentifier("models.advanced")
             }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
         }
-        .onAppear { source = store.selectedServer?.isOnDevice == true ? 1 : 0 }
+        .navigationTitle(Text("Modèles et serveurs"))
+        .navigationDestination(isPresented: $showingInfo) {
+            if let info { ModelDetailView(model: info, inventory: inventory) }
+        }
+        .task { await inventory.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
+            Task { await inventory.refresh() }
+        }
         .sheet(isPresented: $addServer) { ServerEditorView() }
         .sheet(item: $editingServer) { ServerEditorView(profile: $0) }
         .sheet(item: $duplicatingServer) { ServerEditorView(duplicating: $0) }
@@ -322,6 +418,83 @@ private struct ConnectionSettingsView: View {
                 deletingServer = nil
             }
         } message: { Text("La clé API sera supprimée. Les anciennes conversations resteront lisibles, sans connexion à ce serveur.") }
+    }
+
+    /// Le modèle qui répond aux messages, s'il est local et téléchargé : c'est lui
+    /// que la ligne d'en tête ouvre en fiche.
+    private var usedModel: LocalModelCatalog.Model? {
+        guard store.selectedServer?.isLocalLFM == true,
+              let model = LocalModelCatalog.models.first(where: { $0.id == store.selectedServer?.model }),
+              inventory.isInstalled(model) else { return nil }
+        return model
+    }
+
+    /// Qui répond aujourd'hui, dérivé du magasin seul : sans balayage du disque, la
+    /// ligne d'état ne clignote pas.
+    private var engineTitle: String {
+        guard let selected = store.selectedServer else { return "Aucun modèle" }
+        if selected.isApple { return "Apple Intelligence" }
+        if selected.isLocalLFM {
+            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun modèle"
+        }
+        return selected.name
+    }
+
+    private var engineSubtitle: String {
+        guard let selected = store.selectedServer else { return "Choisis un modèle ci-dessous." }
+        if selected.isApple { return "L'iPhone répond, sans téléchargement." }
+        if selected.isLocalLFM { return "Fichiers absents : télécharge-le ci-dessous." }
+        return "Les réponses viennent de ce serveur."
+    }
+
+    /// Les modèles posés sur l'iPhone, dans l'ordre du catalogue : la liste « Sur cet
+    /// iPhone » les montre tous, pas seulement celui qui répond.
+    private var installedModels: [LocalModelCatalog.Model] {
+        LocalModelCatalog.models.filter { inventory.isInstalled($0) }
+    }
+
+    /// L'espace réellement libre, lu sur le volume : c'est lui qui décide si un
+    /// modèle lourd a sa place. Relu à l'ouverture de la page.
+    private var diskUsage: (free: Int64, total: Int64)? {
+        guard let values = try? URL(fileURLWithPath: "/")
+            .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeTotalCapacityKey]),
+            let total = values.volumeTotalCapacity, total > 0,
+            let free = values.volumeAvailableCapacityForImportantUsage, free >= 0 else { return nil }
+        return (free, Int64(total))
+    }
+
+    /// Une jauge du héros : libellé à gauche, valeur à droite, barre fine dessous.
+    /// La barre garde un minimum visible pour rester lisible même presque vide.
+    private func gaugeRow(title: String, value: String, fraction: Double) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(title).font(.caption).foregroundStyle(Palette.muted)
+                Spacer()
+                Text(value).font(.caption.weight(.semibold)).foregroundStyle(Palette.ink)
+            }
+            ProgressView(value: min(1, max(0.02, fraction)))
+                .progressViewStyle(.linear)
+                .tint(Palette.ink)
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// La mémoire vive que le modèle exige, d'après le catalogue : fichiers plus
+    /// fenêtre de contexte, ramenés à la RAM utilisable de cet iPhone.
+    private func ramGauge(for model: LocalModelCatalog.Model) -> (title: String, value: String, fraction: Double)? {
+        let compatibility = model.compatibility()
+        guard compatibility.available > 0 else { return nil }
+        let format = { (bytes: Int) in ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory) }
+        return (title: "Mémoire nécessaire",
+                value: "~\(format(compatibility.required)) sur \(format(compatibility.available))",
+                fraction: Double(compatibility.required) / Double(compatibility.available))
+    }
+
+    private var diskGauge: (title: String, value: String, fraction: Double)? {
+        guard let disk = diskUsage else { return nil }
+        return (title: "Espace disque libre",
+                value: ByteCountFormatter.string(fromByteCount: disk.free, countStyle: .file),
+                fraction: Double(disk.free) / Double(disk.total))
     }
 }
 
@@ -339,6 +512,25 @@ private struct LocalModelDownloadSnapshot: Equatable {
         state = task.state
         countOfBytesReceived = task.countOfBytesReceived
     }
+}
+
+/// Les modèles proposés par défaut : un par usage, toujours du catalogue local —
+/// le modèle d'Apple n'en fait jamais partie.
+private var recommendedModelIDs: Set<String> {
+    Set(LocalModelCatalog.recommendations().map(\.model.id))
+}
+
+/// La pilule « Recommandé », posée sur la ligne du modèle que le catalogue propose
+/// par défaut — plus jamais sur un en-tête, qui ne parle que pour un groupe.
+private func capabilityPill(_ text: String, systemImage: String, filled: Bool) -> some View {
+    Label(text, systemImage: systemImage)
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(filled ? Palette.ink : Palette.muted)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(filled ? Palette.userBubble : Color.clear, in: Capsule())
+        .overlay(Capsule().stroke(Palette.border, lineWidth: 0.5).opacity(filled ? 0 : 1))
+        .accessibilityLabel(filled ? "\(text) : proposé par défaut" : text)
 }
 
 /// Une seule alerte pour les deux gestes : deux `.alert` sur la même vue, la seconde
@@ -360,7 +552,7 @@ private enum PendingModelAction: Equatable {
 }
 
 /// Inventaire partagé par les écrans du catalogue. Sorti de la vue parce que la liste
-/// des familles et la fiche d'un modèle lisent le même état : un téléchargement lancé
+/// des catégories et la fiche d'un modèle lisent le même état : un téléchargement lancé
 /// sur une fiche doit apparaître dans la liste, et une empreinte déjà vérifiée ne doit
 /// pas être recalculée à chaque retour.
 private final class LocalModelInventory: ObservableObject {
@@ -444,129 +636,138 @@ private final class LocalModelInventory: ObservableObject {
     }
 }
 
-/// Entrée des Réglages : le catalogue vit désormais sur son propre écran, parce que
-/// onze modèles à plat ne se lisent pas. Ici ne restent que le raccourci et les
-/// réglages qui ne dépendent pas d'un modèle précis.
-private struct LocalModelSettingsSection: View {
+/// Un effort de raisonnement nommé : c'est la valeur de tokens qui part au moteur,
+/// mais l'utilisateur choisit une intention, jamais un nombre.
+private struct ReasoningTier: Identifiable {
+    let tokens: Int
+    let title: String
+    var id: Int { tokens }
+}
+
+/// Les réglages qui servent à qui connaît déjà les modèles : moteur, fenêtre de
+/// conversation, effort de raisonnement, chargement. Tout ce qui n'a pas sa place sur
+/// les deux écrans principaux vit ici, et rien n'y est caché.
+private struct AdvancedModelSettingsView: View {
     @EnvironmentObject private var store: AppStore
     /// Même clé que `AppStore.loadAtStartupKey` : la garde du préchargement et la case
     /// des Réglages doivent lire exactement la même préférence.
     @AppStorage("lfm.loadAtStartup") private var loadAtStartup = false
-    @StateObject private var inventory = LocalModelInventory()
+    /// L'inventaire reçu de l'écran Modèles : un seul état partagé, un seul balayage.
+    @ObservedObject var inventory: LocalModelInventory
     @State private var loadingID: String?
 
-    var body: some View {
-        // Les sections sont groupées pour que l'état partagé de l'inventaire reste
-        // unique : deux écrans distincts reliraient le disque chacun de leur côté.
-        Group {
-        Section {
-            NavigationLink {
-                ModelCatalogView(inventory: inventory)
-            } label: {
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Catalogue des modèles")
-                        Text(catalogSummary).font(.caption).foregroundStyle(Palette.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 8)
-                    if let selected = selectedModelTitle {
-                        Text(selected).font(.caption).foregroundStyle(Palette.muted)
-                    }
-                }
-            }
-            .accessibilityIdentifier("lfm.catalog")
-        } header: { Text("Modèles sur cet iPhone") }
-        footer: { Text("Le modèle sélectionné reste utilisé pour les messages. Les images sont disponibles uniquement avec un modèle texte et images.") }
-        .listRowBackground(Palette.surface)
-        .listRowSeparatorTint(Palette.border)
+    private static let tiers = [ReasoningTier(tokens: 512, title: "Rapide"),
+                                ReasoningTier(tokens: 1024, title: "Équilibré"),
+                                ReasoningTier(tokens: 2048, title: "Approfondi")]
 
-        Section {
-            Picker("Contexte maximal", selection: Binding(
-                get: { store.localContextStoredTokens }, set: { store.setLocalContextTokens($0) }
-            )) {
-                Text("Automatique (\(store.automaticContextTokens.formatted()) tokens)")
-                    .tag(LocalModelCatalog.automaticContext)
-                // Masquer l'option figée qui vaut déjà le calcul automatique : sinon deux
-                // entrées identiques et une coche ambiguë.
-                ForEach(LocalModelCatalog.contextOptions.filter { $0 != store.automaticContextTokens }, id: \.self) { value in
-                    Text("\(value.formatted()) tokens").tag(value)
-                }
-            }
-            .disabled(store.isGenerating || store.isPreparingSend || loadingID != nil)
-            .accessibilityIdentifier("lfm.contextSize")
-            if store.localContextStoredTokens == LocalModelCatalog.automaticContext {
-                Text("Calculé pour \(DeviceProfile.current.descriptionLabel) : les poids du modèle et la moitié de la mémoire restante au plus pour le cache, sans saturer l’iPhone. Repli sur 4 096 si le fichier est illisible.")
-                    .font(.caption).foregroundStyle(Palette.muted)
-            }
-            Picker("Limite de raisonnement", selection: Binding(
-                get: { store.localReasoningTokens }, set: { store.setLocalReasoningTokens($0) }
-            )) {
-                ForEach(LocalModelCatalog.reasoningOptions, id: \.self) { value in
-                    Text("\(value.formatted()) tokens").tag(value)
-                }
-            }
-            .disabled(store.isGenerating || store.isPreparingSend || loadingID != nil)
-            .accessibilityIdentifier("lfm.reasoningSize")
-            Toggle("Charger à l’ouverture d'Eudes", isOn: $loadAtStartup)
-                .onChange(of: loadAtStartup) { _, enabled in
-                    // Décocher doit se voir tout de suite : sans ce déchargement le modèle
-                    // reste résident jusqu'au prochain passage en arrière-plan et le
-                    // réglage semble ignoré.
-                    guard !enabled else { return }
-                    Task { await unloadSelectedModel() }
-                }
-            if let model = LocalModelCatalog.models.first(where: { $0.id == store.selectedServer?.model }),
-               store.selectedServer?.isLocalLFM == true {
-                Button {
-                    loadingID = model.id
-                    let selectedContext = store.localContextTokens
-                    Task {
-                        do {
-                            try await LocalModelRuntime.shared.prepare(modelID: model.id, useGPU: true,
-                                                                       contextTokens: selectedContext)
-                            inventory.markLoaded(model.id, context: selectedContext)
-                            inventory.errorMessage = nil
-                        } catch {
-                            await inventory.reloadLoadedState()
-                            inventory.errorMessage = error.localizedDescription
-                        }
-                        loadingID = nil
-                    }
-                } label: {
-                    if loadingID == model.id { Label("Chargement…", systemImage: "hourglass") }
-                    else if inventory.loadedID == model.id && inventory.loadedContext == store.localContextTokens { Label("Modèle chargé", systemImage: "checkmark.circle") }
-                    else if inventory.loadedID == model.id { Label("Recharger avec le contexte choisi", systemImage: "arrow.clockwise") }
-                    else { Label("Charger le modèle sélectionné", systemImage: "play.circle") }
-                }.disabled(!inventory.verified.contains(model.id) || loadingID != nil || (inventory.loadedID == model.id && inventory.loadedContext == store.localContextTokens))
-            }
-            if let message = inventory.errorMessage { Text(message).font(.caption).foregroundStyle(.red) }
-        } footer: { Text("Le contexte choisi s’applique au prochain chargement du modèle. Le raisonnement partage ce contexte avec la réponse et peut être écourté si la place manque. Les grandes valeurs utilisent davantage de mémoire et peuvent ralentir ou dépasser les ressources de l’iPhone.") }
-        .listRowBackground(Palette.surface)
+    private var selectedModel: LocalModelCatalog.Model? {
+        guard store.selectedServer?.isLocalLFM == true else { return nil }
+        return LocalModelCatalog.models.first { $0.id == store.selectedServer?.model }
+    }
+
+    private var engineLabel: String {
+        guard let selected = store.selectedServer else { return "Aucun" }
+        if selected.isLocalLFM {
+            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun"
         }
+        if selected.isApple { return "Apple Intelligence" }
+        return selected.name
+    }
+
+    private var busy: Bool { store.isGenerating || store.isPreparingSend || loadingID != nil }
+
+    var body: some View {
+        SettingsForm {
+            Section {
+                LabeledContent("Modèle utilisé", value: engineLabel)
+            } header: { Text("Qui répond") }
+            footer: { Text("Sur cet iPhone, rien ne quitte l'appareil. Une API envoie les messages au serveur configuré.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section {
+                Picker("Fenêtre de conversation", selection: Binding(
+                    get: { store.localContextStoredTokens }, set: { store.setLocalContextTokens($0) }
+                )) {
+                    Text("Automatique (\(store.automaticContextTokens.formatted()) tokens)")
+                        .tag(LocalModelCatalog.automaticContext)
+                    // Masquer l'option figée qui vaut déjà le calcul automatique : sinon deux
+                    // entrées identiques et une coche ambiguë.
+                    ForEach(LocalModelCatalog.contextOptions.filter { $0 != store.automaticContextTokens }, id: \.self) { value in
+                        Text("\(value.formatted()) tokens").tag(value)
+                    }
+                }
+                .disabled(busy)
+                .accessibilityIdentifier("lfm.contextSize")
+            } header: { Text("Fenêtre de conversation") }
+            footer: { Text("C'est la mémoire gardée pour la conversation en cours. « Automatique » l'ajuste à la mémoire libre de l'iPhone.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section {
+                Picker("Effort", selection: Binding(
+                    get: { store.localReasoningTokens }, set: { store.setLocalReasoningTokens($0) }
+                )) {
+                    ForEach(Self.tiers) { tier in
+                        Text(tier.title).tag(tier.tokens)
+                    }
+                    if !Self.tiers.contains(where: { $0.tokens == store.localReasoningTokens }) {
+                        Text("\(store.localReasoningTokens.formatted()) tokens").tag(store.localReasoningTokens)
+                    }
+                }
+                .disabled(busy)
+                .accessibilityIdentifier("lfm.reasoningSize")
+            } header: { Text("Qualité du raisonnement") }
+            footer: { Text("Rapide répond tout de suite, Approfondi prend plus de temps sur les questions difficiles. Le raisonnement partage la fenêtre de conversation.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section {
+                Toggle("Charger à l'ouverture d'Eudes", isOn: $loadAtStartup)
+                    .onChange(of: loadAtStartup) { _, enabled in
+                        // Décocher doit se voir tout de suite : sans ce déchargement le modèle
+                        // reste résident jusqu'au prochain passage en arrière-plan et le
+                        // réglage semble ignoré.
+                        guard !enabled else { return }
+                        Task { await unloadSelectedModel() }
+                    }
+                if let model = selectedModel {
+                    Button {
+                        loadingID = model.id
+                        let selectedContext = store.localContextTokens
+                        Task {
+                            do {
+                                try await LocalModelRuntime.shared.prepare(modelID: model.id, useGPU: true,
+                                                                           contextTokens: selectedContext)
+                                inventory.markLoaded(model.id, context: selectedContext)
+                                inventory.errorMessage = nil
+                            } catch {
+                                await inventory.reloadLoadedState()
+                                inventory.errorMessage = error.localizedDescription
+                            }
+                            loadingID = nil
+                        }
+                    } label: {
+                        if loadingID == model.id { Label("Chargement…", systemImage: "hourglass") }
+                        else if inventory.loadedID == model.id && inventory.loadedContext == store.localContextTokens { Label("Modèle chargé", systemImage: "checkmark.circle") }
+                        else if inventory.loadedID == model.id { Label("Recharger avec la fenêtre choisie", systemImage: "arrow.clockwise") }
+                        else { Label("Charger le modèle maintenant", systemImage: "play.circle") }
+                    }
+                    .disabled(!inventory.verified.contains(model.id) || loadingID != nil || (inventory.loadedID == model.id && inventory.loadedContext == store.localContextTokens))
+                }
+                if let message = inventory.errorMessage { Text(message).font(.caption).foregroundStyle(.red) }
+            } header: { Text("Chargement") }
+            footer: { Text("Un modèle chargé répond sans attente mais garde sa place en mémoire. Décoché, il se charge à la première question.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+        }
+        .navigationTitle(Text("Réglages avancés"))
+        .navigationBarTitleDisplayMode(.inline)
         .task { await inventory.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
             if let message = note.userInfo?["error"] as? String { inventory.errorMessage = message }
             Task { await inventory.refresh() }
         }
-    }
-
-    /// Ce que le raccourci annonce sans mentir : le nombre de modèles réellement sur
-    /// l'appareil, jamais un total qui ferait croire à une installation.
-    private var catalogSummary: String {
-        guard inventory.hasScanned else { return "Lecture de l’iPhone…" }
-        let families = LocalModelCatalog.families.count
-        let count = inventory.installedCount
-        return count == 0
-            ? "\(families) familles, aucun modèle installé"
-            : "\(families) familles · \(count) modèle\(count > 1 ? "s" : "") installé\(count > 1 ? "s" : "")"
-    }
-
-    private var selectedModelTitle: String? {
-        guard store.selectedServer?.isLocalLFM == true,
-              let model = LocalModelCatalog.models.first(where: { $0.id == store.selectedServer?.model }),
-              inventory.isInstalled(model) else { return nil }
-        return model.title
     }
 
     /// Décharge le modèle quand « Charger à l'ouverture » est décoché. Une génération en
@@ -578,119 +779,165 @@ private struct LocalModelSettingsSection: View {
     }
 }
 
-/// Le catalogue : trois raccourcis par usage, puis les familles. Les raccourcis
-/// pointent vers un modèle du catalogue, ils n'ajoutent pas d'entrée : un même modèle
-/// peut donc apparaître deux fois dans la hiérarchie sans être proposé deux fois.
-private struct ModelCatalogView: View {
+/// Une taille dans sa catégorie : un titre, son état, un seul geste.
+/// Le point fort du modèle s'ajoute sous l'état quand la page du catalogue le demande
+/// (`showsStrength`) ; l'écran de décision le garde compact.
+/// Le « i » ouvre la fiche (mémoire demandée, licence, suppression).
+private struct CatalogModelRow: View {
+    @EnvironmentObject private var store: AppStore
+    let model: LocalModelCatalog.Model
     @ObservedObject var inventory: LocalModelInventory
+    let recommended: Bool
+    var showsStrength: Bool = false
+    var onInfo: () -> Void
 
-    var body: some View {
-        SettingsForm {
-            let recommendations = LocalModelCatalog.recommendations()
-            if !recommendations.isEmpty {
-                Section {
-                    ForEach(recommendations) { recommendation in
-                        NavigationLink {
-                            ModelDetailView(model: recommendation.model, inventory: inventory,
-                                            role: recommendation.role)
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: recommendation.role.symbol)
-                                    .font(.system(size: 17, weight: .regular))
-                                    .foregroundStyle(Palette.muted)
-                                    .frame(width: 26)
-                                    .accessibilityHidden(true)
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(recommendation.role.headline)
-                                        .font(.subheadline.weight(.semibold))
-                                    Text("\(recommendation.model.title) · \(recommendation.model.sizeLabel)")
-                                        .font(.caption).foregroundStyle(Palette.muted)
-                                }
-                            }
-                            .multilineTextAlignment(.leading)
-                        }
-                        .accessibilityIdentifier("catalog.role.\(recommendation.role.rawValue)")
-                    }
-                } header: { Text("Pour ton iPhone") }
-                footer: { Text("Un seul suffit pour commencer. Ces trois choix sont recalculés à partir de la mémoire de cet iPhone : un modèle trop lourd n’y figure pas.") }
-                .listRowBackground(Palette.surface)
-                .listRowSeparatorTint(Palette.border)
-            }
-            Section {
-                ForEach(LocalModelCatalog.families) { family in
-                    NavigationLink {
-                        ModelFamilyView(family: family, inventory: inventory)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(family.name).font(.subheadline.weight(.semibold))
-                            Text(family.summary).font(.caption).foregroundStyle(Palette.muted)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text(family.sizesLabel).font(.caption2).foregroundStyle(Palette.muted)
-                        }
-                        .multilineTextAlignment(.leading)
-                    }
-                }
-            } header: { Text("Tous les modèles") }
-            footer: { Text("Un modèle téléchargé fonctionne sans réseau et reste sur l’iPhone. Les modèles trop lourds pour cet appareil restent visibles, avec la mémoire nécessaire.") }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-        }
-        .navigationTitle(Text("Modèles"))
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await inventory.refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
-            Task { await inventory.refresh() }
-        }
+    /// Une seule alerte par ligne : deux `.alert` sur la même vue se remplacent.
+    @State private var pendingAction: PendingModelAction?
+    /// L'échec d'une suppression se dit sur sa ligne, pas dans une alerte qui a déjà
+    /// disparu quand le fichier refuse de partir.
+    @State private var errorText: String?
+
+    private var tooHeavy: String? { model.compatibilityLabel() }
+    private var installed: Bool { inventory.isInstalled(model) }
+    private var active: [LocalModelDownloadSnapshot] { inventory.activeTasks(model) }
+    private var isSelected: Bool {
+        store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
     }
-}
 
-/// Une famille : ses tailles, dans l'ordre du catalogue. Chaque ligne porte deux gestes
-/// explicites — télécharger à droite, ouvrir les informations par le « i » — plutôt qu'une
-/// navigation unique : sans cela, rien n'annonce qu'un modèle se télécharge depuis sa fiche.
-private struct ModelFamilyView: View {
-    let family: LocalModelCatalog.Family
-    @ObservedObject var inventory: LocalModelInventory
-    @State private var info: LocalModelCatalog.Model?
-    @State private var showingInfo = false
+    /// Un seul mot par état : « recommandé » est porté par la pilule du titre,
+    /// jamais redit dans le texte de la ligne.
+    private var stateText: String {
+        if !active.isEmpty { return "Téléchargement en cours" }
+        if tooHeavy != nil { return "Trop lourd pour cet iPhone" }
+        if installed && isSelected { return "Utilisé pour les messages" }
+        if installed { return "Installé" }
+        return "À télécharger"
+    }
 
     var body: some View {
-        SettingsForm {
-            Section {
-                ForEach(family.models) { model in
-                    ModelSummaryRow(model: model, inventory: inventory) {
-                        info = model
-                        showingInfo = true
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(model.title)
+                        .font(.subheadline.weight(recommended ? .semibold : .regular))
+                        .foregroundStyle(Palette.ink)
+                    if recommended {
+                        capabilityPill("Recommandé", systemImage: "checkmark.seal", filled: true)
                     }
                 }
-            } footer: { Text(family.summary) }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
+                if let errorText {
+                    Text(errorText).font(.caption2).foregroundStyle(Palette.warningText)
+                } else {
+                    Text(stateText).font(.caption2).foregroundStyle(Palette.muted)
+                }
+                if showsStrength {
+                    Text(model.strength).font(.caption2).foregroundStyle(Palette.muted)
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !active.isEmpty {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 22, height: 22)
+                    .accessibilityLabel("Téléchargement de \(model.title) en cours")
+            } else if installed && isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Palette.ink)
+                    .frame(width: 32, height: 32)
+                    .accessibilityLabel("\(model.title) est utilisé pour les messages")
+            } else if installed {
+                Button("Utiliser") { store.selectLocalModel(model.id) }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.borderless)
+                    .disabled(store.isPreparingSend)
+                    .accessibilityLabel("Utiliser \(model.title) pour les messages")
+            } else if tooHeavy == nil {
+                Button { pendingAction = .download(model) } label: {
+                    Image(systemName: "arrow.down.circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Palette.ink)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Télécharger \(model.title)")
+            }
+
+            // La suppression est un geste visible sur la ligne : un balayage n'est
+            // pas découvrable, et la fiche est un détour pour libérer de la place.
+            if installed && active.isEmpty {
+                Button { pendingAction = .remove(model) } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 17))
+                        .foregroundStyle(Palette.muted)
+                        .frame(width: 40, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .disabled(store.isPreparingSend || store.isGenerating)
+                .accessibilityLabel("Supprimer \(model.title) de l'iPhone")
+            }
+
+            Button(action: onInfo) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 19))
+                    .foregroundStyle(Palette.muted)
+                    .frame(width: 40, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Informations sur \(model.title)")
         }
-        .navigationTitle(Text(family.name))
-        .navigationBarTitleDisplayMode(.inline)
-        // `LocalModelCatalog.Model` n'est pas `Hashable` : la destination se pilote donc
-        // par un booléen, le modèle retenu étant gardé à côté.
-        .navigationDestination(isPresented: $showingInfo) {
-            if let info { ModelDetailView(model: info, inventory: inventory) }
-        }
-        .task { await inventory.refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
-            if let message = note.userInfo?["error"] as? String { inventory.errorMessage = message }
-            Task { await inventory.refresh() }
-        }
-        .alert("Téléchargement impossible", isPresented: Binding(
-            get: { inventory.errorMessage != nil }, set: { if !$0 { inventory.errorMessage = nil } })) {
-            Button("OK", role: .cancel) { inventory.errorMessage = nil }
+        .alert(pendingAction?.isRemoval == true ? "Supprimer le modèle ?" : "Télécharger le modèle ?",
+               isPresented: Binding(get: { pendingAction != nil },
+                                    set: { if !$0 { pendingAction = nil } })) {
+            if let action = pendingAction {
+                switch action {
+                case .download(let target):
+                    Button("Télécharger \(target.title)") {
+                        inventory.errorMessage = nil
+                        Task {
+                            await LocalModelDownloads.shared.start(model: target)
+                            await inventory.refresh()
+                        }
+                    }
+                case .remove(let target):
+                    Button("Supprimer \(target.title)", role: .destructive) {
+                        errorText = nil
+                        Task {
+                            do { try await store.deleteLocalModel(target.id) }
+                            catch { errorText = error.localizedDescription }
+                            await inventory.refresh()
+                        }
+                    }
+                }
+            }
+            Button("Annuler", role: .cancel) { pendingAction = nil }
         } message: {
-            Text(inventory.errorMessage ?? "")
+            if let action = pendingAction {
+                let size = ByteCountFormatter.string(fromByteCount: action.model.downloadBytes, countStyle: .file)
+                switch action {
+                case .download:
+                    Text("Taille : \(size). Le téléchargement peut continuer en arrière-plan et utiliser les données mobiles.")
+                case .remove:
+                    Text("\(size) seront libérés. Tes conversations restent intactes.")
+                }
+            }
         }
     }
 }
 
 /// Une ligne de modèle : le résumé à gauche, puis le téléchargement et le « i ».
 private struct ModelSummaryRow: View {
+    @EnvironmentObject private var store: AppStore
     let model: LocalModelCatalog.Model
     @ObservedObject var inventory: LocalModelInventory
+    /// Quand la ligne répond à « Que veux-tu faire ? », le titre est l'intention et le
+    /// modèle passe en second : c'est la question qui mène, pas le nom du fichier.
+    var headline: String? = nil
     var onInfo: () -> Void
 
     @State private var confirmingDownload = false
@@ -714,9 +961,14 @@ private struct ModelSummaryRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(model.title).foregroundStyle(Palette.ink)
-                Text(model.capabilityDescription).font(.caption).foregroundStyle(Palette.muted)
-                Text("\(model.sizeLabel)\(stateSuffix)").font(.caption).foregroundStyle(Palette.muted)
+                if let headline {
+                    Text(headline).font(.subheadline.weight(.semibold)).foregroundStyle(Palette.ink)
+                    Text("\(model.title) · \(model.sizeLabel)\(stateSuffix)").font(.caption).foregroundStyle(Palette.muted)
+                } else {
+                    Text(model.title).foregroundStyle(Palette.ink)
+                    Text(model.capabilityDescription).font(.caption).foregroundStyle(Palette.muted)
+                    Text("\(model.sizeLabel)\(stateSuffix)").font(.caption).foregroundStyle(Palette.muted)
+                }
                 if let tooHeavy {
                     Text(tooHeavy).font(.caption).foregroundStyle(Palette.warningText)
                 }
@@ -730,7 +982,7 @@ private struct ModelSummaryRow: View {
                 Image(systemName: "info.circle")
                     .font(.system(size: 19))
                     .foregroundStyle(Palette.muted)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
@@ -775,18 +1027,25 @@ private struct ModelSummaryRow: View {
             .accessibilityLabel("Téléchargement de \(model.title)")
             .accessibilityValue("\(Int(progress * 100)) %")
             .accessibilityIdentifier("model.row.progress.\(model.id)")
-        } else if installed {
-            Image(systemName: "checkmark.circle")
+        } else if installed && isSelected {
+            Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 22))
-                .foregroundStyle(Palette.muted)
+                .foregroundStyle(Palette.ink)
                 .frame(width: 32, height: 32)
-                .accessibilityLabel("\(model.title) est téléchargé")
+                .accessibilityLabel("\(model.title) est utilisé pour les messages")
+        } else if installed {
+            Button("Utiliser") { store.selectLocalModel(model.id) }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.borderless)
+                .disabled(store.isPreparingSend)
+                .accessibilityLabel("Utiliser \(model.title) pour les messages")
+                .accessibilityIdentifier("model.row.use.\(model.id)")
         } else {
             Button { confirmingDownload = true } label: {
                 Image(systemName: "arrow.down.circle")
                     .font(.system(size: 22))
                     .foregroundStyle(Palette.ink)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
@@ -795,15 +1054,58 @@ private struct ModelSummaryRow: View {
         }
     }
 
+    private var isSelected: Bool {
+        store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
+    }
+
     private var stateSuffix: String {
         if !active.isEmpty { return " · téléchargement en cours" }
+        if installed && isSelected { return " · utilisé" }
         if installed { return " · installé" }
-        return ""
+        return " · à télécharger"
     }
 }
 
 /// La fiche d'un modèle : ce qu'il sait faire, ce qu'il coûte en mémoire, et les deux
 /// gestes utiles (télécharger, utiliser). Supprimer reste possible, une fois installé.
+/// Le catalogue complet, ouvert par une seule ligne depuis « Modèles et serveurs ».
+/// Deux catégories — texte, texte + vision — chacune avec son logo, sa phrase toujours
+/// vraie et ses modèles du plus léger au plus lourd : un nouveau modèle se classe sans
+/// arbitrage, et la famille reste lisible sur la fiche « i » de chaque modèle.
+private struct AllModelsView: View {
+    @ObservedObject var inventory: LocalModelInventory
+    @State private var info: LocalModelCatalog.Model?
+    @State private var showingInfo = false
+
+    var body: some View {
+        SettingsForm {
+            ForEach(LocalModelCatalog.capabilitySections) { section in
+                Section {
+                    ForEach(section.models) { model in
+                        CatalogModelRow(model: model, inventory: inventory,
+                                        recommended: recommendedModelIDs.contains(model.id),
+                                        showsStrength: true) {
+                            info = model
+                            showingInfo = true
+                        }
+                    }
+                } header: {
+                    Label(section.name, systemImage: section.icon)
+                }
+                footer: { Text(section.summary) }
+            }
+        }
+        .navigationTitle(Text("Tous les modèles"))
+        .navigationDestination(isPresented: $showingInfo) {
+            if let info { ModelDetailView(model: info, inventory: inventory) }
+        }
+        .task { await inventory.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
+            Task { await inventory.refresh() }
+        }
+    }
+}
+
 private struct ModelDetailView: View {
     @EnvironmentObject private var store: AppStore
     let model: LocalModelCatalog.Model
@@ -816,6 +1118,11 @@ private struct ModelDetailView: View {
     private var isSelected: Bool {
         store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
     }
+    /// Ce que le modèle demande pour tourner : poids du fichier plus le cache minimal.
+    /// Un fait, pas un maximum théorique que l'iPhone n'atteindra jamais.
+    private var memoryRequired: String {
+        ByteCountFormatter.string(fromByteCount: Int64(model.compatibility().required), countStyle: .memory)
+    }
 
     var body: some View {
         SettingsForm {
@@ -826,10 +1133,9 @@ private struct ModelDetailView: View {
                 Text(model.strength).font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
                 LabeledContent("Taille", value: model.sizeLabel)
+                LabeledContent("Mémoire requise", value: memoryRequired)
                 LabeledContent("Images", value: model.supportsImages ? "lues" : "non")
-                if let native = model.nativeContext {
-                    LabeledContent("Contexte du modèle", value: "\(native.formatted()) tokens")
-                }
+                LabeledContent("Famille", value: model.family)
                 LabeledContent("Licence", value: model.licence)
             } header: { Text(model.title) }
             footer: { Text("Le nom technique et la licence servent à retrouver le fichier ; c’est le seul endroit de l’app où ils apparaissent.") }
@@ -902,7 +1208,7 @@ private struct ModelDetailView: View {
                 case .download:
                     Text("Taille : \(size). Le téléchargement peut continuer en arrière-plan et utiliser les données mobiles.")
                 case .remove:
-                    Text("\(size) seront libérés. Le modèle repassera dans « À télécharger » ; tes conversations restent intactes.")
+                    Text("\(size) seront libérés. Tes conversations restent intactes.")
                 }
             }
         }
