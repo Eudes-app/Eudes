@@ -329,26 +329,9 @@ private struct ConnectionSettingsView: View {
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
-            Section {
-                if let storage = storageLine {
-                    HStack {
-                        Label("Stockage des modèles", systemImage: "internaldrive")
-                            .font(.subheadline)
-                            .foregroundStyle(Palette.ink)
-                        Spacer()
-                        Text("\(formatBytes(storage.used)) utilisés · \(formatBytes(storage.free)) libres")
-                            .font(.caption)
-                            .foregroundStyle(Palette.muted)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
-                }
-            } header: { Text("Tous les modèles") }
-            footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau. Les modèles trop lourds restent visibles ; leur fiche dit la mémoire demandée.") }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-
             // Une carte par famille : chaque taille avec son état, et un seul geste.
+            // L'espace disque libre est déjà dans la jauge du héros : pas de second
+            // chiffre de stockage ici.
             ForEach(LocalModelCatalog.families) { family in
                 Section {
                     capabilityBadges(for: family)
@@ -460,20 +443,6 @@ private struct ConnectionSettingsView: View {
         Set(LocalModelCatalog.recommendations().map(\.model.id))
     }
 
-    /// Ce que les modèles téléchargés pèsent, additionné : le chiffre de la ligne
-    /// « Stockage des modèles », à côté de l'espace qui reste.
-    private var storageLine: (used: Int64, free: Int64)? {
-        guard let disk = diskUsage else { return nil }
-        let used = LocalModelCatalog.models
-            .filter { inventory.isInstalled($0) }
-            .reduce(Int64(0)) { $0 + $1.downloadBytes }
-        return (used, disk.free)
-    }
-
-    private func formatBytes(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-    }
-
     /// Les badges d'une famille, scannés sans lire : « Vision » quand un modèle lit
     /// les images, « Recommandé » quand le catalogue en propose un par défaut.
     /// Aucun badge quand la famille n'a ni l'un ni l'autre.
@@ -511,11 +480,6 @@ private struct ConnectionSettingsView: View {
             let total = values.volumeTotalCapacity, total > 0,
             let free = values.volumeAvailableCapacityForImportantUsage, free >= 0 else { return nil }
         return (free, Int64(total))
-    }
-
-    private var freeSpaceText: String? {
-        guard let disk = diskUsage else { return nil }
-        return ByteCountFormatter.string(fromByteCount: disk.free, countStyle: .file) + " disponibles sur l'iPhone"
     }
 
     /// Une jauge du héros : libellé à gauche, valeur à droite, barre fine dessous.
