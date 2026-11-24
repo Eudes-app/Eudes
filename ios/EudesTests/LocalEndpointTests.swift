@@ -1394,12 +1394,33 @@ final class ContextSizingTests: XCTestCase {
         }
     }
 
-    func testFamilySizesLabelCountsRealFiles() {
+    /// Le libellé d'une famille liste ses fichiers, sans compteur à décoder :
+    /// « 532,5 Mo, 1,28 Go et 2,74 Go ».
+    func testFamilySizesLabelListsFilesWithoutCount() {
         let qwen = LocalModelCatalog.families.first { $0.name == "Qwen3.5" }
         XCTAssertEqual(qwen?.models.map(\.title), ["Qwen3.5 0,8B", "Qwen3.5 2B", "Qwen3.5 4B"])
-        XCTAssertEqual(qwen?.sizesLabel.hasPrefix("3 tailles · "), true)
+        let label = qwen?.sizesLabel ?? ""
+        XCTAssertFalse(label.lowercased().contains("taille"), label)
+        XCTAssertEqual(label.components(separatedBy: " et ").count, 2, label)
+        XCTAssertEqual(label.components(separatedBy: ", ").count, 3, label)
         let single = LocalModelCatalog.families.first { $0.name == "Phi-4" }
-        XCTAssertEqual(single?.sizesLabel.hasPrefix("1 taille · "), true)
+        XCTAssertEqual(single?.sizesLabel, single?.models.first?.sizeLabel)
+    }
+
+    /// Aucune phrase du catalogue ne promet un contexte que l'iPhone n'atteint pas :
+    /// le maximum du modèle n'est plus une information d'écran.
+    func testFamilySummariesMentionNoModelContext() {
+        for family in LocalModelCatalog.families {
+            let summary = family.summary.lowercased()
+            XCTAssertFalse(summary.contains("mots"), family.name)
+            XCTAssertFalse(summary.contains("262"), family.name)
+            XCTAssertFalse(summary.contains("131"), family.name)
+        }
+        for model in LocalModelCatalog.models {
+            let strength = model.strength.lowercased()
+            XCTAssertFalse(strength.contains("mots"), model.id)
+            XCTAssertFalse(strength.contains("256k"), model.id)
+        }
     }
 
     func testRecommendationsOnARecentPhoneCoverTheThreeUses() {

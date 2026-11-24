@@ -85,7 +85,7 @@ enum LocalModelCatalog {
                   sha256: "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 262_144,
         kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
-        strength: "Pensé pour l'edge : 1 Go en 4 bits, contexte 256k, entraîné pour les agents.")
+        strength: "Pensé pour l'edge : 1 Go en 4 bits, entraîné pour les agents.")
     static let vision = Model(id: "lfm3-vision", title: "LFM3 VL 2B", supportsImages: true,
         repository: "LFM3-VL-2B-GGUF", revision: "1add221a5ea6c047fcf1eaaf2d247939d7cf8849", assets: [
             Asset(filename: "LFM3-VL-2B-Q4_K_M.gguf", size: 1_099_627_808,
@@ -173,7 +173,7 @@ enum LocalModelCatalog {
                   sha256: "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5")
         ], family: "Granite 4.2", licence: "Apache-2.0", nativeContext: 131072,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
-        strength: "131 000 mots de mémoire et un suivi d'instructions soigné.")
+        strength: "Un suivi d'instructions soigné, en texte seulement.")
 
     static let ministral3_3b = Model(id: "ministral3_3b", title: "Ministral 3 3B", supportsImages: true,
         repository: "mistralai/Ministral-3-3B-Instruct-2512-GGUF", revision: "eb599d408350ea2bb60452cb86be7c7b2fc28227", assets: [
@@ -183,7 +183,7 @@ enum LocalModelCatalog {
                   sha256: "70ca26e41ecea9da997e2887462ad68b848fbf64da011ff4107bbe7353519ee0")
         ], family: "Ministral 3", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 79872, usesEmbeddedTemplate: true,
-        strength: "Lit les images et garde 262 000 mots de mémoire.")
+        strength: "Lit les images, compacte pour sa capacité.")
 
     static let models = [text, vision] + extended
 
@@ -206,11 +206,12 @@ enum LocalModelCatalog {
 
         var id: String { name }
 
-        /// « 2 tailles · 1,2 Go et 2,5 Go », jamais un total inventé.
+        /// « 532,5 Mo, 1,28 Go et 2,74 Go » : les fichiers réels, sans compteur ni
+        /// formule à décoder avant de savoir ce qu'on installe.
         var sizesLabel: String {
             let sizes = models.map(\.sizeLabel)
-            guard models.count > 1 else { return "1 taille · \(sizes.first ?? "")" }
-            return "\(models.count) tailles · \(sizes.joined(separator: " et "))"
+            guard sizes.count > 1 else { return sizes.first ?? "" }
+            return sizes.dropLast().joined(separator: ", ") + " et " + (sizes.last ?? "")
         }
     }
 
@@ -226,9 +227,9 @@ enum LocalModelCatalog {
         "LFM3": "La plus légère, avec une version qui lit les images.",
         "Gemma 4": "Réfléchit avant de répondre, efficace par paramètre actif.",
         "Bonsai": "Beaucoup de capacité dans très peu de mémoire, images comprises.",
-        "Granite 4.2": "131 000 mots de mémoire, bon suivi d'instructions.",
+        "Granite 4.2": "Bon suivi d'instructions, texte seulement.",
         "Phi-4": "Raisonnement dense pour sa taille, licence très permissive.",
-        "Ministral 3": "Lit les images et garde 262 000 mots de mémoire.",
+        "Ministral 3": "Lit les images, compacte pour sa capacité.",
     ]
 
     static var families: [Family] {
