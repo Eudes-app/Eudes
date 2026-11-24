@@ -333,7 +333,7 @@ private struct ConnectionSettingsView: View {
                         showingInfo = true
                     }
                 }
-            } header: { Text("Sur cet iPhone") }
+            } header: { Text("Modèles téléchargés") }
             footer: { Text("Aucun message ne quitte l'appareil.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
@@ -346,7 +346,7 @@ private struct ConnectionSettingsView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Tous les modèles").foregroundStyle(Palette.ink)
-                        Text("\(LocalModelCatalog.models.count) modèles, \(LocalModelCatalog.families.count) familles")
+                        Text("\(LocalModelCatalog.models.count) modèles")
                             .font(.caption)
                             .foregroundStyle(Palette.muted)
                     }
@@ -520,12 +520,13 @@ private var recommendedModelIDs: Set<String> {
     Set(LocalModelCatalog.recommendations().map(\.model.id))
 }
 
-/// Les badges d'une famille, scannés sans lire : « Vision » quand un modèle lit
-/// les images, « Recommandé » quand le catalogue en propose un par défaut.
+/// Les badges d'une famille, scannés sans lire : « Vision » quand **toute** la famille
+/// lit les images — un seul modèle vision n'engage pas la famille, c'est la ligne du
+/// modèle qui le dit —, « Recommandé » quand le catalogue propose un modèle par défaut.
 /// Aucun badge quand la famille n'a ni l'un ni l'autre.
 @ViewBuilder
 private func capabilityBadges(for family: LocalModelCatalog.Family) -> some View {
-    let vision = family.models.contains { $0.supportsImages }
+    let vision = !family.models.isEmpty && family.models.allSatisfy { $0.supportsImages }
     let recommended = family.models.contains { recommendedModelIDs.contains($0.id) }
     if vision || recommended {
         HStack(spacing: 6) {
@@ -797,12 +798,15 @@ private struct AdvancedModelSettingsView: View {
 }
 
 /// Une taille dans la carte de sa famille : un titre, son état, un seul geste.
+/// Le point fort du modèle s'ajoute sous l'état quand la page du catalogue le demande
+/// (`showsStrength`) ; l'écran de décision le garde compact.
 /// Le « i » ouvre la fiche (mémoire demandée, licence, suppression).
 private struct CatalogModelRow: View {
     @EnvironmentObject private var store: AppStore
     let model: LocalModelCatalog.Model
     @ObservedObject var inventory: LocalModelInventory
     let recommended: Bool
+    var showsStrength: Bool = false
     var onInfo: () -> Void
 
     /// Une seule alerte par ligne : deux `.alert` sur la même vue se remplacent.
@@ -838,6 +842,9 @@ private struct CatalogModelRow: View {
                     Text(errorText).font(.caption2).foregroundStyle(Palette.warningText)
                 } else {
                     Text(stateText).font(.caption2).foregroundStyle(Palette.muted)
+                }
+                if showsStrength {
+                    Text(model.strength).font(.caption2).foregroundStyle(Palette.muted)
                 }
             }
             .multilineTextAlignment(.leading)
@@ -1075,8 +1082,8 @@ private struct ModelSummaryRow: View {
 /// La fiche d'un modèle : ce qu'il sait faire, ce qu'il coûte en mémoire, et les deux
 /// gestes utiles (télécharger, utiliser). Supprimer reste possible, une fois installé.
 /// Le catalogue complet, ouvert par une seule ligne depuis « Modèles et serveurs ».
-/// Chaque famille garde son résumé et ses badges, chaque taille son état et son geste :
-/// aucun modèle n'est annoncé deux fois sur le même écran.
+/// Chaque famille garde son résumé et ses badges, chaque taille son état, son point
+/// fort et son geste : aucun modèle n'est annoncé deux fois sur le même écran.
 private struct AllModelsView: View {
     @ObservedObject var inventory: LocalModelInventory
     @State private var info: LocalModelCatalog.Model?
@@ -1089,7 +1096,8 @@ private struct AllModelsView: View {
                     capabilityBadges(for: family)
                     ForEach(family.models) { model in
                         CatalogModelRow(model: model, inventory: inventory,
-                                        recommended: recommendedModelIDs.contains(model.id)) {
+                                        recommended: recommendedModelIDs.contains(model.id),
+                                        showsStrength: true) {
                             info = model
                             showingInfo = true
                         }
