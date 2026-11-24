@@ -33,20 +33,8 @@ When code changes or a defect is reported, reflect the current Corrections/revie
 
 ## Display format
 
-When reporting a new issue status in chat, identify/link the issue and show all three complete sequences, one Markdown line per path, with these English stage labels:
-
-Development: ⚪ **Issue** → ⚪ **Development** → ⚪ **Pull request** → ⚪ **Review** → ⚪ **Corrections** → ⚪ **CI checks**
-
-iPhone validation: ⚪ **Compilation & signing** → ⚪ **Installation manuelle** → ⚪ **iPhone tests** → ⚪ **Approbation manuelle**
-
-Final delivery: ⚪ **Manual validation** → ⚪ **Compilation** → ⚪ **Merge**
-
-Use 🟢 completed, 🔵 current/in progress, ⚪ pending, and 🔴 blocked/failed, based on verified evidence for the relevant revision. Explain when Corrections is not needed or the iPhone path is not requested/necessary; do not invent completed actions. Show regression or invalidated evidence in the displayed statuses, without triggering corrective automation from this skill.
-
-### Compact one-line form
-
-When reporting the state of an issue or PR in chat, a single compact line is also acceptable, using this exact shape:
+When reporting the state of an issue or PR in chat, identify/link it and show one compact Markdown line in this exact shape:
 
 🟢 Issue #N ──► 🟢 Branche + PR ──► 🟢 CI n/n ──► 🟢 Review ──► 🔘 Merge main ──► 🔘 Build IPA
 
-Each stage carries a short annotation underneath (branch name, checks passed, label name, merge mode, workflow name). Legend: 🟢 completed, 🔘 pending, 🔵 in progress, 🔴 blocked/failed.
+Each stage carries a short annotation underneath (branch name, checks passed, label name, merge mode, workflow name). Legend: 🟢 completed, 🔘 pending, 🔵 in progress, 🔴 blocked/failed. Base statuses on verified evidence for the relevant revision; do not invent completed actions. Show regression or invalidated evidence in the displayed statuses, without triggering corrective automation from this skill.
