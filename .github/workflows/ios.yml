@@ -43,6 +43,19 @@ jobs:
           path: ios/Packages/EudesLlama/Artifacts
           key: llama-sim-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('tools/prepare-llama-simulator.sh') }}
 
+      # DerivedData contient les modules compilés de l'app et des tests : le mettre en
+      # cache évite de tout recompiler à chaque run. La clé porte la version de Xcode et
+      # l'empreinte des sources Swift / du projet : toute modification du code vide le
+      # cache au lieu de réutiliser des objets périmés. Le restore-key en préfixe permet
+      # une restauration partielle quand seules quelques sources ont changé.
+      - name: Restore DerivedData
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/DerivedData
+          key: derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/**/*.swift', 'ios/**/*.xcodeproj/**', 'ios/Packages/**/Package.swift', 'ios/**/*.xcconfig') }}
+          restore-keys: |
+            derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-
+
       - name: Run the complete XCTest suite
         run: bash tools/test-ios.sh
 
