@@ -221,14 +221,15 @@ enum LocalModelCatalog {
     static let familyOrder = ["Qwen3.5", "LFM3", "Gemma 4", "Bonsai", "Granite 4.2", "Phi-4", "Ministral 3"]
 
     /// Un nom de famille ne dit rien à qui découvre les modèles : chaque ligne porte
-    /// donc une phrase qui décrit l'usage, pas l'architecture.
+    /// donc une phrase qui décrit l'usage, pas l'architecture. Chaque phrase doit rester
+    /// vraie pour **toutes** les tailles de la famille (Bonsai 8B ne lit pas les images).
     static let familySummaries = [
         "Qwen3.5": "Polyvalente et rapide, bon français, trois tailles.",
-        "LFM3": "La plus légère, avec une version qui lit les images.",
-        "Gemma 4": "Réfléchit avant de répondre, efficace par paramètre actif.",
-        "Bonsai": "Beaucoup de capacité dans très peu de mémoire, images comprises.",
+        "LFM3": "Deux tailles compactes, dont une qui lit les images.",
+        "Gemma 4": "Réfléchit avant de répondre, très efficace pour sa taille.",
+        "Bonsai": "Beaucoup de capacité dans très peu de mémoire ; deux tailles sur trois lisent les images.",
         "Granite 4.2": "Bon suivi d'instructions, texte seulement.",
-        "Phi-4": "Raisonnement dense pour sa taille, licence très permissive.",
+        "Phi-4": "Raisonnement dense pour sa taille, précis sur les consignes.",
         "Ministral 3": "Lit les images, compacte pour sa capacité.",
     ]
 

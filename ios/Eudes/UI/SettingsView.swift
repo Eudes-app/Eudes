@@ -473,6 +473,16 @@ private struct ModelChoiceView: View {
         return model
     }
 
+    /// « Aucun modèle installé » n'a de sens que si rien n'est téléchargé : quand des
+    /// modèles sont là mais qu'aucun n'est utilisé, l'écran doit le dire autrement.
+    private var installedCount: Int { inventory.installedCount }
+
+    private var suggestedFooter: String {
+        installedCount == 0
+            ? "Un seul suffit pour commencer. Ces trois choix sont recalculés à partir de la mémoire de cet iPhone : un modèle trop lourd n'y figure pas."
+            : "Un seul suffit. Ces trois choix sont recalculés à partir de la mémoire de cet iPhone : un modèle trop lourd n'y figure pas."
+    }
+
     var body: some View {
         SettingsForm {
             Section {
@@ -491,9 +501,17 @@ private struct ModelChoiceView: View {
                         }
                         Spacer(minLength: 0)
                     }
-                } else {
+                } else if installedCount == 0 {
                     Text("Aucun modèle installé").foregroundStyle(Palette.ink)
                     Text("Choisis un usage ci-dessous : le modèle se télécharge, puis s'utilise tout seul.")
+                        .font(.caption).foregroundStyle(Palette.muted)
+                } else {
+                    // Des fichiers sont sur l'appareil, mais aucun ne répond aux messages :
+                    // le dire évite de contredire le compteur « N sur 13 installés ».
+                    Text("Aucun modèle utilisé").foregroundStyle(Palette.ink)
+                    Text(installedCount == 1
+                        ? "Un modèle est déjà téléchargé : touche Utiliser sur celui que tu veux garder."
+                        : "\(installedCount) modèles sont déjà téléchargés : touche Utiliser sur celui que tu veux garder.")
                         .font(.caption).foregroundStyle(Palette.muted)
                 }
             } header: { Text("Modèle actuel") }
@@ -509,7 +527,7 @@ private struct ModelChoiceView: View {
                     }
                 }
             } header: { Text("Que veux-tu faire ?") }
-            footer: { Text("Un seul suffit pour commencer. Ces trois choix sont recalculés à partir de la mémoire de cet iPhone : un modèle trop lourd n'y figure pas.") }
+            footer: { Text(suggestedFooter) }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
@@ -517,7 +535,10 @@ private struct ModelChoiceView: View {
                 NavigationLink {
                     ModelCatalogueView(inventory: inventory)
                 } label: {
-                    LabeledContent("Tous les modèles", value: "\(LocalModelCatalog.models.count)")
+                    // « 13 » seul laissait croire à treize lignes de modèles : la ligne
+                    // annonce les deux niveaux qu'on traverse vraiment.
+                    LabeledContent("Tous les modèles",
+                                   value: "\(LocalModelCatalog.models.count) · \(LocalModelCatalog.families.count) familles")
                 }
                 .accessibilityIdentifier("models.catalogue")
                 NavigationLink {
@@ -551,6 +572,18 @@ private struct ModelChoiceView: View {
 private struct ModelCatalogueView: View {
     @ObservedObject var inventory: LocalModelInventory
 
+    /// Ce qui est déjà sur l'appareil, par famille : sans cela, le compteur
+    /// « N sur 13 installés » est invérifiable depuis le catalogue.
+    private func installedCount(in family: LocalModelCatalog.Family) -> Int {
+        family.models.filter { inventory.isInstalled($0) }.count
+    }
+
+    private func sizesLine(for family: LocalModelCatalog.Family) -> String {
+        let installed = installedCount(in: family)
+        guard installed > 0 else { return family.sizesLabel }
+        return family.sizesLabel + " · " + (installed == 1 ? "1 installé" : "\(installed) installés")
+    }
+
     var body: some View {
         SettingsForm {
             Section {
@@ -562,13 +595,15 @@ private struct ModelCatalogueView: View {
                             Text(family.name).font(.subheadline.weight(.semibold))
                             Text(family.summary).font(.caption).foregroundStyle(Palette.muted)
                                 .fixedSize(horizontal: false, vertical: true)
-                            Text(family.sizesLabel).font(.caption2).foregroundStyle(Palette.muted)
+                            Text(sizesLine(for: family)).font(.caption2).foregroundStyle(Palette.muted)
                         }
                         .multilineTextAlignment(.leading)
                     }
                 }
             } header: { Text("Toutes les familles") }
-            footer: { Text("Un modèle téléchargé fonctionne sans réseau et reste sur l'iPhone. Les modèles trop lourds pour cet appareil restent visibles, avec la mémoire nécessaire.") }
+            // La mémoire demandée n'est pas affichée sur cette liste : on ne promet
+            // donc pas qu'elle y est. Elle vit dans la fiche du modèle.
+            footer: { Text("Un modèle téléchargé fonctionne sans réseau et reste sur l'iPhone. Les modèles trop lourds pour cet appareil restent visibles ; leur fiche dit la mémoire qu'ils demandent.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
         }

@@ -1426,6 +1426,23 @@ final class ContextSizingTests: XCTestCase {
         }
     }
 
+    /// Une phrase de famille vaut pour **toutes** ses tailles : Bonsai 8B ne lit pas les
+    /// images, donc « images comprises » ne décrit pas la famille, et « la plus légère »
+    /// n'est vrai que si aucun modèle du catalogue ne descend plus bas.
+    func testFamilySummariesHoldForEverySizeOfTheFamily() {
+        let lightestInCatalog = LocalModelCatalog.models.map(\.downloadBytes).min() ?? 0
+        for family in LocalModelCatalog.families {
+            let summary = family.summary.lowercased()
+            if summary.contains("images comprises") {
+                XCTAssertTrue(family.models.allSatisfy(\.supportsImages), "\(family.name) : \(family.summary)")
+            }
+            if summary.contains("la plus légère") {
+                let lightestInFamily = family.models.map(\.downloadBytes).min() ?? 0
+                XCTAssertEqual(lightestInFamily, lightestInCatalog, "\(family.name) : \(family.summary)")
+            }
+        }
+    }
+
     func testRecommendationsOnARecentPhoneCoverTheThreeUses() {
         let device = DeviceProfile(machineIdentifier: "iPhone17,1", physicalMemory: 8_000_000_000)
         let recommendations = LocalModelCatalog.recommendations(device: device)
