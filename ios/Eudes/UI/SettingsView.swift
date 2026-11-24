@@ -253,8 +253,8 @@ private struct ConnectionSettingsView: View {
 
     var body: some View {
         SettingsForm {
-            if store.connectionChoices.contains(where: { $0.isApple }) {
             Section {
+                    if store.connectionChoices.contains(where: { $0.isApple }) {
                     Button {
                         store.selectServer(ServerProfile.appleID)
                     } label: {
@@ -270,6 +270,26 @@ private struct ConnectionSettingsView: View {
                         }
                     }
                     .disabled(store.isPreparingSend)
+                    }
+                    // Les modèles déjà téléchargés : on choisit directement ici, sans
+                    // passer par le catalogue, puisque seuls les fichiers présents servent.
+                    ForEach(installedModels) { model in
+                        Button { store.selectLocalModel(model.id) } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(model.title).foregroundStyle(Palette.ink)
+                                    Text("\(model.sizeLabel) · téléchargé")
+                                        .font(.caption).foregroundStyle(Palette.muted)
+                                }
+                                Spacer()
+                                if store.selectedServer?.isLocalLFM == true, store.selectedServer?.model == model.id {
+                                    Image(systemName: "checkmark").accessibilityLabel("Sélectionné")
+                                }
+                            }
+                        }
+                        .disabled(store.isPreparingSend)
+                        .accessibilityIdentifier("models.installed.\(model.id)")
+                    }
                     NavigationLink {
                         ModelChoiceView(inventory: inventory)
                     } label: {
@@ -285,7 +305,6 @@ private struct ConnectionSettingsView: View {
             footer: { Text("Ces modèles tournent dans l'app : aucun message ne quitte l'appareil.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
-            }
             Section("Serveurs API") {
                 ForEach(store.data.servers) { profile in
                     Button { editingServer = profile } label: {
@@ -315,6 +334,9 @@ private struct ConnectionSettingsView: View {
         }
         .navigationTitle(Text("Modèles et serveurs"))
         .task { await inventory.refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
+            Task { await inventory.refresh() }
+        }
         .sheet(isPresented: $addServer) { ServerEditorView() }
         .sheet(item: $editingServer) { ServerEditorView(profile: $0) }
         .sheet(item: $duplicatingServer) { ServerEditorView(duplicating: $0) }
@@ -325,6 +347,12 @@ private struct ConnectionSettingsView: View {
                 deletingServer = nil
             }
         } message: { Text("La clé API sera supprimée. Les anciennes conversations resteront lisibles, sans connexion à ce serveur.") }
+    }
+
+    /// Les modèles dont les fichiers sont sur l'iPhone : seuls ceux-là peuvent être
+    /// choisis depuis cet écran. Le catalogue reste le chemin pour en ajouter.
+    private var installedModels: [LocalModelCatalog.Model] {
+        LocalModelCatalog.models.filter { inventory.isInstalled($0) }
     }
 
     /// Dit ce qu'on trouve derrière le chevron sans mentir sur l'état du disque :
