@@ -520,26 +520,8 @@ private var recommendedModelIDs: Set<String> {
     Set(LocalModelCatalog.recommendations().map(\.model.id))
 }
 
-/// Les badges d'une famille, scannés sans lire : « Vision » quand **toute** la famille
-/// lit les images — un seul modèle vision n'engage pas la famille, c'est la ligne du
-/// modèle qui le dit —, « Recommandé » quand le catalogue propose un modèle par défaut.
-/// Aucun badge quand la famille n'a ni l'un ni l'autre.
-@ViewBuilder
-private func capabilityBadges(for family: LocalModelCatalog.Family) -> some View {
-    let vision = !family.models.isEmpty && family.models.allSatisfy { $0.supportsImages }
-    let recommended = family.models.contains { recommendedModelIDs.contains($0.id) }
-    if vision || recommended {
-        HStack(spacing: 6) {
-            if vision {
-                capabilityPill("Vision", systemImage: "eye", filled: false)
-            }
-            if recommended {
-                capabilityPill("Recommandé", systemImage: "checkmark.seal", filled: true)
-            }
-        }
-    }
-}
-
+/// La pilule « Recommandé », posée sur la ligne du modèle que le catalogue propose
+/// par défaut — plus jamais sur un en-tête, qui ne parle que pour un groupe.
 private func capabilityPill(_ text: String, systemImage: String, filled: Bool) -> some View {
     Label(text, systemImage: systemImage)
         .font(.caption2.weight(.semibold))
@@ -570,7 +552,7 @@ private enum PendingModelAction: Equatable {
 }
 
 /// Inventaire partagé par les écrans du catalogue. Sorti de la vue parce que la liste
-/// des familles et la fiche d'un modèle lisent le même état : un téléchargement lancé
+/// des catégories et la fiche d'un modèle lisent le même état : un téléchargement lancé
 /// sur une fiche doit apparaître dans la liste, et une empreinte déjà vérifiée ne doit
 /// pas être recalculée à chaque retour.
 private final class LocalModelInventory: ObservableObject {
@@ -797,7 +779,7 @@ private struct AdvancedModelSettingsView: View {
     }
 }
 
-/// Une taille dans la carte de sa famille : un titre, son état, un seul geste.
+/// Une taille dans sa catégorie : un titre, son état, un seul geste.
 /// Le point fort du modèle s'ajoute sous l'état quand la page du catalogue le demande
 /// (`showsStrength`) ; l'écran de décision le garde compact.
 /// Le « i » ouvre la fiche (mémoire demandée, licence, suppression).
@@ -822,7 +804,7 @@ private struct CatalogModelRow: View {
         store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
     }
 
-    /// Un seul mot par état : « recommandé » est porté par l'en-tête de famille,
+    /// Un seul mot par état : « recommandé » est porté par la pilule du titre,
     /// jamais redit dans le texte de la ligne.
     private var stateText: String {
         if !active.isEmpty { return "Téléchargement en cours" }
@@ -835,9 +817,14 @@ private struct CatalogModelRow: View {
     var body: some View {
         HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(model.title)
-                    .font(.subheadline.weight(recommended ? .semibold : .regular))
-                    .foregroundStyle(Palette.ink)
+                HStack(spacing: 6) {
+                    Text(model.title)
+                        .font(.subheadline.weight(recommended ? .semibold : .regular))
+                        .foregroundStyle(Palette.ink)
+                    if recommended {
+                        capabilityPill("Recommandé", systemImage: "checkmark.seal", filled: true)
+                    }
+                }
                 if let errorText {
                     Text(errorText).font(.caption2).foregroundStyle(Palette.warningText)
                 } else {
@@ -1082,8 +1069,9 @@ private struct ModelSummaryRow: View {
 /// La fiche d'un modèle : ce qu'il sait faire, ce qu'il coûte en mémoire, et les deux
 /// gestes utiles (télécharger, utiliser). Supprimer reste possible, une fois installé.
 /// Le catalogue complet, ouvert par une seule ligne depuis « Modèles et serveurs ».
-/// Chaque famille garde son résumé et ses badges, chaque taille son état, son point
-/// fort et son geste : aucun modèle n'est annoncé deux fois sur le même écran.
+/// Deux catégories — texte, texte + vision — chacune avec son logo, sa phrase toujours
+/// vraie et ses modèles du plus léger au plus lourd : un nouveau modèle se classe sans
+/// arbitrage, et la famille reste lisible sur la fiche « i » de chaque modèle.
 private struct AllModelsView: View {
     @ObservedObject var inventory: LocalModelInventory
     @State private var info: LocalModelCatalog.Model?
@@ -1091,10 +1079,9 @@ private struct AllModelsView: View {
 
     var body: some View {
         SettingsForm {
-            ForEach(LocalModelCatalog.families) { family in
+            ForEach(LocalModelCatalog.capabilitySections) { section in
                 Section {
-                    capabilityBadges(for: family)
-                    ForEach(family.models) { model in
+                    ForEach(section.models) { model in
                         CatalogModelRow(model: model, inventory: inventory,
                                         recommended: recommendedModelIDs.contains(model.id),
                                         showsStrength: true) {
@@ -1103,9 +1090,9 @@ private struct AllModelsView: View {
                         }
                     }
                 } header: {
-                    Label(family.name, systemImage: family.icon)
+                    Label(section.name, systemImage: section.icon)
                 }
-                footer: { Text(family.summary) }
+                footer: { Text(section.summary) }
             }
         }
         .navigationTitle(Text("Tous les modèles"))
@@ -1148,6 +1135,7 @@ private struct ModelDetailView: View {
                 LabeledContent("Taille", value: model.sizeLabel)
                 LabeledContent("Mémoire requise", value: memoryRequired)
                 LabeledContent("Images", value: model.supportsImages ? "lues" : "non")
+                LabeledContent("Famille", value: model.family)
                 LabeledContent("Licence", value: model.licence)
             } header: { Text(model.title) }
             footer: { Text("Le nom technique et la licence servent à retrouver le fichier ; c’est le seul endroit de l’app où ils apparaissent.") }

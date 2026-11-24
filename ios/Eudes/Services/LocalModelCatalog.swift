@@ -94,7 +94,7 @@ enum LocalModelCatalog {
                   sha256: "c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 128_000,
         kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
-        strength: "Lit les images, en restant compact.")
+        strength: "Un des plus compacts : 1,3 Go.")
     static let qwen35_2b = Model(id: "qwen35_2b", title: "Qwen3.5 2B", supportsImages: false,
         repository: "unsloth/Qwen3.5-2B-GGUF", revision: "f6d5376be1edb4d416d56da11e5397a961aca8ae", assets: [
             Asset(filename: "Qwen3.5-2B-Q4_K_M.gguf", size: 1280835840,
@@ -147,7 +147,7 @@ enum LocalModelCatalog {
                   sha256: "ac9934e8d7966d0d62442c202ec8fdad99a045dea79366c1a4a246a46f5c0533")
         ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 49152, usesEmbeddedTemplate: true,
-        strength: "Très léger (0,55 Go) et lit aussi les images.")
+        strength: "Très léger (0,55 Go) : répond vite.")
 
     static let bonsai_4b = Model(id: "bonsai_4b", title: "Bonsai 4B", supportsImages: true,
         repository: "prism-ml/Ternary-Bonsai-2-4B-gguf", revision: "50ebba61be85e5be07e8083db468ace0fc1bac43", assets: [
@@ -157,7 +157,7 @@ enum LocalModelCatalog {
                   sha256: "db939d5f9b7014137810205e91d05e5f54afd72b0b3af9d33bd7d82f7906a55d")
         ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
-        strength: "Léger pour sa puissance (1,2 Go), lit aussi les images.")
+        strength: "Léger pour sa puissance (1,2 Go).")
 
     static let bonsai_8b = Model(id: "bonsai_8b", title: "Bonsai 8B", supportsImages: false,
         repository: "prism-ml/Ternary-Bonsai-8B-gguf", revision: "c2aefbeb4b24469cd11579c3384b990404c17a30", assets: [
@@ -173,7 +173,7 @@ enum LocalModelCatalog {
                   sha256: "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5")
         ], family: "Granite 4.2", licence: "Apache-2.0", nativeContext: 131072,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
-        strength: "Suit les consignes à la lettre, texte seulement.")
+        strength: "Suit les consignes à la lettre.")
 
     static let ministral3_3b = Model(id: "ministral3_3b", title: "Ministral 3 3B", supportsImages: true,
         repository: "mistralai/Ministral-3-3B-Instruct-2512-GGUF", revision: "eb599d408350ea2bb60452cb86be7c7b2fc28227", assets: [
@@ -183,11 +183,11 @@ enum LocalModelCatalog {
                   sha256: "70ca26e41ecea9da997e2887462ad68b848fbf64da011ff4107bbe7353519ee0")
         ], family: "Ministral 3", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 79872, usesEmbeddedTemplate: true,
-        strength: "Lit les images et suit de longues discussions.")
+        strength: "Suit de longues discussions.")
 
     static let models = [text, vision] + extended
 
-    /// Modèles ajoutés au catalogue d'origine, dans l'ordre des familles et des tailles.
+    /// Modèles ajoutés au catalogue d'origine, dans l'ordre du catalogue.
     static let extended: [Model] = [
         qwen35_08b, qwen35_2b, qwen35_4b,
         gemma4_e2b, gemma4_e4b,
@@ -197,64 +197,31 @@ enum LocalModelCatalog {
 
     // MARK: - Catalogue lisible
 
-    /// Une famille telle qu'elle s'affiche : un nom, une phrase compréhensible sans
-    /// connaître les modèles, et ses tailles dans l'ordre du catalogue.
-    struct Family: Identifiable, Equatable, Sendable {
-        let name: String
-        let summary: String
+    /// Les deux catégories de l'écran « Tous les modèles » : un modèle lit les images
+    /// ou non, et c'est tout. Un modèle futur atterrit tout seul dans sa catégorie,
+    /// du plus léger au plus lourd — aucun arbitrage de famille, aucune phrase à écrire.
+    struct CapabilitySection: Identifiable, Equatable, Sendable {
+        let supportsImages: Bool
         let models: [Model]
 
-        var id: String { name }
-
-        /// Le pictogramme de la carte : `familyIcons[name]`, avec un repli neutre
-        /// si une famille future n'a pas encore son symbole.
-        var icon: String { LocalModelCatalog.familyIcons[name] ?? "cube.transparent" }
-
-        /// « 532,5 Mo, 1,28 Go et 2,74 Go » : les fichiers réels, sans compteur ni
-        /// formule à décoder avant de savoir ce qu'on installe.
-        var sizesLabel: String {
-            let sizes = models.map(\.sizeLabel)
-            guard sizes.count > 1 else { return sizes.first ?? "" }
-            return sizes.dropLast().joined(separator: ", ") + " et " + (sizes.last ?? "")
+        var id: Bool { supportsImages }
+        /// Le nom de la section reprend le libellé de capacité de ses modèles, au pluriel.
+        var name: String { supportsImages ? "Modèles texte + vision" : "Modèles texte" }
+        /// Les logos de l'écran : le chat pour le texte, l'œil pour la vision.
+        var icon: String { supportsImages ? "eye" : "bubble.left.and.text.bubble.right" }
+        /// Vraie par construction : la section est définie par ce qu'elle contient.
+        var summary: String {
+            supportsImages ? "Lisent aussi les images. Le plus léger d'abord."
+                           : "Ne lisent pas les images. Le plus léger d'abord."
         }
     }
 
-    /// Ordre d'affichage voulu : la famille la plus polyvalente d'abord, puis les plus
-    /// spécialisées. Toute famille absente de cette liste passe après, par ordre
-    /// alphabétique : ajouter un modèle ne peut pas le faire disparaître du catalogue.
-    static let familyOrder = ["Qwen3.5", "LFM3", "Gemma 4", "Bonsai", "Granite 4.2", "Phi-4", "Ministral 3"]
-
-    /// Un pictogramme par famille : l'œil identifie la carte sans lire. Un symbole
-    /// simple, pas de marque à copier.
-    static let familyIcons = [
-        "Qwen3.5": "bubble.left.and.text.bubble.right",
-        "LFM3": "eye",
-        "Gemma 4": "sparkles",
-        "Bonsai": "leaf",
-        "Granite 4.2": "doc.text",
-        "Phi-4": "brain",
-        "Ministral 3": "photo",
-    ]
-
-    /// Un nom de famille ne dit rien à qui découvre les modèles : chaque ligne porte
-    /// donc une phrase qui décrit l'usage, pas l'architecture. Chaque phrase doit rester
-    /// vraie pour **toutes** les tailles de la famille (Bonsai 8B ne lit pas les images).
-    static let familySummaries = [
-        "Qwen3.5": "Polyvalente et rapide, bon français, trois tailles.",
-        "LFM3": "Deux tailles compactes, dont une qui lit les images.",
-        "Gemma 4": "Réfléchit avant de répondre, très efficace pour sa taille.",
-        "Bonsai": "Beaucoup de capacité dans très peu de mémoire ; deux tailles sur trois lisent les images.",
-        "Granite 4.2": "Bon suivi d'instructions, texte seulement.",
-        "Phi-4": "Raisonnement dense pour sa taille, précis sur les consignes.",
-        "Ministral 3": "Lit les images, compacte pour sa capacité.",
-    ]
-
-    static var families: [Family] {
-        let grouped = Dictionary(grouping: models, by: \.family)
-        let ordered = familyOrder.filter { grouped[$0] != nil }
-        let remaining = grouped.keys.filter { !familyOrder.contains($0) }.sorted()
-        return (ordered + remaining).map { name in
-            Family(name: name, summary: familySummaries[name] ?? "", models: grouped[name] ?? [])
+    /// Le texte d'abord (la majorité du catalogue), puis les modèles qui lisent les images.
+    static var capabilitySections: [CapabilitySection] {
+        [false, true].map { vision in
+            CapabilitySection(supportsImages: vision,
+                              models: models.filter { $0.supportsImages == vision }
+                                            .sorted { $0.downloadBytes < $1.downloadBytes })
         }
     }
 

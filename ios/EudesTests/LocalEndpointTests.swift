@@ -1377,48 +1377,17 @@ final class ContextSizingTests: XCTestCase {
     }
     // MARK: - Catalogue lisible
 
-    func testEveryModelBelongsToExactlyOneFamily() {
-        let ids = LocalModelCatalog.families.flatMap { $0.models.map(\.id) }
-        XCTAssertEqual(ids.count, LocalModelCatalog.models.count)
-        XCTAssertEqual(Set(ids), Set(LocalModelCatalog.models.map(\.id)))
-    }
-
-    func testFamiliesFollowTheDeclaredOrderAndEveryOneHasASummary() {
-        let present = Set(LocalModelCatalog.models.map(\.family))
-        XCTAssertEqual(LocalModelCatalog.families.map(\.name),
-                       LocalModelCatalog.familyOrder.filter { present.contains($0) })
-        for family in LocalModelCatalog.families {
-            XCTAssertFalse(family.summary.isEmpty, family.name)
-            XCTAssertFalse(family.models.isEmpty, family.name)
-            XCTAssertTrue(family.models.allSatisfy { $0.family == family.name }, family.name)
+    /// Le catalogue affiche la famille sur la fiche « i » de chaque modèle : le champ
+    /// reste obligatoire, même si l'écran catalogue ne regroupe plus par famille.
+    func testEveryModelDeclaresAFamilyForItsDetailSheet() {
+        for model in LocalModelCatalog.models {
+            XCTAssertFalse(model.family.isEmpty, model.id)
         }
-    }
-
-    /// Le libellé d'une famille liste ses fichiers, sans compteur à décoder :
-    /// « 532,5 Mo, 1,28 Go et 2,74 Go ».
-    func testFamilySizesLabelListsFilesWithoutCount() {
-        let qwen = LocalModelCatalog.families.first { $0.name == "Qwen3.5" }
-        XCTAssertEqual(qwen?.models.map(\.title), ["Qwen3.5 0,8B", "Qwen3.5 2B", "Qwen3.5 4B"])
-        let sizes = qwen?.models.map(\.sizeLabel) ?? []
-        XCTAssertEqual(sizes.count, 3)
-        let label = qwen?.sizesLabel ?? ""
-        XCTAssertFalse(label.lowercased().contains("taille"), label)
-        // Le séparateur décimal suit la locale du simulateur : on vérifie la mise en
-        // forme (« … , … et … »), pas les chiffres, qui viennent déjà de `sizeLabel`.
-        XCTAssertEqual(label, sizes.dropLast().joined(separator: ", ") + " et " + (sizes.last ?? ""))
-        let single = LocalModelCatalog.families.first { $0.name == "Phi-4" }
-        XCTAssertEqual(single?.sizesLabel, single?.models.first?.sizeLabel)
     }
 
     /// Aucune phrase du catalogue ne promet un contexte que l'iPhone n'atteint pas :
     /// le maximum du modèle n'est plus une information d'écran.
-    func testFamilySummariesMentionNoModelContext() {
-        for family in LocalModelCatalog.families {
-            let summary = family.summary.lowercased()
-            XCTAssertFalse(summary.contains("mots"), family.name)
-            XCTAssertFalse(summary.contains("262"), family.name)
-            XCTAssertFalse(summary.contains("131"), family.name)
-        }
+    func testStrengthsMentionNoModelContext() {
         for model in LocalModelCatalog.models {
             let strength = model.strength.lowercased()
             XCTAssertFalse(strength.contains("mots"), model.id)
@@ -1426,21 +1395,42 @@ final class ContextSizingTests: XCTestCase {
         }
     }
 
-    /// Une phrase de famille vaut pour **toutes** ses tailles : Bonsai 8B ne lit pas les
-    /// images, donc « images comprises » ne décrit pas la famille, et « la plus légère »
-    /// n'est vrai que si aucun modèle du catalogue ne descend plus bas.
-    func testFamilySummariesHoldForEverySizeOfTheFamily() {
-        let lightestInCatalog = LocalModelCatalog.models.map(\.downloadBytes).min() ?? 0
-        for family in LocalModelCatalog.families {
-            let summary = family.summary.lowercased()
-            if summary.contains("images comprises") {
-                XCTAssertTrue(family.models.allSatisfy(\.supportsImages), "\(family.name) : \(family.summary)")
-            }
-            if summary.contains("la plus légère") {
-                let lightestInFamily = family.models.map(\.downloadBytes).min() ?? 0
-                XCTAssertEqual(lightestInFamily, lightestInCatalog, "\(family.name) : \(family.summary)")
+    /// L'écran catalogue range par capacité : un modèle lit les images ou non, et
+    /// chacun apparaît une seule fois, dans la catégorie qui le décrit.
+    func testCapabilitySectionsCoverEveryModelExactlyOnce() {
+        let ids = LocalModelCatalog.capabilitySections.flatMap { $0.models.map(\.id) }
+        XCTAssertEqual(ids.count, LocalModelCatalog.models.count)
+        XCTAssertEqual(Set(ids), Set(LocalModelCatalog.models.map(\.id)))
+    }
+
+    /// Dans une catégorie, le plus léger d'abord : un nouveau modèle se place tout
+    /// seul, sans entretien.
+    func testCapabilitySectionsSortModelsFromLightestToHeaviest() {
+        for section in LocalModelCatalog.capabilitySections {
+            let weights = section.models.map(\.downloadBytes)
+            XCTAssertEqual(weights, weights.sorted(), section.name)
+        }
+    }
+
+    /// Le logo chat / œil ne ment jamais : la catégorie « texte + vision » ne contient
+    /// que des modèles qui lisent les images, l'autre aucun. La phrase de section est
+    /// vraie par construction — elle décrit ce que la catégorie contient.
+    func testCapabilitySectionLogosAndPhrasesHoldForEveryModel() {
+        XCTAssertEqual(LocalModelCatalog.capabilitySections.map(\.supportsImages), [false, true])
+        for section in LocalModelCatalog.capabilitySections {
+            XCTAssertEqual(section.models.allSatisfy { $0.supportsImages }, section.supportsImages,
+                           section.name)
+            XCTAssertFalse(section.summary.isEmpty, section.name)
+            for model in section.models {
+                XCTAssertEqual(model.capabilityDescription,
+                               section.supportsImages ? "Modèle texte + vision" : "Modèle texte",
+                               model.id)
             }
         }
+        // Les deux logos de la capture validée : chat pour le texte, œil pour la vision.
+        XCTAssertEqual(LocalModelCatalog.capabilitySections.first?.icon,
+                       "bubble.left.and.text.bubble.right")
+        XCTAssertEqual(LocalModelCatalog.capabilitySections.last?.icon, "eye")
     }
 
     func testRecommendationsOnARecentPhoneCoverTheThreeUses() {
