@@ -250,6 +250,9 @@ private struct ConnectionSettingsView: View {
     @State private var editingServer: ServerProfile?
     @State private var duplicatingServer: ServerProfile?
     @State private var deletingServer: ServerProfile?
+    /// La fiche d'un modèle, ouverte depuis un usage ou une famille.
+    @State private var info: LocalModelCatalog.Model?
+    @State private var showingInfo = false
 
     var body: some View {
         SettingsForm {
@@ -290,17 +293,6 @@ private struct ConnectionSettingsView: View {
                         .disabled(store.isPreparingSend)
                         .accessibilityIdentifier("models.installed.\(model.id)")
                     }
-                    NavigationLink {
-                        ModelChoiceView(inventory: inventory)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Modèles").foregroundStyle(Palette.ink)
-                            Text(catalogSummary).font(.caption).foregroundStyle(Palette.muted)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .multilineTextAlignment(.leading)
-                    }
-                    .accessibilityIdentifier("models.choice")
             } header: { Text("Sur cet iPhone") }
             footer: { Text("Ces modèles tournent dans l'app : aucun message ne quitte l'appareil.") }
             .listRowBackground(Palette.surface)
@@ -331,8 +323,59 @@ private struct ConnectionSettingsView: View {
             }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
+
+            // La décision, sur la même page que le choix du moteur : une page de moins.
+            Section {
+                ForEach(LocalModelCatalog.recommendations()) { recommendation in
+                    ModelSummaryRow(model: recommendation.model, inventory: inventory,
+                                    headline: recommendation.role.headline) {
+                        info = recommendation.model
+                        showingInfo = true
+                    }
+                }
+            } header: { Text("Que veux-tu faire ?") }
+            footer: { Text("Un seul suffit. Un modèle se télécharge une fois, puis fonctionne sans réseau.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section {
+                ForEach(LocalModelCatalog.families) { family in
+                    NavigationLink {
+                        ModelFamilyView(family: family, inventory: inventory)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(family.name).font(.subheadline.weight(.semibold))
+                            Text(family.summary).font(.caption).foregroundStyle(Palette.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(sizesLine(for: family)).font(.caption2).foregroundStyle(Palette.muted)
+                        }
+                        .multilineTextAlignment(.leading)
+                    }
+                }
+            } header: { Text("Tous les modèles") }
+            footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau. Les modèles trop lourds pour cet appareil restent visibles ; leur fiche dit la mémoire demandée.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section {
+                NavigationLink {
+                    AdvancedModelSettingsView(inventory: inventory)
+                } label: {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Réglages avancés")
+                        Text("Fenêtre, raisonnement, chargement").font(.caption).foregroundStyle(Palette.muted)
+                    }
+                    .multilineTextAlignment(.leading)
+                }
+                .accessibilityIdentifier("models.advanced")
+            }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
         }
         .navigationTitle(Text("Modèles et serveurs"))
+        .navigationDestination(isPresented: $showingInfo) {
+            if let info { ModelDetailView(model: info, inventory: inventory) }
+        }
         .task { await inventory.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
             Task { await inventory.refresh() }
@@ -355,13 +398,16 @@ private struct ConnectionSettingsView: View {
         LocalModelCatalog.models.filter { inventory.isInstalled($0) }
     }
 
-    /// Dit ce qu'on trouve derrière le chevron sans mentir sur l'état du disque :
-    /// avant le premier balayage, une seule chose est sûre, le nombre de modèles.
-    private var catalogSummary: String {
-        let total = LocalModelCatalog.models.count
-        guard inventory.hasScanned else { return "\(total) modèles" }
-        let installed = inventory.installedCount
-        return installed == 0 ? "\(total) modèles à télécharger" : "\(installed) sur \(total) installés"
+    /// Ce qui est déjà sur l'appareil, par famille : le compteur
+    /// « N sur 13 installés » se vérifie sans quitter l'écran.
+    private func installedCount(in family: LocalModelCatalog.Family) -> Int {
+        family.models.filter { inventory.isInstalled($0) }.count
+    }
+
+    private func sizesLine(for family: LocalModelCatalog.Family) -> String {
+        let installed = installedCount(in: family)
+        guard installed > 0 else { return family.sizesLabel }
+        return family.sizesLabel + " · " + (installed == 1 ? "1 installé" : "\(installed) installés")
     }
 }
 
@@ -481,163 +527,6 @@ private final class LocalModelInventory: ObservableObject {
             }
         }
         hasScanned = true
-    }
-}
-
-/// L'écran des modèles : une seule décision à la fois. En haut le modèle utilisé,
-/// ensuite la question qui compte pour qui découvre l'app, puis deux lignes discrètes
-/// vers le catalogue complet et les réglages. Rien d'autre : ni identifiant d'appareil,
-/// ni contexte maximal du modèle, ni nom de moteur.
-private struct ModelChoiceView: View {
-    @EnvironmentObject private var store: AppStore
-    @ObservedObject var inventory: LocalModelInventory
-    @State private var info: LocalModelCatalog.Model?
-    @State private var showingInfo = false
-
-    private var currentModel: LocalModelCatalog.Model? {
-        guard store.selectedServer?.isLocalLFM == true,
-              let model = LocalModelCatalog.models.first(where: { $0.id == store.selectedServer?.model }),
-              inventory.isInstalled(model) else { return nil }
-        return model
-    }
-
-    /// Qui répond aujourd'hui : le modèle local utilisé, sinon le modèle réel. Dérivé
-    /// du magasin seul, sans balayage du disque : la ligne d'état ne clignote pas.
-    private var engineTitle: String {
-        guard let selected = store.selectedServer else { return "Aucun modèle" }
-        if selected.isApple { return "Modèle d'Apple" }
-        if selected.isLocalLFM {
-            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun modèle"
-        }
-        return selected.name
-    }
-
-    private var engineSubtitle: String {
-        guard let selected = store.selectedServer else { return "Choisis un usage ci-dessous." }
-        if selected.isApple { return "L'iPhone répond, sans téléchargement." }
-        if selected.isLocalLFM { return "Fichiers absents : télécharge-le depuis la liste ci-dessous." }
-        return "Les réponses viennent de ce serveur."
-    }
-
-    var body: some View {
-        SettingsForm {
-            Section {
-                if let model = currentModel {
-                    HStack(spacing: 12) {
-                        Image(systemName: "checkmark.circle")
-                            .font(.system(size: 20))
-                            .foregroundStyle(Palette.muted)
-                            .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(model.title).foregroundStyle(Palette.ink)
-                            Text(model.supportsImages ? "Texte et images · \(model.sizeLabel)" : "Texte · \(model.sizeLabel)")
-                                .font(.caption).foregroundStyle(Palette.muted)
-                            Text("Utilisé pour les messages")
-                                .font(.caption).foregroundStyle(Palette.muted)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                } else {
-                    // Le moteur réel, pas une absence : Apple ou un serveur API répondent
-                    // aussi, et l'écran doit le dire. Dérivé du magasin seul, donc la
-                    // ligne ne clignote pas pendant le premier balayage du disque.
-                    Text(engineTitle).foregroundStyle(Palette.ink)
-                    Text(engineSubtitle).font(.caption).foregroundStyle(Palette.muted)
-                }
-            } header: { Text("Modèle utilisé") }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-
-            Section {
-                ForEach(LocalModelCatalog.recommendations()) { recommendation in
-                    ModelSummaryRow(model: recommendation.model, inventory: inventory,
-                                    headline: recommendation.role.headline) {
-                        info = recommendation.model
-                        showingInfo = true
-                    }
-                }
-            } header: { Text("Que veux-tu faire ?") }
-            footer: { Text("Un seul suffit. Un modèle se télécharge une fois, puis fonctionne sans réseau.") }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-
-            Section {
-                NavigationLink {
-                    ModelCatalogueView(inventory: inventory)
-                } label: {
-                    LabeledContent("Catalogue", value: "\(LocalModelCatalog.models.count) modèles")
-                }
-                .accessibilityIdentifier("models.catalogue")
-                NavigationLink {
-                    AdvancedModelSettingsView(inventory: inventory)
-                } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Réglages avancés")
-                        Text("Fenêtre, raisonnement, chargement").font(.caption).foregroundStyle(Palette.muted)
-                    }
-                    .multilineTextAlignment(.leading)
-                }
-                .accessibilityIdentifier("models.advanced")
-            }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-        }
-        .navigationTitle(Text("Modèles"))
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(isPresented: $showingInfo) {
-            if let info { ModelDetailView(model: info, inventory: inventory) }
-        }
-        .task { await inventory.refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
-            Task { await inventory.refresh() }
-        }
-    }
-}
-
-/// Le catalogue complet, rangé par familles : c'est la vue « pour aller plus loin »,
-/// pas le parcours de premier lancement.
-private struct ModelCatalogueView: View {
-    @ObservedObject var inventory: LocalModelInventory
-
-    /// Ce qui est déjà sur l'appareil, par famille : sans cela, le compteur
-    /// « N sur 13 installés » est invérifiable depuis le catalogue.
-    private func installedCount(in family: LocalModelCatalog.Family) -> Int {
-        family.models.filter { inventory.isInstalled($0) }.count
-    }
-
-    private func sizesLine(for family: LocalModelCatalog.Family) -> String {
-        let installed = installedCount(in: family)
-        guard installed > 0 else { return family.sizesLabel }
-        return family.sizesLabel + " · " + (installed == 1 ? "1 installé" : "\(installed) installés")
-    }
-
-    var body: some View {
-        SettingsForm {
-            Section {
-                ForEach(LocalModelCatalog.families) { family in
-                    NavigationLink {
-                        ModelFamilyView(family: family, inventory: inventory)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(family.name).font(.subheadline.weight(.semibold))
-                            Text(family.summary).font(.caption).foregroundStyle(Palette.muted)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text(sizesLine(for: family)).font(.caption2).foregroundStyle(Palette.muted)
-                        }
-                        .multilineTextAlignment(.leading)
-                    }
-                }
-            }
-            footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau. Les modèles trop lourds pour cet appareil restent visibles ; leur fiche dit la mémoire demandée.") }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-        }
-        .navigationTitle(Text("Tous les modèles"))
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await inventory.refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
-            Task { await inventory.refresh() }
-        }
     }
 }
 
