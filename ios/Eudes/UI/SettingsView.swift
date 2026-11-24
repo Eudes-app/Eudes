@@ -537,7 +537,7 @@ private struct ModelChoiceView: View {
                 NavigationLink {
                     ModelCatalogueView(inventory: inventory)
                 } label: {
-                    LabeledContent("Catalogue", value: "\(LocalModelCatalog.models.count) modèles · \(LocalModelCatalog.families.count) familles")
+                    LabeledContent("Catalogue", value: "\(LocalModelCatalog.models.count) modèles")
                 }
                 .accessibilityIdentifier("models.catalogue")
                 NavigationLink {
