@@ -1399,10 +1399,13 @@ final class ContextSizingTests: XCTestCase {
     func testFamilySizesLabelListsFilesWithoutCount() {
         let qwen = LocalModelCatalog.families.first { $0.name == "Qwen3.5" }
         XCTAssertEqual(qwen?.models.map(\.title), ["Qwen3.5 0,8B", "Qwen3.5 2B", "Qwen3.5 4B"])
+        let sizes = qwen?.models.map(\.sizeLabel) ?? []
+        XCTAssertEqual(sizes.count, 3)
         let label = qwen?.sizesLabel ?? ""
         XCTAssertFalse(label.lowercased().contains("taille"), label)
-        XCTAssertEqual(label.components(separatedBy: " et ").count, 2, label)
-        XCTAssertEqual(label.components(separatedBy: ", ").count, 3, label)
+        // Le séparateur décimal suit la locale du simulateur : on vérifie la mise en
+        // forme (« … , … et … »), pas les chiffres, qui viennent déjà de `sizeLabel`.
+        XCTAssertEqual(label, sizes.dropLast().joined(separator: ", ") + " et " + (sizes.last ?? ""))
         let single = LocalModelCatalog.families.first { $0.name == "Phi-4" }
         XCTAssertEqual(single?.sizesLabel, single?.models.first?.sizeLabel)
     }
