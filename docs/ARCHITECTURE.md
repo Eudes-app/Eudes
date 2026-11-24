@@ -80,8 +80,6 @@ Transcription Apple locale, génération par le moteur sélectionné, lecture pa
 | `tools/install-iphone.py` | installation sur l'appareil détecté |
 | `tools/package_ipa.py` | vérification des numéros et IPA non signée |
 | `tools/delivery_version.py` | réservation des numéros de version |
-| `tools/delivery_control.py` | contrôle des preuves avant validation finale |
-| `tools/update-project-workflow.py` | transitions du projet GitHub |
 
 ## Où lire quoi
 

@@ -2,23 +2,19 @@ name: iOS tests
 
 on:
   pull_request:
-    types: [labeled, unlabeled, synchronize, closed, converted_to_draft]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
   pull-requests: read
 
 concurrency:
-  group: ios-review-${{ github.event.pull_request.number }}-${{ ((github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.label.name == 'review-validée') && 'validated' || github.run_id }}
+  group: ios-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   tests:
-    if: >-
-      github.event.action == 'labeled' &&
-      github.event.label.name == 'review-validée' &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
     name: XCTest · iPhone simulator
     runs-on: xcode-27
     timeout-minutes: 60
@@ -29,14 +25,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      - name: Check review label and commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REVIEWED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bash tools/check-review-label.sh
-
-      - name: Test delivery versioning and project automation
+      - name: Run Python unit tests
         run: python3 -m unittest discover -s tests -v
 
       - name: Read toolchain version
@@ -56,13 +45,6 @@ jobs:
 
       - name: Run the complete XCTest suite
         run: bash tools/test-ios.sh
-
-      - name: Recheck review after tests
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REVIEWED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bash tools/check-review-label.sh
 
       - name: Upload test results and logs
         if: always()
