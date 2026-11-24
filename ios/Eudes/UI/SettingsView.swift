@@ -245,6 +245,7 @@ private struct SettingsForm<Content: View>: View {
 
 private struct ConnectionSettingsView: View {
     @EnvironmentObject private var store: AppStore
+    @StateObject private var inventory = LocalModelInventory()
     @State private var addServer = false
     @State private var editingServer: ServerProfile?
     @State private var duplicatingServer: ServerProfile?
@@ -269,6 +270,17 @@ private struct ConnectionSettingsView: View {
                         }
                     }
                     .disabled(store.isPreparingSend)
+                    NavigationLink {
+                        ModelChoiceView(inventory: inventory)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Modèles").foregroundStyle(Palette.ink)
+                            Text(catalogSummary).font(.caption).foregroundStyle(Palette.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .multilineTextAlignment(.leading)
+                    }
+                    .accessibilityIdentifier("models.choice")
             } header: { Text("Sur cet iPhone") }
             footer: { Text("Ces modèles tournent dans l'app : aucun message ne quitte l'appareil.") }
             .listRowBackground(Palette.surface)
@@ -302,6 +314,7 @@ private struct ConnectionSettingsView: View {
             .listRowSeparatorTint(Palette.border)
         }
         .navigationTitle(Text("Moteur"))
+        .task { await inventory.refresh() }
         .sheet(isPresented: $addServer) { ServerEditorView() }
         .sheet(item: $editingServer) { ServerEditorView(profile: $0) }
         .sheet(item: $duplicatingServer) { ServerEditorView(duplicating: $0) }
@@ -312,6 +325,15 @@ private struct ConnectionSettingsView: View {
                 deletingServer = nil
             }
         } message: { Text("La clé API sera supprimée. Les anciennes conversations resteront lisibles, sans connexion à ce serveur.") }
+    }
+
+    /// Dit ce qu'on trouve derrière le chevron sans mentir sur l'état du disque :
+    /// avant le premier balayage, une seule chose est sûre, le nombre de modèles.
+    private var catalogSummary: String {
+        let total = LocalModelCatalog.models.count
+        guard inventory.hasScanned else { return "\(total) modèles" }
+        let installed = inventory.installedCount
+        return installed == 0 ? "\(total) modèles à télécharger" : "\(installed) sur \(total) installés"
     }
 }
 
