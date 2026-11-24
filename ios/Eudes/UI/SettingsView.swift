@@ -55,7 +55,7 @@ private enum SettingsDestination: String, Hashable {
 
     var title: LocalizedStringResource {
         switch self {
-        case .connections: "Moteur"
+        case .connections: "Modèles et serveurs"
         case .voice: "Assistant vocal"
         case .web: "Recherche Web"
         case .appearance: "Apparence"
@@ -313,7 +313,7 @@ private struct ConnectionSettingsView: View {
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
         }
-        .navigationTitle(Text("Moteur"))
+        .navigationTitle(Text("Modèles et serveurs"))
         .task { await inventory.refresh() }
         .sheet(isPresented: $addServer) { ServerEditorView() }
         .sheet(item: $editingServer) { ServerEditorView(profile: $0) }
@@ -473,13 +473,13 @@ private struct ModelChoiceView: View {
         return model
     }
 
-    /// Qui répond aujourd'hui : le modèle local utilisé, sinon le moteur réel. Dérivé
+    /// Qui répond aujourd'hui : le modèle local utilisé, sinon le modèle réel. Dérivé
     /// du magasin seul, sans balayage du disque : la ligne d'état ne clignote pas.
     private var engineTitle: String {
-        guard let selected = store.selectedServer else { return "Aucun moteur" }
+        guard let selected = store.selectedServer else { return "Aucun modèle" }
         if selected.isApple { return "Modèle d'Apple" }
         if selected.isLocalLFM {
-            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun moteur"
+            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun modèle"
         }
         return selected.name
     }
@@ -544,7 +544,7 @@ private struct ModelChoiceView: View {
                     AdvancedModelSettingsView(inventory: inventory)
                 } label: {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Réglages du moteur")
+                        Text("Réglages avancés")
                         Text("Fenêtre, raisonnement, chargement").font(.caption).foregroundStyle(Palette.muted)
                     }
                     .multilineTextAlignment(.leading)
@@ -657,8 +657,8 @@ private struct AdvancedModelSettingsView: View {
         SettingsForm {
             Section {
                 LabeledContent("Modèle utilisé", value: engineLabel)
-                NavigationLink { ConnectionSettingsView() } label: { Text("Moteur et serveurs") }
-            } header: { Text("Moteur") }
+                NavigationLink { ConnectionSettingsView() } label: { Text("Modèles et serveurs") }
+            } header: { Text("Qui répond") }
             footer: { Text("Sur cet iPhone, rien ne quitte l'appareil. Une API envoie les messages au serveur configuré.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
@@ -739,7 +739,7 @@ private struct AdvancedModelSettingsView: View {
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
         }
-        .navigationTitle(Text("Réglages du moteur"))
+        .navigationTitle(Text("Réglages avancés"))
         .navigationBarTitleDisplayMode(.inline)
         .task { await inventory.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
