@@ -328,7 +328,8 @@ private struct ConnectionSettingsView: View {
                 }
                 ForEach(installedModels) { model in
                     CatalogModelRow(model: model, inventory: inventory,
-                                    recommended: recommendedModelIDs.contains(model.id)) {
+                                    recommended: recommendedModelIDs.contains(model.id),
+                                    weightDisplay: .compact) {
                         info = model
                         showingInfo = true
                     }
@@ -779,6 +780,12 @@ private struct AdvancedModelSettingsView: View {
     }
 }
 
+/// Comment la ligne montre le poids du modèle : rien, la jauge seule sur l'écran
+/// principal, ou la jauge avec son étiquette dans le catalogue.
+private enum ModelWeightDisplay {
+    case hidden, compact, labeled
+}
+
 /// Une taille dans sa catégorie : un titre, son état, un seul geste.
 /// Le point fort du modèle s'ajoute sous l'état quand la page du catalogue le demande
 /// (`showsStrength`) ; l'écran de décision le garde compact.
@@ -789,6 +796,7 @@ private struct CatalogModelRow: View {
     @ObservedObject var inventory: LocalModelInventory
     let recommended: Bool
     var showsStrength: Bool = false
+    var weightDisplay: ModelWeightDisplay = .hidden
     var onInfo: () -> Void
 
     /// Une seule alerte par ligne : deux `.alert` sur la même vue se remplacent.
@@ -814,6 +822,17 @@ private struct CatalogModelRow: View {
         return "À télécharger"
     }
 
+    @ViewBuilder private var weightGauge: some View {
+        switch weightDisplay {
+        case .hidden:
+            EmptyView()
+        case .compact:
+            ModelWeightGauge(level: ModelWeightLevel.forBytes(model.downloadBytes), compact: true)
+        case .labeled:
+            ModelWeightGauge(level: ModelWeightLevel.forBytes(model.downloadBytes))
+        }
+    }
+
     var body: some View {
         HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
@@ -833,6 +852,7 @@ private struct CatalogModelRow: View {
                 if showsStrength {
                     Text(model.strength).font(.caption2).foregroundStyle(Palette.muted)
                 }
+                weightGauge
             }
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -969,6 +989,7 @@ private struct ModelSummaryRow: View {
                     Text(model.capabilityDescription).font(.caption).foregroundStyle(Palette.muted)
                     Text("\(model.sizeLabel)\(stateSuffix)").font(.caption).foregroundStyle(Palette.muted)
                 }
+                ModelWeightGauge(level: ModelWeightLevel.forBytes(model.downloadBytes), compact: true)
                 if let tooHeavy {
                     Text(tooHeavy).font(.caption).foregroundStyle(Palette.warningText)
                 }
@@ -1076,15 +1097,34 @@ private struct AllModelsView: View {
     @ObservedObject var inventory: LocalModelInventory
     @State private var info: LocalModelCatalog.Model?
     @State private var showingInfo = false
+    /// Replié par défaut : la page montre d'abord les modèles recommandés et installés.
+    @State private var expanded = false
 
     var body: some View {
         SettingsForm {
+            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    ModelWeightLegend()
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Poids du modèle").font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Palette.ink)
+                        Text("Plus la jauge est remplie, plus le modèle est lourd : il peut faire chauffer le téléphone et consommer davantage de batterie.")
+                            .font(.caption).foregroundStyle(Palette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
             ForEach(LocalModelCatalog.capabilitySections) { section in
                 Section {
-                    ForEach(section.models) { model in
+                    ForEach(visibleModels(in: section)) { model in
                         CatalogModelRow(model: model, inventory: inventory,
                                         recommended: recommendedModelIDs.contains(model.id),
-                                        showsStrength: true) {
+                                        showsStrength: true,
+                                        weightDisplay: .labeled) {
                             info = model
                             showingInfo = true
                         }
@@ -1093,9 +1133,28 @@ private struct AllModelsView: View {
                     Label(section.name, systemImage: section.icon)
                 }
                 footer: { Text(section.summary) }
+                .listRowBackground(Palette.surface)
+                .listRowSeparatorTint(Palette.border)
             }
+
+            Section {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+                } label: {
+                    HStack {
+                        Text(expanded ? "Afficher moins" : "Afficher plus")
+                        Spacer()
+                        Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(Palette.ink)
+                }
+                .accessibilityIdentifier("models.expand")
+            }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
         }
-        .navigationTitle(Text("Tous les modèles"))
+        .navigationTitle(Text("Choisir un modèle"))
         .navigationDestination(isPresented: $showingInfo) {
             if let info { ModelDetailView(model: info, inventory: inventory) }
         }
@@ -1103,6 +1162,16 @@ private struct AllModelsView: View {
         .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { _ in
             Task { await inventory.refresh() }
         }
+    }
+
+    /// Replié, la section garde les modèles recommandés et déjà installés ; les autres
+    /// restent derrière « Afficher plus ». Une section vide se replie sur son contenu.
+    private func visibleModels(in section: LocalModelCatalog.CapabilitySection) -> [LocalModelCatalog.Model] {
+        guard !expanded else { return section.models }
+        let featured = section.models.filter {
+            recommendedModelIDs.contains($0.id) || inventory.isInstalled($0)
+        }
+        return featured.isEmpty ? section.models : featured
     }
 }
 

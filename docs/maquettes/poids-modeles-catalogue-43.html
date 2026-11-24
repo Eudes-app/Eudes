@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Maquette — poids des modèles, catalogue (issue #43)</title>
+<style>
+  :root {
+    --fond:#171717; --surface:#242424; --carte:#252525; --bulle:#343434;
+    --encre:#ffffff; --attenue:#a3a3a3; --bordure:#383838; --rayon:14px;
+    --c1:#22c55e; --c2:#84cc16; --c3:#eab308; --c4:#f97316; --c5:#ef4444;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--fond); color:var(--encre);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif; }
+  .planche { display:flex; gap:24px; padding:24px; align-items:flex-start; }
+  .colonne { width:430px; display:flex; flex-direction:column; gap:10px; }
+  .cadre { width:430px; height:880px; background:var(--fond); border:1px solid var(--bordure);
+    border-radius:40px; overflow:hidden; display:flex; flex-direction:column; }
+  .statut { height:44px; flex:none; display:flex; align-items:center; padding:0 26px;
+    font-size:15px; font-weight:600; letter-spacing:.2px; }
+  .nav { height:44px; flex:none; display:flex; align-items:center; gap:6px; padding:0 12px; }
+  .nav .retour { width:34px; display:flex; align-items:center; justify-content:center; }
+  .nav .titre { flex:1; text-align:center; font-size:17px; font-weight:600; }
+  .nav .fin { min-width:34px; text-align:right; font-size:15px; color:var(--encre); }
+  .contenu { flex:1; overflow:hidden; padding:2px 16px 0; }
+  .carte { background:var(--surface); border:1px solid var(--bordure); border-radius:var(--rayon);
+    padding:14px; margin-top:12px; }
+  .legende { display:flex; gap:3px; margin-bottom:10px; }
+  .legende .seg { flex:1; height:6px; }
+  .carte .t { font-size:14px; font-weight:600; }
+  .carte .p { font-size:12px; line-height:1.45; color:var(--attenue); margin-top:4px; }
+  .section { margin-top:20px; }
+  .entete { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+  .sous-titre { font-size:12px; color:var(--attenue); margin:4px 0 8px; }
+  .groupe { background:var(--surface); border-radius:var(--rayon); overflow:hidden; }
+  .ligne { display:flex; align-items:flex-start; gap:8px; padding:13px 12px;
+    border-bottom:.5px solid var(--bordure); }
+  .ligne:last-child { border-bottom:none; }
+  .principal { flex:1; min-width:0; }
+  .ligne-titre { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .nom { font-size:15px; font-weight:400; }
+  .nom.fort { font-weight:600; }
+  .pastille { font-size:10px; font-weight:600; color:var(--attenue); border:1px solid var(--bordure);
+    border-radius:999px; padding:2px 7px; }
+  .pastille.pleine { color:var(--encre); background:var(--bulle); }
+  .etat { font-size:11px; color:var(--attenue); margin-top:2px; }
+  .desc { font-size:11px; color:var(--attenue); margin-top:2px; line-height:1.35; }
+  .jauge { display:flex; align-items:center; gap:3px; margin-top:6px; }
+  .seg { width:12px; height:5px; border-radius:999px; background:var(--bordure); }
+  .seg.c1{background:var(--c1)} .seg.c2{background:var(--c2)} .seg.c3{background:var(--c3)}
+  .seg.c4{background:var(--c4)} .seg.c5{background:var(--c5)}
+  .jauge .mot { font-size:11px; color:var(--attenue); margin-left:4px; }
+  .jauge.compacte { margin-top:5px; }
+  .jauge.compacte .seg { width:5px; height:4px; }
+  .actions { display:flex; align-items:center; gap:4px; padding-top:2px; }
+  .pilule { display:inline-flex; align-items:center; gap:5px; border:1px solid var(--bordure);
+    border-radius:999px; padding:6px 10px; font-size:12px; color:var(--encre); white-space:nowrap; }
+  .pilule.desactivee { color:var(--attenue); opacity:.45; }
+  .pilule .vert { color:var(--c1); }
+  .rond { width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    color:var(--attenue); }
+  .rond.vert { color:var(--c1); }
+  .afficher { margin-top:16px; display:flex; }
+  .afficher .pilule { padding:8px 14px; font-size:13px; color:var(--encre); background:var(--surface); }
+  .legende-panneau { font-size:12px; line-height:1.4; color:var(--attenue); }
+  .legende-panneau strong { color:var(--encre); font-weight:600; }
+</style>
+</head>
+<body>
+<main class="planche">
+
+  <!-- ===================== AVANT ===================== -->
+  <div class="colonne">
+    <div class="cadre">
+      <div class="statut">9:41</div>
+      <div class="nav">
+        <div class="retour">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div class="titre">Tous les modèles</div>
+        <div class="fin"></div>
+      </div>
+      <div class="contenu">
+
+        <div class="section" style="margin-top:10px">
+          <div class="entete">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4V5z"/></svg>
+            Modèles texte
+          </div>
+          <div class="sous-titre">Ne lisent pas les images. Le plus léger d'abord.</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 0,8B</span></div>
+              <div class="etat">À télécharger</div>
+              <div class="desc">Le plus léger du catalogue : répond vite et tient sur les vieux iPhone.</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">LFM3 1.7B</span></div>
+              <div class="etat">À télécharger</div>
+              <div class="desc">Répond vite et suit de longues discussions.</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 2B</span><span class="pastille pleine">Recommandé</span></div>
+              <div class="etat">À télécharger</div>
+              <div class="desc">Comprend plusieurs langues, raisonne bien et répond vite.</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Bonsai 8B</span></div>
+              <div class="etat">À télécharger</div>
+              <div class="desc">Le plus capable des modèles légers, déjà éprouvé sur iPhone.</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Granite 4.2 3B</span></div>
+              <div class="etat">À télécharger</div>
+              <div class="desc">Suit les consignes à la lettre.</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Phi-4 mini</span></div>
+              <div class="etat">À télécharger</div>
+              <div class="desc">Très bon en maths et en logique pour sa taille.</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 4B</span><span class="pastille pleine">Recommandé</span></div>
+              <div class="etat">Utilisé pour les messages</div>
+              <div class="desc">Le plus capable des trois Qwen3.5 : meilleur raisonnement, un peu plus lent.</div>
+            </div><div class="actions">
+              <div class="rond vert"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Gemma 4 E2B</span></div>
+              <div class="etat">À télécharger</div>
+              <div class="desc">Le compact de la famille : réfléchit avant de répondre, reste vif.</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="legende-panneau"><strong>Avant.</strong> Sections par capacité ; la taille reste
+      dans le texte du point fort, sans repère visuel comparable d'une ligne à l'autre.</p>
+  </div>
+
+  <!-- ===================== APRÈS, REPLIÉ ===================== -->
+  <div class="colonne">
+    <div class="cadre">
+      <div class="statut">9:41</div>
+      <div class="nav">
+        <div class="retour">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div class="titre">Choisir un modèle</div>
+        <div class="fin"></div>
+      </div>
+      <div class="contenu">
+
+        <div class="carte">
+          <div class="legende">
+            <span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span>
+            <span class="seg c4"></span><span class="seg c5"></span>
+          </div>
+          <div class="t">Poids du modèle</div>
+          <div class="p">Plus la jauge est remplie, plus le modèle est lourd : il peut faire
+            chauffer le téléphone et consommer davantage de batterie.</div>
+        </div>
+
+        <div class="section">
+          <div class="entete">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4V5z"/></svg>
+            Pour discuter
+          </div>
+          <div class="sous-titre">Écrire, poser des questions, trouver des idées</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom fort">LFM3 1.7B</span><span class="pastille pleine">Recommandé</span></div>
+              <div class="desc">Répond vite et suit de longues discussions.</div>
+              <div class="jauge">
+                <span class="seg c1"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                <span class="mot">Très léger</span>
+              </div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 2B</span></div>
+              <div class="desc">Comprend plusieurs langues, raisonne bien et répond vite.</div>
+              <div class="jauge">
+                <span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                <span class="mot">Léger</span>
+              </div>
+            </div><div class="actions">
+              <div class="pilule">Utiliser</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 4B</span><span class="pastille pleine">Actif</span></div>
+              <div class="desc">Le plus capable des trois Qwen3.5 : meilleur raisonnement, un peu plus lent.</div>
+              <div class="jauge">
+                <span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg c4"></span><span class="seg"></span>
+                <span class="mot">Lourd</span>
+              </div>
+            </div><div class="actions">
+              <div class="rond vert"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            Pour discuter avec des images
+          </div>
+          <div class="sous-titre">Poser aussi des questions sur vos photos</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom fort">Bonsai 2B</span><span class="pastille pleine">Recommandé</span></div>
+              <div class="desc">Répond vite, même avec des images.</div>
+              <div class="jauge">
+                <span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                <span class="mot">Léger</span>
+              </div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">LFM3 VL 2B</span></div>
+              <div class="desc">Comprend les images et reste très réactif.</div>
+              <div class="jauge">
+                <span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+                <span class="mot">Léger</span>
+              </div>
+            </div><div class="actions">
+              <div class="pilule">Utiliser</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+        <div class="afficher">
+          <div class="pilule">Afficher plus
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="legende-panneau"><strong>Après, replié.</strong> Une seule carte explicative,
+      deux sections par rôle, tri du plus léger au plus lourd. Le replié garde les modèles
+      recommandés et déjà installés ; « Afficher plus » ouvre le reste.</p>
+  </div>
+
+  <!-- ===================== APRÈS, DÉPLIÉ ===================== -->
+  <div class="colonne">
+    <div class="cadre">
+      <div class="statut">9:41</div>
+      <div class="nav">
+        <div class="retour">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div class="titre">Choisir un modèle</div>
+        <div class="fin"></div>
+      </div>
+      <div class="contenu">
+
+        <div class="carte">
+          <div class="legende">
+            <span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span>
+            <span class="seg c4"></span><span class="seg c5"></span>
+          </div>
+          <div class="t">Poids du modèle</div>
+          <div class="p">Plus la jauge est remplie, plus le modèle est lourd : il peut faire
+            chauffer le téléphone et consommer davantage de batterie.</div>
+        </div>
+
+        <div class="section">
+          <div class="entete">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4V5z"/></svg>
+            Pour discuter
+          </div>
+          <div class="sous-titre">Écrire, poser des questions, trouver des idées</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 0,8B</span></div>
+              <div class="desc">Le plus léger du catalogue : répond vite et tient sur les vieux iPhone.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="mot">Très léger</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom fort">LFM3 1.7B</span><span class="pastille pleine">Recommandé</span></div>
+              <div class="desc">Répond vite et suit de longues discussions.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="mot">Très léger</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 2B</span></div>
+              <div class="desc">Comprend plusieurs langues, raisonne bien et répond vite.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="mot">Léger</span></div>
+            </div><div class="actions">
+              <div class="pilule">Utiliser</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Bonsai 8B</span></div>
+              <div class="desc">Le plus capable des modèles légers, déjà éprouvé sur iPhone.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg"></span><span class="seg"></span><span class="mot">Moyen</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Granite 4.2 3B</span></div>
+              <div class="desc">Suit les consignes à la lettre.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg"></span><span class="seg"></span><span class="mot">Moyen</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Phi-4 mini</span></div>
+              <div class="desc">Très bon en maths et en logique pour sa taille.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg"></span><span class="seg"></span><span class="mot">Moyen</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Qwen3.5 4B</span><span class="pastille pleine">Actif</span></div>
+              <div class="desc">Le plus capable des trois Qwen3.5 : meilleur raisonnement, un peu plus lent.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg c4"></span><span class="seg"></span><span class="mot">Lourd</span></div>
+            </div><div class="actions">
+              <div class="rond vert"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Gemma 4 E2B</span></div>
+              <div class="desc">Le compact de la famille : réfléchit avant de répondre, reste vif.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg c4"></span><span class="seg"></span><span class="mot">Lourd</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Gemma 4 E4B</span></div>
+              <div class="desc">Le plus capable de la famille ; demande beaucoup de mémoire vive.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg c4"></span><span class="seg c5"></span><span class="mot">Très lourd</span></div>
+            </div><div class="actions">
+              <div class="pilule desactivee"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            Pour discuter avec des images
+          </div>
+          <div class="sous-titre">Poser aussi des questions sur vos photos</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom fort">Bonsai 2B</span><span class="pastille pleine">Recommandé</span></div>
+              <div class="desc">Répond vite, même avec des images.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="mot">Léger</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">LFM3 VL 2B</span></div>
+              <div class="desc">Comprend les images et reste très réactif.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="mot">Léger</span></div>
+            </div><div class="actions">
+              <div class="pilule">Utiliser</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Bonsai 4B</span></div>
+              <div class="desc">Lit les images et garde de la puissance.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="mot">Léger</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre"><span class="nom">Ministral 3 3B</span></div>
+              <div class="desc">Suit de longues discussions.</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg c4"></span><span class="seg"></span><span class="mot">Lourd</span></div>
+            </div><div class="actions">
+              <div class="pilule"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg>Télécharger</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="legende-panneau"><strong>Après, déplié.</strong> Tout le catalogue reste
+      accessible, trié du plus léger au plus lourd ; les modèles trop lourds pour l'iPhone
+      gardent leur bouton désactivé. La coupe montre que la liste défile.</p>
+  </div>
+
+</main>
+</body>
+</html>

@@ -1481,4 +1481,37 @@ final class ContextSizingTests: XCTestCase {
             }
         }
     }
+
+    /// Chaque modèle du catalogue tombe dans un des cinq paliers, avec un libellé connu.
+    func testEveryCatalogueModelHasAWeightLevel() {
+        let labels = Set(ModelWeightLevel.allCases.map(\.label))
+        XCTAssertEqual(labels, ["Très léger", "Léger", "Moyen", "Lourd", "Très lourd"])
+        for model in LocalModelCatalog.models {
+            let level = ModelWeightLevel.forBytes(model.downloadBytes)
+            XCTAssertTrue((1...5).contains(level.rawValue), model.id)
+            XCTAssertTrue(labels.contains(level.label), model.id)
+        }
+    }
+
+    /// Les seuils du brief sont absolus : le palier change exactement à la borne.
+    func testWeightLevelUsesTheFixedBands() {
+        XCTAssertEqual(ModelWeightLevel.forBytes(0), .veryLight)
+        XCTAssertEqual(ModelWeightLevel.forBytes(1_199_999_999), .veryLight)
+        XCTAssertEqual(ModelWeightLevel.forBytes(1_200_000_000), .light)
+        XCTAssertEqual(ModelWeightLevel.forBytes(1_699_999_999), .light)
+        XCTAssertEqual(ModelWeightLevel.forBytes(1_700_000_000), .medium)
+        XCTAssertEqual(ModelWeightLevel.forBytes(2_599_999_999), .medium)
+        XCTAssertEqual(ModelWeightLevel.forBytes(2_600_000_000), .heavy)
+        XCTAssertEqual(ModelWeightLevel.forBytes(4_199_999_999), .heavy)
+        XCTAssertEqual(ModelWeightLevel.forBytes(4_200_000_000), .veryHeavy)
+    }
+
+    /// Le poids ne vit plus que sur la jauge : aucune phrase ne répète une taille en Go.
+    func testStrengthsCarryNoFileSize() {
+        for model in LocalModelCatalog.models {
+            XCTAssertNil(model.strength.range(of: #"\d+(?:[.,]\d+)?\s*go\b"#,
+                                              options: [.regularExpression, .caseInsensitive]),
+                         model.strength)
+        }
+    }
 }
