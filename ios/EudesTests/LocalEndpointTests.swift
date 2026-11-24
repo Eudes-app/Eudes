@@ -1452,6 +1452,18 @@ final class ContextSizingTests: XCTestCase {
         XCTAssertEqual(recommendations.first { $0.role == .vision }?.model.id, "lfm3-vision")
     }
 
+    func testRecommendationsOfferOneModelPerUseAndAlwaysFromTheCatalog() {
+        let recommendations = LocalModelCatalog.recommendations()
+        // Une intention, un modèle : pas de liste de choix dans « Que veux-tu faire ? ».
+        XCTAssertEqual(recommendations.count, Set(recommendations.map(\.role)).count)
+        // Le modèle d'Apple n'est pas un modèle du catalogue : toute recommandation
+        // doit pointer sur un modèle local, jamais sur lui.
+        for recommendation in recommendations {
+            XCTAssertTrue(LocalModelCatalog.models.contains { $0.id == recommendation.model.id },
+                          "\(recommendation.model.id) ne vient pas du catalogue")
+        }
+    }
+
     func testRecommendationsNeverOfferAModelThePhoneCannotHold() {
         for memory in [1_000_000_000, 2_000_000_000, 3_000_000_000, 4_000_000_000] {
             let device = DeviceProfile(machineIdentifier: "iPhone12,1", physicalMemory: memory)

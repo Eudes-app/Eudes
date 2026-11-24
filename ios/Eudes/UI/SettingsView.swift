@@ -256,8 +256,55 @@ private struct ConnectionSettingsView: View {
 
     var body: some View {
         SettingsForm {
+            // Qui répond, avant tout : l'état en tête, le changement un appui plus bas.
             Section {
-                    if store.connectionChoices.contains(where: { $0.isApple }) {
+                if let model = usedModel {
+                    Button {
+                        info = model
+                        showingInfo = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 20))
+                                .foregroundStyle(Palette.muted)
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(model.title).foregroundStyle(Palette.ink)
+                                Text("Utilisé pour les messages · \(model.sizeLabel)")
+                                    .font(.caption).foregroundStyle(Palette.muted)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.caption).foregroundStyle(Palette.muted)
+                        }
+                    }
+                    .accessibilityIdentifier("models.used")
+                } else {
+                    // Apple ou un serveur API : l'état se dit ici, le changement se fait
+                    // dans la liste en dessous — pas de fiche à ouvrir.
+                    Text(engineTitle).foregroundStyle(Palette.ink)
+                    Text(engineSubtitle).font(.caption).foregroundStyle(Palette.muted)
+                }
+            } header: { Text("Modèle utilisé") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            // La décision simple : un modèle par usage, toujours du catalogue local.
+            Section {
+                ForEach(LocalModelCatalog.recommendations()) { recommendation in
+                    ModelSummaryRow(model: recommendation.model, inventory: inventory,
+                                    headline: recommendation.role.headline) {
+                        info = recommendation.model
+                        showingInfo = true
+                    }
+                }
+            } header: { Text("Que veux-tu faire ?") }
+            footer: { Text("Un seul suffit. Un modèle se télécharge une fois, puis fonctionne sans réseau.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            Section {
+                if store.connectionChoices.contains(where: { $0.isApple }) {
                     Button {
                         store.selectServer(ServerProfile.appleID)
                     } label: {
@@ -273,30 +320,37 @@ private struct ConnectionSettingsView: View {
                         }
                     }
                     .disabled(store.isPreparingSend)
-                    }
-                    // Les modèles déjà téléchargés : on choisit directement ici, sans
-                    // passer par le catalogue, puisque seuls les fichiers présents servent.
-                    ForEach(installedModels) { model in
-                        Button { store.selectLocalModel(model.id) } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(model.title).foregroundStyle(Palette.ink)
-                                    Text("\(model.sizeLabel) · téléchargé")
-                                        .font(.caption).foregroundStyle(Palette.muted)
-                                }
-                                Spacer()
-                                if store.selectedServer?.isLocalLFM == true, store.selectedServer?.model == model.id {
-                                    Image(systemName: "checkmark").accessibilityLabel("Sélectionné")
-                                }
-                            }
-                        }
-                        .disabled(store.isPreparingSend)
-                        .accessibilityIdentifier("models.installed.\(model.id)")
-                    }
+                }
             } header: { Text("Sur cet iPhone") }
             footer: { Text("Ces modèles tournent dans l'app : aucun message ne quitte l'appareil.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
+
+            Section {
+                if let free = freeSpaceText {
+                    Label(free, systemImage: "internaldrive")
+                        .font(.caption)
+                        .foregroundStyle(Palette.muted)
+                }
+            } header: { Text("Tous les modèles") }
+            footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau. Les modèles trop lourds restent visibles ; leur fiche dit la mémoire demandée.") }
+            .listRowBackground(Palette.surface)
+            .listRowSeparatorTint(Palette.border)
+
+            // Une carte par famille : chaque taille avec son état, et un seul geste.
+            ForEach(LocalModelCatalog.families) { family in
+                Section {
+                    ForEach(family.models) { model in
+                        CatalogModelRow(model: model, inventory: inventory,
+                                        recommended: recommendedIDs.contains(model.id)) {
+                            info = model
+                            showingInfo = true
+                        }
+                    }
+                } header: { Text(family.name) }
+                footer: { Text(family.summary) }
+            }
+
             Section("Serveurs API") {
                 ForEach(store.data.servers) { profile in
                     Button { editingServer = profile } label: {
@@ -321,39 +375,6 @@ private struct ConnectionSettingsView: View {
                 }
                 Button { addServer = true } label: { Label("Ajouter un serveur", systemImage: "plus.circle") }
             }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-
-            // La décision, sur la même page que le choix du moteur : une page de moins.
-            Section {
-                ForEach(LocalModelCatalog.recommendations()) { recommendation in
-                    ModelSummaryRow(model: recommendation.model, inventory: inventory,
-                                    headline: recommendation.role.headline) {
-                        info = recommendation.model
-                        showingInfo = true
-                    }
-                }
-            } header: { Text("Que veux-tu faire ?") }
-            footer: { Text("Un seul suffit. Un modèle se télécharge une fois, puis fonctionne sans réseau.") }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-
-            Section {
-                ForEach(LocalModelCatalog.families) { family in
-                    NavigationLink {
-                        ModelFamilyView(family: family, inventory: inventory)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(family.name).font(.subheadline.weight(.semibold))
-                            Text(family.summary).font(.caption).foregroundStyle(Palette.muted)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text(sizesLine(for: family)).font(.caption2).foregroundStyle(Palette.muted)
-                        }
-                        .multilineTextAlignment(.leading)
-                    }
-                }
-            } header: { Text("Tous les modèles") }
-            footer: { Text("Un modèle téléchargé reste sur l'iPhone et fonctionne sans réseau. Les modèles trop lourds pour cet appareil restent visibles ; leur fiche dit la mémoire demandée.") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
@@ -392,22 +413,46 @@ private struct ConnectionSettingsView: View {
         } message: { Text("La clé API sera supprimée. Les anciennes conversations resteront lisibles, sans connexion à ce serveur.") }
     }
 
-    /// Les modèles dont les fichiers sont sur l'iPhone : seuls ceux-là peuvent être
-    /// choisis depuis cet écran. Le catalogue reste le chemin pour en ajouter.
-    private var installedModels: [LocalModelCatalog.Model] {
-        LocalModelCatalog.models.filter { inventory.isInstalled($0) }
+    /// Le modèle qui répond aux messages, s'il est local et téléchargé : c'est lui
+    /// que la ligne d'en tête ouvre en fiche.
+    private var usedModel: LocalModelCatalog.Model? {
+        guard store.selectedServer?.isLocalLFM == true,
+              let model = LocalModelCatalog.models.first(where: { $0.id == store.selectedServer?.model }),
+              inventory.isInstalled(model) else { return nil }
+        return model
     }
 
-    /// Ce qui est déjà sur l'appareil, par famille : le compteur
-    /// « N sur 13 installés » se vérifie sans quitter l'écran.
-    private func installedCount(in family: LocalModelCatalog.Family) -> Int {
-        family.models.filter { inventory.isInstalled($0) }.count
+    /// Qui répond aujourd'hui, dérivé du magasin seul : sans balayage du disque, la
+    /// ligne d'état ne clignote pas.
+    private var engineTitle: String {
+        guard let selected = store.selectedServer else { return "Aucun modèle" }
+        if selected.isApple { return "Modèle d'Apple" }
+        if selected.isLocalLFM {
+            return LocalModelCatalog.models.first { $0.id == selected.model }?.title ?? "Aucun modèle"
+        }
+        return selected.name
     }
 
-    private func sizesLine(for family: LocalModelCatalog.Family) -> String {
-        let installed = installedCount(in: family)
-        guard installed > 0 else { return family.sizesLabel }
-        return family.sizesLabel + " · " + (installed == 1 ? "1 installé" : "\(installed) installés")
+    private var engineSubtitle: String {
+        guard let selected = store.selectedServer else { return "Choisis un modèle ci-dessous." }
+        if selected.isApple { return "L'iPhone répond, sans téléchargement." }
+        if selected.isLocalLFM { return "Fichiers absents : télécharge-le ci-dessous." }
+        return "Les réponses viennent de ce serveur."
+    }
+
+    /// Les modèles proposés par défaut : un par usage, toujours du catalogue local —
+    /// le modèle d'Apple n'en fait jamais partie.
+    private var recommendedIDs: Set<String> {
+        Set(LocalModelCatalog.recommendations().map(\.model.id))
+    }
+
+    /// L'espace réellement libre, lu sur le volume : c'est lui qui décide si un
+    /// modèle lourd a sa place. Relu à l'ouverture de la page.
+    private var freeSpaceText: String? {
+        guard let value = try? URL(fileURLWithPath: "/")
+            .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+            .volumeAvailableCapacityForImportantUsage, value > 0 else { return nil }
+        return ByteCountFormatter.string(fromByteCount: value, countStyle: .file) + " disponibles sur l'iPhone"
     }
 }
 
@@ -673,45 +718,93 @@ private struct AdvancedModelSettingsView: View {
     }
 }
 
-/// Une famille : ses tailles, dans l'ordre du catalogue. Chaque ligne porte deux gestes
-/// explicites — télécharger à droite, ouvrir les informations par le « i » — plutôt qu'une
-/// navigation unique : sans cela, rien n'annonce qu'un modèle se télécharge depuis sa fiche.
-private struct ModelFamilyView: View {
-    let family: LocalModelCatalog.Family
+/// Une taille dans la carte de sa famille : un titre, son état, un seul geste.
+/// Le « i » ouvre la fiche (mémoire demandée, licence, suppression).
+private struct CatalogModelRow: View {
+    @EnvironmentObject private var store: AppStore
+    let model: LocalModelCatalog.Model
     @ObservedObject var inventory: LocalModelInventory
-    @State private var info: LocalModelCatalog.Model?
-    @State private var showingInfo = false
+    let recommended: Bool
+    var onInfo: () -> Void
+
+    @State private var confirmingDownload = false
+
+    private var tooHeavy: String? { model.compatibilityLabel() }
+    private var installed: Bool { inventory.isInstalled(model) }
+    private var active: [LocalModelDownloadSnapshot] { inventory.activeTasks(model) }
+    private var isSelected: Bool {
+        store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
+    }
+
+    private var stateText: String {
+        if !active.isEmpty { return "Téléchargement en cours" }
+        if tooHeavy != nil { return "Trop lourd pour cet iPhone" }
+        if installed && isSelected { return "Utilisé pour les messages" }
+        if installed { return recommended ? "Installé · recommandé" : "Installé" }
+        return recommended ? "Recommandé · à télécharger" : "À télécharger"
+    }
 
     var body: some View {
-        SettingsForm {
-            Section {
-                ForEach(family.models) { model in
-                    ModelSummaryRow(model: model, inventory: inventory) {
-                        info = model
-                        showingInfo = true
-                    }
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.title)
+                    .font(.subheadline.weight(recommended ? .semibold : .regular))
+                    .foregroundStyle(Palette.ink)
+                Text(stateText).font(.caption2).foregroundStyle(Palette.muted)
+            }
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !active.isEmpty {
+                ProgressView()
+                    .controlSize(.small)
+                    .frame(width: 22, height: 22)
+                    .accessibilityLabel("Téléchargement de \(model.title) en cours")
+            } else if installed && isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Palette.ink)
+                    .accessibilityLabel("\(model.title) est utilisé pour les messages")
+            } else if installed {
+                Button("Utiliser") { store.selectLocalModel(model.id) }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.borderless)
+                    .disabled(store.isPreparingSend)
+                    .accessibilityLabel("Utiliser \(model.title) pour les messages")
+            } else if tooHeavy == nil {
+                Button { confirmingDownload = true } label: {
+                    Image(systemName: "arrow.down.circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Palette.ink)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-            } footer: { Text(family.summary) }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Télécharger \(model.title)")
+            }
+
+            Button(action: onInfo) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 19))
+                    .foregroundStyle(Palette.muted)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Informations sur \(model.title)")
         }
-        .navigationTitle(Text(family.name))
-        .navigationBarTitleDisplayMode(.inline)
-        // `LocalModelCatalog.Model` n'est pas `Hashable` : la destination se pilote donc
-        // par un booléen, le modèle retenu étant gardé à côté.
-        .navigationDestination(isPresented: $showingInfo) {
-            if let info { ModelDetailView(model: info, inventory: inventory) }
-        }
-        .task { await inventory.refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: LocalModelDownloads.didChange)) { note in
-            if let message = note.userInfo?["error"] as? String { inventory.errorMessage = message }
-            Task { await inventory.refresh() }
-        }
-        .alert("Téléchargement impossible", isPresented: Binding(
-            get: { inventory.errorMessage != nil }, set: { if !$0 { inventory.errorMessage = nil } })) {
-            Button("OK", role: .cancel) { inventory.errorMessage = nil }
+        .alert("Télécharger le modèle ?", isPresented: $confirmingDownload) {
+            Button("Télécharger \(model.title)") {
+                inventory.errorMessage = nil
+                Task {
+                    await LocalModelDownloads.shared.start(model: model)
+                    await inventory.refresh()
+                }
+            }
+            Button("Annuler", role: .cancel) {}
         } message: {
-            Text(inventory.errorMessage ?? "")
+            let size = ByteCountFormatter.string(fromByteCount: model.downloadBytes, countStyle: .file)
+            Text("Taille : \(size). Le téléchargement peut continuer en arrière-plan et utiliser les données mobiles.")
         }
     }
 }
