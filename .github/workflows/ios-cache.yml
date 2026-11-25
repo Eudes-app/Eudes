@@ -1,0 +1,74 @@
+name: iOS cache baseline
+
+# La branche par défaut publie le cache de compilation que toutes les pull
+# requests restaurent. GitHub scope un cache créé par une PR à sa propre
+# référence de fusion : sans ce workflow, chaque nouvelle branche recompile
+# llama.cpp depuis zéro. Voir docs/DELIVERY_WORKFLOWS.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - 'tools/test-ios.sh'
+      - 'tools/prepare-llama-simulator.sh'
+      - '.github/workflows/ios.yml'
+      - '.github/workflows/ios-cache.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-cache-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    name: Baseline · iPhone simulator
+    runs-on: xcode-27
+    timeout-minutes: 60
+    # Même mode que ios.yml : la PR restaure exactement ce que main a publié.
+    env:
+      LLAMA_BUILD_SLICES: simulator
+    steps:
+      - name: Check out current sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run Python unit tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Read toolchain version
+        id: toolchain
+        run: echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+
+      # Même clé que dans ios.yml : la PR restaure ce que main a publié ici.
+      - name: Restore the llama.cpp simulator build
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ios/Packages/EudesLlama/Artifacts
+          key: llama-sim-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ env.LLAMA_BUILD_SLICES }}-${{ hashFiles('tools/prepare-llama-simulator.sh') }}
+
+      # Le restore-key en préfixe permet de repartir du cache précédent de main
+      # quand seules quelques sources ont changé depuis la fusion précédente.
+      - name: Restore DerivedData
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/DerivedData
+          key: derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/**/*.swift', 'ios/**/*.xcodeproj/**', 'ios/Packages/**/Package.swift', 'ios/**/*.xcconfig') }}
+          restore-keys: |
+            derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-
+
+      - name: Run the complete XCTest suite
+        run: bash tools/test-ios.sh
+
+      - name: Upload test results and logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ios-cache-tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/test-results/
+          if-no-files-found: warn
+          retention-days: 7

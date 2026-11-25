@@ -4,6 +4,8 @@
 
 Workflow GitHub par défaut : à chaque pull request ouverte, synchronisée ou repassée en « ready for review », la CI lance les tests Python puis la suite XCTest complète sur un runner macOS hébergé par GitHub (`ios.yml`). Les brouillons ne déclenchent rien. Une CI en échec bloque la fusion si le check est requis ; pour un incident de runner, relancer les jobs concernés. Les demandes de changements d’une review sont bloquantes via les protections de branche.
 
+Deux caches accélèrent ce parcours : la tranche simulateur de llama.cpp (`ios/Packages/EudesLlama/Artifacts`) et `build/DerivedData`. GitHub limite un cache créé par une pull request à sa propre référence de fusion : une PR ne peut donc pas réutiliser le cache d’une autre. `ios-cache.yml` s’exécute à chaque fusion sur `main` qui touche les fichiers iOS et publie ces deux caches sur la branche par défaut, que toute PR peut restaurer. La première PR qui suit une fusion ne recompile donc plus llama.cpp, et le cache propre à une PR continue de servir à ses pushes suivants. En CI, `LLAMA_BUILD_SLICES=simulator` ne compile que la tranche simulateur, la seule chargée par les tests ; la tranche appareil reste produite par défaut pour les builds locaux et exigée par `tools/build-device.sh`. La technique est inspirée de [l’optimisation de la CI de llama.cpp](https://huggingface.co/blog/ggml-org/llama-cpp-ci-buckets).
+
 Pour garder le garde-fou de fusion, le check **iOS tests** doit figurer dans les status checks requis de `main` (protection de branche), comme le sont déjà `Workflow automation checks` et `Personal data check`.
 
 ## Tests sur iPhone
