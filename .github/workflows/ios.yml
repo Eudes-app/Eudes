@@ -18,17 +18,40 @@ jobs:
     name: XCTest · iPhone simulator
     runs-on: xcode-27
     timeout-minutes: 60
+    outputs:
+      ios_changed: ${{ steps.changed.outputs.ios_changed }}
     steps:
       - name: Check out current sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
+      # PR purement documentaire (docs, skill, README…) : le check requis "iOS tests"
+      # doit exister mais réussit en quelques secondes sans lancer le simulateur.
+      - name: Detect iOS-relevant changes
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --name-only "$BASE...$HEAD" | grep -qE '^(ios/|tools/(test-ios|prepare-llama-simulator|build-device)\.sh|\.github/workflows/ios\.yml)'; then
+            echo "ios_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ios_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip when no iOS-relevant file changed
+        if: steps.changed.outputs.ios_changed == 'false'
+        run: echo "Aucun changement iOS — tests sautés (PR documentaire)."
+
       - name: Run Python unit tests
+        if: steps.changed.outputs.ios_changed == 'true'
         run: python3 -m unittest discover -s tests -v
 
       - name: Read toolchain version
+        if: steps.changed.outputs.ios_changed == 'true'
         id: toolchain
         run: echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
 
@@ -38,6 +61,7 @@ jobs:
       # Xcode et l'empreinte du script qui fixe la révision : toute mise à jour de l'un
       # ou de l'autre vide le cache au lieu de réutiliser un binaire périmé.
       - name: Restore the llama.cpp simulator build
+        if: steps.changed.outputs.ios_changed == 'true'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ios/Packages/EudesLlama/Artifacts
@@ -49,6 +73,7 @@ jobs:
       # cache au lieu de réutiliser des objets périmés. Le restore-key en préfixe permet
       # une restauration partielle quand seules quelques sources ont changé.
       - name: Restore DerivedData
+        if: steps.changed.outputs.ios_changed == 'true'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: build/DerivedData
@@ -57,10 +82,11 @@ jobs:
             derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-
 
       - name: Run the complete XCTest suite
+        if: steps.changed.outputs.ios_changed == 'true'
         run: bash tools/test-ios.sh
 
       - name: Upload test results and logs
-        if: always()
+        if: always() && steps.changed.outputs.ios_changed == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ios-tests-${{ github.run_id }}-${{ github.run_attempt }}

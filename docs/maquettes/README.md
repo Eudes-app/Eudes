@@ -19,3 +19,6 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
   poids à cinq segments, sections par rôle et ligne « Afficher plus » (issue #43).
 - `poids-modeles-accueil-43.html` / `.png` — avant / après de l'écran principal, avec la
   jauge compacte sous les lignes de modèles (issue #43).
+- `rangement-automatique-conversations.html` — le rangement automatique en quatre
+  écrans : plan à cocher case par case, bandeau d'annulation complet, réglages avec
+  profondeur et modèle d'analyse ; jamais de déplacement silencieux (issue #45).
