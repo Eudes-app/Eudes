@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eudes — Rangement automatique (maquette)</title>
+<style>
+  /* ===== Palette Eudes — tokens de ios/Eudes/UI/DesignSystem.swift ===== */
+  html[data-theme="light"]{
+    --accent:#171717; --background:#FFFFFF; --background-top:#FFFFFF; --background-middle:#FFFFFF;
+    --surface:#F7F7F7; --user-bubble:#F0F0F0; --assistant-bubble:#FAFAFA; --ink:#171717;
+    --warning:#B42318; --muted:#777777; --border:#E8E8E8; --on-accent:#FFFFFF;
+    --page:#ECECEE; --page-ink:#171717; --page-muted:#6B6B6B; --card:#FFFFFF; --card-border:#DFDFDF;
+    --chk-inner:#FFFFFF; --sw-off:#E8E8E8; --knob:#FFFFFF; --scrim:rgba(0,0,0,.06);
+  }
+  html[data-theme="dark"]{
+    --accent:#FFFFFF; --background:#171717; --background-top:#303030; --background-middle:#242424;
+    --surface:#242424; --user-bubble:#343434; --assistant-bubble:#252525; --ink:#FFFFFF;
+    --warning:#FF6961; --muted:#A3A3A3; --border:#383838; --on-accent:#000000;
+    --page:#0D0D0D; --page-ink:#F2F2F2; --page-muted:#9A9A9A; --card:#1D1D1D; --card-border:#2E2E2E;
+    --chk-inner:#000000; --sw-off:#383838; --knob:#000000; --scrim:rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box; -webkit-font-smoothing:antialiased;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+    background:var(--page); color:var(--page-ink);
+    transition:background .25s;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:28px 20px 80px;}
+  header.page{margin-bottom:6px;}
+  h1{font-size:26px; margin:0 0 6px; letter-spacing:-.02em;}
+  .page-sub{color:var(--page-muted); font-size:14.5px; line-height:1.5; margin:0 0 18px; max-width:840px;}
+  .swatches{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 22px;}
+  .sw{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--page-muted); border:1px solid var(--card-border); border-radius:10px; padding:5px 9px; background:var(--card);}
+  .sw i{width:14px; height:14px; border-radius:4px; display:inline-block; border:1px solid rgba(128,128,128,.35);}
+  .controls{display:flex; align-items:center; gap:12px; margin-bottom:26px; flex-wrap:wrap;}
+  .seg{display:inline-flex; background:var(--card); border:1px solid var(--card-border); border-radius:12px; padding:3px;}
+  .seg button{
+    font:inherit; font-size:13.5px; font-weight:600; border:0; background:transparent; color:var(--page-muted);
+    padding:8px 18px; border-radius:9px; cursor:pointer;
+  }
+  .seg button.on{background:var(--accent); color:var(--on-accent);}
+  .hint{font-size:12.5px; color:var(--page-muted);}
+  /* ===== Figures ===== */
+  .figs{display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:44px 36px;}
+  figure.fig{margin:0;}
+  figcaption.fig-title{font-size:15.5px; font-weight:700; margin-bottom:14px; letter-spacing:-.01em;}
+  figcaption.fig-title small{display:block; font-weight:400; color:var(--page-muted); margin-top:3px; font-size:12.5px;}
+  /* ===== Téléphone ===== */
+  .phone{
+    width:340px; max-width:100%; margin:0 auto; background:#0B0B0C; border-radius:56px; padding:11px;
+    box-shadow:0 24px 50px -12px rgba(0,0,0,.45), 0 0 0 1px rgba(128,128,128,.18);
+  }
+  .screen{
+    background:linear-gradient(180deg,var(--background-top) 0%,var(--background-middle) 55%,var(--background) 100%);
+    border-radius:46px; overflow:hidden; position:relative; height:716px; display:flex; flex-direction:column; color:var(--ink);
+  }
+  .sb{display:flex; justify-content:space-between; align-items:center; padding:14px 26px 4px; flex:none;}
+  .sb .time{font-size:15px; font-weight:600;}
+  .sb .icons{display:flex; gap:6px; align-items:center;}
+  .island{position:absolute; top:11px; left:50%; transform:translateX(-50%); width:118px; height:34px; background:#000; border-radius:20px; z-index:5;}
+  /* ===== Écran Historique ===== */
+  .hist-top{padding:12px 16px 6px; flex:none;}
+  .search-row{display:flex; gap:10px; align-items:center;}
+  .searchbar{
+    flex:1; display:flex; align-items:center; gap:7px; background:var(--surface);
+    border:1px solid var(--border); border-radius:14px; padding:9px 10px; color:var(--muted); font-size:15px;
+  }
+  .rbtn{
+    width:44px; height:44px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid color-mix(in srgb,var(--border) 65%, transparent);
+    color:var(--ink); cursor:pointer; position:relative;
+  }
+  .halo{position:absolute; inset:-6px; border-radius:50%; border:2px dashed var(--warning); animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:.25}50%{opacity:.9}}
+  .btn-dot{position:absolute; top:-1px; right:-1px; width:9px; height:9px; border-radius:50%; background:var(--warning);}
+  .scroll{flex:1; overflow-y:auto; overscroll-behavior:contain;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .sec{margin:14px 16px 0; border-radius:14px; background:var(--surface); overflow:hidden;}
+  .sec-head{padding:14px 16px 6px; font-size:12.5px; font-weight:700; color:var(--muted); display:flex; align-items:center; justify-content:space-between;}
+  .sec-head button{font:inherit; border:0; background:none; color:var(--ink); font-weight:600; font-size:13px; display:flex; gap:5px; align-items:center; cursor:pointer;}
+  .row{
+    display:flex; align-items:center; gap:11px; min-height:44px; padding:7px 14px;
+    border-top:.5px solid var(--border); position:relative; font-size:15.5px; background:var(--surface);
+  }
+  .row:first-of-type{border-top:0;}
+  .row.sel{background:var(--user-bubble);}
+  .row .lbl{flex:1; min-width:0;}
+  .row .t{font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .row .s{font-size:12.5px; color:var(--muted); margin-top:1px; display:flex; gap:6px;}
+  .count{font-size:13px; color:var(--muted); flex:none;}
+  .chev{flex:none; color:var(--muted);}
+  .indent1{padding-left:34px;}
+  .indent2{padding-left:54px;}
+  .i-folder{color:var(--ink); flex:none;}
+  .i-doc{color:var(--muted); flex:none;}
+  .empty-note{padding:12px 16px 14px; font-size:13px; color:var(--muted);}
+  .hist-footer{flex:none; height:24px;}
+  /* ===== Banner ===== */
+  .banner{
+    margin:14px 16px 0; display:flex; align-items:center; gap:10px; padding:11px 13px;
+    background:var(--user-bubble); border-radius:14px; font-size:13.5px;
+  }
+  .banner .grow{flex:1; font-weight:600;}
+  .banner a{color:var(--warning); font-weight:700; text-decoration:none; cursor:pointer;}
+  /* ===== Barre de déclenchement (fig 1) ===== */
+  .cta{
+    margin:14px 16px 0; display:flex; align-items:center; gap:12px; padding:12px 14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  }
+  .cta .sparkbadge{
+    width:38px; height:38px; border-radius:50%; background:var(--accent); color:var(--on-accent);
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .cta .grow{flex:1;}
+  .cta .t{font-size:14.5px; font-weight:700;}
+  .cta .s{font-size:12.5px; color:var(--muted); margin-top:2px;}
+  /* ===== Nav ===== */
+  .nav{display:flex; align-items:center; gap:8px; padding:2px 14px 0; flex:none; height:44px;}
+  .nav .back{display:flex; align-items:center; gap:4px; color:var(--ink); font-size:15.5px; font-weight:500; border:0; background:none; cursor:pointer; padding:0; font-family:inherit;}
+  .nav .title{flex:1; text-align:center; font-size:16.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .nav .right{flex:none; width:70px; display:flex; justify-content:flex-end;}
+  .nav .right button{border:0; background:none; color:var(--ink); font-size:15.5px; cursor:pointer; padding:0; font-family:inherit;}
+  /* ===== Écran Plan ===== */
+  .plan-note{margin:12px 16px 0; padding:11px 13px; background:var(--surface); border-radius:14px; font-size:13px; line-height:1.45; color:var(--ink); display:flex; gap:9px;}
+  .plan-note .ic{flex:none; margin-top:1px; color:var(--ink);}
+  .plan-note .privacy{color:var(--muted); font-size:12px; margin-top:3px; display:block;}
+  .prow{display:flex; align-items:center; gap:11px; min-height:46px; padding:8px 14px; border-top:.5px solid var(--border); background:var(--surface); cursor:pointer;}
+  .prow:first-of-type{border-top:0;}
+  .prow.off{opacity:.45;}
+  .chk{flex:none; cursor:pointer; color:var(--accent);}
+  .prow .lbl{flex:1; min-width:0;}
+  .prow .t{font-size:15px; font-weight:600;}
+  .prow .s{font-size:12.5px; color:var(--muted); margin-top:1px;}
+  .dest{flex:none; display:flex; align-items:center; gap:5px; max-width:46%; align-items:center; justify-content:flex-end;}
+  .dest .fold{display:flex; align-items:center; gap:4px; font-size:12.5px; font-weight:600; background:var(--user-bubble); color:var(--ink); border-radius:8px; padding:5px 8px; cursor:pointer;}
+  .dest .none{font-size:12.5px; color:var(--muted);}
+  .arrowic{color:var(--muted); flex:none;}
+  /* ===== Footer d'action ===== */
+  .actionbar{flex:none; padding:12px 16px 26px; background:linear-gradient(180deg,transparent,var(--scrim));}
+  .primary{
+    width:100%; font:inherit; font-size:16.5px; font-weight:700; color:var(--on-accent); background:var(--accent);
+    border:0; border-radius:14px; padding:15px; cursor:pointer; text-align:center;
+  }
+  .primary[disabled]{opacity:.4; cursor:default;}
+  .secondary{width:100%; font:inherit; font-size:15px; font-weight:600; color:var(--muted); background:none; border:0; padding:13px; cursor:pointer;}
+  /* ===== Réglages (fig 4) ===== */
+  .set-row{display:flex; align-items:center; gap:11px; min-height:48px; padding:9px 14px; border-top:.5px solid var(--border); background:var(--surface);}
+  .set-row:first-of-type{border-top:0;}
+  .set-row .lbl{flex:1;}
+  .set-row .t{font-size:15.5px;}
+  .set-row .s{font-size:12.5px; color:var(--muted); margin-top:2px; line-height:1.35;}
+  .switch{width:51px; height:31px; border-radius:16px; background:var(--sw-off); position:relative; cursor:pointer; transition:background .2s; flex:none;}
+  .switch.on{background:var(--accent);}
+  .switch i{position:absolute; top:2px; left:2px; width:27px; height:27px; border-radius:50%; background:var(--knob); box-shadow:0 2px 5px rgba(0,0,0,.3); transition:left .2s;}
+  .switch.on i{left:22px;}
+  .value{font-size:15px; color:var(--muted); display:flex; align-items:center; gap:5px;}
+  /* ===== Annotations ===== */
+  .notes{background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:16px 18px; margin-top:16px; font-size:13.5px; line-height:1.55; color:var(--page-ink);}
+  .notes ol{margin:0; padding-left:18px;}
+  .notes li{margin-bottom:9px;}
+  .notes li:last-child{margin-bottom:0;}
+  .notes b{font-weight:700;}
+  .notes code{background:var(--scrim); border-radius:5px; padding:1px 5px; font-size:12px;}
+  /* ===== Décisions ===== */
+  h2{font-size:20px; letter-spacing:-.01em; margin:56px 0 6px;}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:14px; margin-top:18px;}
+  .card{background:var(--card); border:1px solid var(--card-border); border-radius:16px; padding:16px 18px; font-size:13.5px; line-height:1.5;}
+  .card b{display:block; margin-bottom:6px; font-size:14.5px;}
+  .card code{background:var(--scrim); border-radius:5px; padding:1px 5px; font-size:12px;}
+  .foot{margin-top:46px; font-size:12.5px; color:var(--page-muted); line-height:1.6; border-top:1px solid var(--card-border); padding-top:18px;}
+  svg{display:block;}
+  em{font-style:normal;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="page">
+  <h1>Rangement automatique des conversations</h1>
+  <p class="page-sub">Maquette pour Eudes, iOS natif SwiftUI. Fidèle aux teintes de <em>DesignSystem.swift</em> et aux libellés prévus : quatre écrans, une proposition à valider ligne par ligne, jamais de déplacement silencieux. Teste en mode clair et sombre : la palette suit les tokens exacts de l'app.</p>
+  <div class="swatches">
+    <span class="sw"><i style="background:#171717"></i>accent · clair</span>
+    <span class="sw"><i style="background:#FFFFFF;border-color:#888"></i>accent · sombre</span>
+    <span class="sw"><i style="background:#F7F7F7"></i>surface</span>
+    <span class="sw"><i style="background:#F0F0F0"></i>userBubble</span>
+    <span class="sw"><i style="background:#777777"></i>muted</span>
+    <span class="sw"><i style="background:#E8E8E8"></i>border</span>
+    <span class="sw"><i style="background:#B42318"></i>warningText</span>
+    <span class="sw">cornerRadius 14 · separator 0,5</span>
+  </div>
+  <div class="controls">
+    <div class="seg" role="tablist">
+      <button id="btn-light" class="on" type="button">Clair</button>
+      <button id="btn-dark" type="button">Sombre</button>
+    </div>
+    <span class="hint">Les cases du plan (fig. 2), les interrupteurs (fig. 4) et le bandeau « Annuler » (fig. 3) sont cliquables pour Tester la maquette.</span>
+  </div>
+</header>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-folder" viewBox="0 0 24 24">
+      <path d="M2.5 7.2c0-1 .8-1.7 1.7-1.7h3.4c.5 0 .9.2 1.2.5l1.1 1.1c.2.3.6.5 1 .5h9c1 0 1.7.8 1.7 1.7v8.4c0 1-.8 1.7-1.7 1.7H4.2c-1 0-1.7-.8-1.7-1.7V7.2z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24">
+      <path d="M9 5.5l6.5 6.5L9 18.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-chevd" viewBox="0 0 24 24">
+      <path d="M5.5 9l6.5 6.5L18.5 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-magn" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="6.4" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M15.3 15.3L20.5 20.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-xmark" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24">
+      <path d="M11 2.6l1.7 4.4 4.4 1.7-4.4 1.7L11 14.8l-1.7-4.4L4.9 8.7l4.4-1.7L11 2.6z" fill="currentColor"/>
+      <path d="M18.6 13.4l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1 1-2.6z" fill="currentColor"/>
+      <path d="M4.8 14.2l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-bubble" viewBox="0 0 24 24">
+      <path d="M3.4 5.3c0-1 .8-1.8 1.8-1.8h13.6c1 0 1.8.8 1.8 1.8v8.9c0 1-.8 1.8-1.8 1.8H9.6l-6.2 4.6V5.3z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M4 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="M5 12.8l4.2 4.2L19 6.8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-circle" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    </symbol>
+    <symbol id="i-cradio" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9.4" fill="currentColor"/>
+      <path d="M7.5 12.4l3 3 6-6" fill="none" stroke-width="2.2" stroke="var(--chk-inner)" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M12 10.6v5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="7.7" r="1.15" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M12 2.8l1.2 2.5 2.7.5-1.9 2 .5 2.7 2.4-1.3 2.5 1.2-2.5 1.2-1.3 2.4 2.7.5 2 1.9-.5-2.7-1.2-2.5 1.3-2.4-2.4 1.3-2.7-.5-.5-2.7-2.7-.5-1.2-2.5-1.2 2.5-.5 2.7-2 1.9 2L3.2 12l2.5-1.2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="figs">
+
+  <!-- ============ FIG 1 : Historique + déclencheur ============ -->
+  <figure class="fig">
+    <figcaption class="fig-title">Fig. 1 · L'Historique aujourd'hui, avec le déclencheur
+      <small>Deux points d'entrée : bouton rond (contrôles existants) et carte sous « Récentes ».</small>
+    </figcaption>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="7" rx="1" fill="currentColor"/><rect x="10" y="2.5" width="3" height="9.5" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5L.6 3.6a10.6 10.6 0 0114.8 0L8 11.5z" fill="currentColor"/></svg>
+          <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".38"/><rect x="2" y="2" width="15" height="8" rx="1.8" fill="currentColor"/><path d="M23 4v4a2.4 2.4 0 000-4z" fill="currentColor" opacity=".38"/></svg>
+        </span>
+      </div>
+      <div class="hist-top">
+        <div class="search-row">
+          <div class="searchbar"><svg width="17" height="17"><use href="#i-magn"/></svg><span>Rechercher</span></div>
+          <div class="rbtn"><span class="halo"></span><svg width="22" height="22"><use href="#i-spark"/></svg></div>
+          <div class="rbtn"><svg width="18" height="18"><use href="#i-xmark"/></svg></div>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="sec">
+          <div class="sec-head"><span>DOSSIERS</span><button><svg width="14" height="14" style="color:currentColor"><use href="#i-plus"/></svg>Créer un dossier</button></div>
+          <div class="row"><svg class="i-folder" width="20" height="20"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Recettes</span><span class="s">2 conversations</span></span><span class="count">2</span><svg class="chev" width="15" height="15"><use href="#i-chev"/></svg></div>
+          <div class="row"><svg class="i-folder" width="20" height="20"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Immobilier</span><span class="s">1 conversation</span></span><span class="count">1</span><svg class="chev" width="15" height="15"><use href="#i-chev"/></svg></div>
+        </div>
+        <div class="cta">
+          <div class="sparkbadge"><svg width="20" height="20"><use href="#i-spark"/></svg></div>
+          <div class="grow"><div class="t">Ranger automatiquement</div><div class="s">6 conversations sans dossier, et l'arborescence à construire.</div></div>
+          <svg class="chev" width="16" height="16"><use href="#i-chev"/></svg>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>RÉCENTES · 6</span><span style="font-size:12.5px;color:var(--muted)">Dépliées</span></div>
+          <div class="row"><svg class="i-doc" width="19" height="19"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Problème de scroll dans la liste</span><span class="s">Aujourd'hui · 14:02</span></span></div>
+          <div class="row"><svg class="i-doc" width="19" height="19"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Recette de lasagnes sans béchamel</span><span class="s">Aujourd'hui · 11:20</span></span></div>
+          <div class="row"><svg class="i-doc" width="19" height="19"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Estimation loyer studio 28 m2</span><span class="s">Hier</span></span></div>
+          <div class="row"><svg class="i-doc" width="19" height="19"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Refactoring du parsing SSE</span><span class="s">Hier</span></span></div>
+          <div class="row"><svg class="i-doc" width="19" height="19"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Idées de cadeaux anniversaire</span><span class="s">Vendredi</span></span></div>
+          <div class="row"><svg class="i-doc" width="19" height="19"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Plan semi-marathon 10 semaines</span><span class="s">12 nov.</span></span></div>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="hist-footer"></div>
+    </div></div>
+    <div class="notes"><ol>
+      <li><b>Bouton rond « Rangement automatique »</b> : même famille que les contrôles existants (<code>RoundButton</code>, 44 pt, contour 0,5). Un point rouge signale les conversations sans dossier tant que la fonctionnalité n'a jamais servi.</li>
+      <li><b>Carte sous les dossiers</b> : la même action en grande taille, parce que c'est la tâche principale quand rien n'est encore rangé. Elle disparaît dès que tout est classé.</li>
+      <li>L'analyse porte d'abord sur <b>« Récentes »</b>, les conversations sans dossier ; elle ne reclasse jamais un classement existant sans confirmation.</li>
+    </ol></div>
+  </figure>
+
+  <!-- ============ FIG 2 : Plan de rangement ============ -->
+  <figure class="fig">
+    <figcaption class="fig-title">Fig. 2 · Le plan proposé, à valider ligne par ligne
+      <small>Créations et modifications d'arborescence d'un côté, déplacements de l'autre.</small>
+    </figcaption>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="7" rx="1" fill="currentColor"/><rect x="10" y="2.5" width="3" height="9.5" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5L.6 3.6a10.6 10.6 0 0114.8 0L8 11.5z" fill="currentColor"/></svg>
+          <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".38"/><rect x="2" y="2" width="15" height="8" rx="1.8" fill="currentColor"/><path d="M23 4v4a2.4 2.4 0 000-4z" fill="currentColor" opacity=".38"/></svg>
+        </span>
+      </div>
+      <div class="nav">
+        <button class="back"><svg width="15" height="15" style="transform:rotate(180deg)"><use href="#i-chev"/></svg>Historique</button>
+        <span class="title">Plan de rangement</span>
+        <span class="right"><button id="plan-cancel">Annuler</button></span>
+      </div>
+      <div class="plan-note">
+        <svg class="ic" width="18" height="18"><use href="#i-info"/></svg>
+        <span>Le modèle actif propose un plan pour tes <b>6 conversations sans dossier</b>.
+        <span class="privacy">Analyse à partir des titres et des résumés de contexte. Ajuste les cases, puis applique.</span></span>
+      </div>
+      <div class="scroll">
+        <div class="sec">
+          <div class="sec-head"><span>ARBORESCENCE PROPOSÉE</span><span style="font-size:12.5px;color:var(--muted)">4 actions</span></div>
+          <div class="prow plan-line" data-arbo><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Créer le dossier « Sport »</span><span class="s">Nouveau</span></span></div>
+          <div class="prow plan-line" data-arbo><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Renommer « Recettes » en « Cuisine »</span><span class="s">2 conversations suivent le dossier</span></span></div>
+          <div class="prow plan-line" data-arbo><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Créer « Code › Eudes »</span><span class="s">Sous-dossier du nouveau dossier « Code »</span></span></div>
+          <div class="prow plan-line" data-arbo><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Déplacer « Immobilier » sous « Travail »</span><span class="s">Nouveau dossier parent « Travail »</span></span></div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>CONVERSATIONS À RANGER</span><span style="font-size:12.5px;color:var(--muted)">6 dont 5 proposées</span></div>
+          <div class="prow plan-line" data-move="1"><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Problème de scroll dans la liste</span><span class="s">Aujourd'hui · 14:02</span></span><span class="dest"><button class="fold"><svg width="13" height="13"><use href="#i-folder"/></svg>Code › Eudes</button></span></div>
+          <div class="prow plan-line" data-move="1"><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Refactoring du parsing SSE</span><span class="s">Hier</span></span><span class="dest"><button class="fold"><svg width="13" height="13"><use href="#i-folder"/></svg>Code › Eudes</button></span></div>
+          <div class="prow plan-line" data-move="1"><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Recette de lasagnes sans béchamel</span><span class="s">Aujourd'hui · 11:20</span></span><span class="dest"><button class="fold"><svg width="13" height="13"><use href="#i-folder"/></svg>Cuisine</button></span></div>
+          <div class="prow plan-line" data-move="1"><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Estimation loyer studio 28 m2</span><span class="s">Hier</span></span><span class="dest"><button class="fold"><svg width="13" height="13"><use href="#i-folder"/></svg>Travail › Immobilier</button></span></div>
+          <div class="prow plan-line" data-move="1"><span class="chk"><svg width="22" height="22"><use href="#i-cradio"/></svg></span><span class="lbl"><span class="t">Plan semi-marathon 10 semaines</span><span class="s">12 nov.</span></span><span class="dest"><button class="fold"><svg width="13" height="13"><use href="#i-folder"/></svg>Sport</button></span></div>
+          <div class="prow plan-line off" data-move="0"><span class="chk"><svg width="22" height="22"><use href="#i-circle"/></svg></span><span class="lbl"><span class="t">Idées de cadeaux anniversaire</span><span class="s">Aucun dossier proposé · reste dans Récentes</span></span><span class="dest"><span class="none">Sans dossier</span></span></div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+      <div class="actionbar">
+        <button class="primary" id="plan-apply">Ranger 5 conversations</button>
+        <button class="secondary" id="plan-cancel2">Annuler</button>
+      </div>
+    </div></div>
+    <div class="notes"><ol>
+      <li><b>L'arborescence est une proposition, pas un fait</b> : chaque création, renommage ou déplacement de dossier se décoche indépendamment. Les cases réutilisent <code>checkmark.circle.fill</code>, déjà familières avec la sélection multiple.</li>
+      <li><b>Classement</b> par le modèle actif (modèle Apple sur l'iPhone, GGUF local ou serveur) à partir des titres et des <code>contextSummary</code>, jamais les messages complets : c'est affiché sur l'écran, c'est ce qui est envoyé.</li>
+      <li><b>Destinations modifiables</b> : un appui sur la pastille dossier ouvre la feuille existante « Déplacer vers un dossier », enrichie des dossiers du plan.</li>
+      <li><b>Un doute reste en « Récentes »</b> : une conversation sans destination claire n'est jamais déplacée par défaut. Rien n'est perdu, rien n'est appliqué sans le bouton « Ranger ».</li>
+    </ol></div>
+  </figure>
+
+  <!-- ============ FIG 3 : Résultat + annulation ============ -->
+  <figure class="fig">
+    <figcaption class="fig-title">Fig. 3 · Après application, arborescence à 2 niveaux
+      <small>Bandeau réversible, compteurs consolidés, « Récentes » conserve le reste.</small>
+    </figcaption>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="7" rx="1" fill="currentColor"/><rect x="10" y="2.5" width="3" height="9.5" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5L.6 3.6a10.6 10.6 0 0114.8 0L8 11.5z" fill="currentColor"/></svg>
+          <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".38"/><rect x="2" y="2" width="15" height="8" rx="1.8" fill="currentColor"/><path d="M23 4v4a2.4 2.4 0 000-4z" fill="currentColor" opacity=".38"/></svg>
+        </span>
+      </div>
+      <div class="hist-top">
+        <div class="search-row">
+          <div class="searchbar"><svg width="17" height="17"><use href="#i-magn"/></svg><span>Rechercher</span></div>
+          <div class="rbtn"><svg width="22" height="22"><use href="#i-spark"/></svg></div>
+          <div class="rbtn"><svg width="18" height="18"><use href="#i-xmark"/></svg></div>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="banner" id="undo-banner">
+          <svg width="18" height="18" style="color:var(--ink)"><use href="#i-check"/></svg>
+          <span class="grow">5 conversations rangées</span>
+          <a id="undo-btn">Annuler</a>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>DOSSIERS</span><button><svg width="14" height="14" style="color:currentColor"><use href="#i-plus"/></svg>Créer un dossier</button></div>
+          <div class="row"><svg class="chev" width="15" height="15" style="color:var(--muted)"><use href="#i-chevd"/></svg><svg class="i-folder" width="20" height="20"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Code</span><span class="s">2 conversations, 1 sous-dossier</span></span><span class="count">2</span></div>
+          <div class="row indent1"><svg class="chev" width="15" height="15" style="color:var(--muted)"><use href="#i-chevd"/></svg><svg class="i-folder" width="18" height="18"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Eudes</span><span class="s">Créé à l'instant</span></span><span class="count">2</span></div>
+          <div class="row indent2"><svg class="i-doc" width="16" height="16"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Problème de scroll dans la liste</span><span class="s">Aujourd'hui · 14:02</span></span></div>
+          <div class="row indent2"><svg class="i-doc" width="16" height="16"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Refactoring du parsing SSE</span><span class="s">Hier</span></span></div>
+          <div class="row"><svg class="chev" width="15" height="15" style="color:var(--muted)"><use href="#i-chev"/></svg><svg class="i-folder" width="20" height="20"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Cuisine</span><span class="s">Renommé depuis « Recettes »</span></span><span class="count">3</span></div>
+          <div class="row"><svg class="chev" width="15" height="15" style="color:var(--muted)"><use href="#i-chev"/></svg><svg class="i-folder" width="20" height="20"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Sport</span><span class="s">1 conversation</span></span><span class="count">1</span></div>
+          <div class="row"><svg class="chev" width="15" height="15" style="color:var(--muted)"><use href="#i-chevd"/></svg><svg class="i-folder" width="20" height="20"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Travail</span><span class="s">Nouveau · 1 sous-dossier</span></span><span class="count">2</span></div>
+          <div class="row indent1"><svg class="chev" width="15" height="15" style="color:var(--muted)"><use href="#i-chev"/></svg><svg class="i-folder" width="18" height="18"><use href="#i-folder"/></svg><span class="lbl"><span class="t">Immobilier</span><span class="s">Déplacé depuis la racine</span></span><span class="count">2</span></div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>RÉCENTES · 1</span><span style="font-size:12.5px;color:var(--muted)">Dépliées</span></div>
+          <div class="row"><svg class="i-doc" width="19" height="19"><use href="#i-bubble"/></svg><span class="lbl"><span class="t">Idées de cadeaux anniversaire</span><span class="s">Vendredi · jamais rangée sans validation</span></span></div>
+          <div class="empty-note">Tes conversations sans dossier apparaîtront ici.</div>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="hist-footer"></div>
+    </div></div>
+    <div class="notes"><ol>
+      <li><b>Deux niveaux maximum</b> : au-delà, le plan proposerait une fusion plutôt qu'un sous-dossier de plus. Les niveaux sont alignés sur les retraits existants de la liste.</li>
+      <li><b>Bandeau réversible</b> « 5 conversations rangées · Annuler » qui restaure l'état d'avant le plan (dossiers créés, renommés, déplacés et memberships), même mécanique réversible que la suppression.</li>
+      <li><b>Compteurs consolidés</b> : un dossier affiche ses conversations plus celles de ses sous-dossiers ; le sous-dossier affiche les siennes.</li>
+      <li>Une conversation sans destination claire <b>reste dans « Récentes »</b> : la prochaine exécution la repropose, et l'utilisateur peut la ranger à la main.</li>
+    </ol></div>
+  </figure>
+
+  <!-- ============ FIG 4 : Réglages ============ -->
+  <figure class="fig">
+    <figcaption class="fig-title">Fig. 4 · Réglages ▸ Conversations
+      <small>Opt-in, fréquence et profondeur d'arborescence.</small>
+    </figcaption>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb">
+        <span class="time">9:41</span>
+        <span class="icons">
+          <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="7" rx="1" fill="currentColor"/><rect x="10" y="2.5" width="3" height="9.5" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 11.5L.6 3.6a10.6 10.6 0 0114.8 0L8 11.5z" fill="currentColor"/></svg>
+          <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".38"/><rect x="2" y="2" width="15" height="8" rx="1.8" fill="currentColor"/><path d="M23 4v4a2.4 2.4 0 000-4z" fill="currentColor" opacity=".38"/></svg>
+        </span>
+      </div>
+      <div class="nav">
+        <button class="back"><svg width="15" height="15" style="transform:rotate(180deg)"><use href="#i-chev"/></svg>Réglages</button>
+        <span class="title">Conversations</span>
+        <span class="right"></span>
+      </div>
+      <div class="scroll">
+        <div class="sec">
+          <div class="sec-head"><span>HISTORIQUE</span></div>
+          <div class="set-row"><span class="lbl"><span class="t">Garder l'historique</span></span><span class="switch on"><i></i></span></div>
+          <div class="set-row"><span class="lbl"><span class="t">Résumé de contexte</span><span class="s">Condense les conversations longues côté modèle</span></span><span class="switch"><i></i></span></div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>RANGEMENT AUTOMATIQUE</span></div>
+          <div class="set-row"><span class="lbl"><span class="t">Toujours proposer un plan</span><span class="s">Aucun déplacement sans validation de ta part</span></span><span class="switch on"><i></i></span></div>
+          <div class="set-row"><span class="lbl"><span class="t">Ranger après chaque réponse</span><span class="s">Le plan s'affiche à la fin d'une conversation</span></span><span class="switch"><i></i></span></div>
+          <div class="set-row"><span class="lbl"><span class="t">Profondeur d'arborescence</span><span class="s">1 niveau correspond au comportement actuel</span></span><span class="value">2 <svg class="chev" width="14" height="14"><use href="#i-chev"/></svg></span></div>
+          <div class="set-row"><span class="lbl"><span class="t">Modèle d'analyse</span><span class="s">Le modèle actif : modèle Apple sur l'iPhone, GGUF local ou serveur</span></span><span class="value">Actif <svg class="chev" width="14" height="14"><use href="#i-chev"/></svg></span></div>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><span>CONFIDENTIALITÉ</span></div>
+          <div class="empty-note" style="padding-top:10px">L'analyse passe par le modèle que tu as choisi. Seuls les titres et les résumés de contexte sont utilisés : jamais les messages complets.</div>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="hist-footer"></div>
+    </div></div>
+    <div class="notes"><ol>
+      <li><b>Écran existant</b> : Réglages ▸ Conversations (« Menu, clavier et historique ») reçoit juste la section « Rangement automatique », après l'historique.</li>
+      <li><b>« Toujours proposer un plan »</b> est actif par défaut : le mode silencieux (bandeau réversible fig. 3, sans écran de plan) est une évolution, pas la v1.</li>
+      <li><b>Profondeur réglable</b> : 1 = dossiers plats comme aujourd'hui ; 2 = sous-dossiers. Le champ <code>parentID</code> du dossier reste optionnel pour garder les données actives lisibles sans migration.</li>
+    </ol></div>
+  </figure>
+
+</div>
+
+<h2>Points à trancher avant le code</h2>
+<p class="page-sub">Décisions de conception, avec leur impact mesuré.</p>
+<div class="cards">
+  <div class="card"><b>Données : dossiers imbriqués</b> Aujourd'hui <code>ConversationFolder</code> est plat (<code>id</code>, <code>name</code>). Il faut un champ <code>parentID: UUID?</code> optionnel, une limite à 2 niveaux et un contrôle de cycle à la sauvegarde. Les fichiers existants restent lisibles sans migration.</div>
+  <div class="card"><b>Never silent</b> Le tri n'applique jamais sans l'écran de plan fig. 2. Le bandeau fig. 3 garantit l'annulation complète : création, renommage, déplacement de dossier et rangements.</div>
+  <div class="card"><b>Classification</b> Une requête au modèle actif avec titres + <code>contextSummary</code> et l'arborescence existante. Si aucun résumé de contexte n'existe, les trois premiers messages. Coût : une requête par lot, pas par conversation.</div>
+  <div class="card"><b>Renommer un dossier</b> L'action la plus risquée du plan : le modèle peut vouloir renommer un dossier qui contient déjà des conversations. Toujours en proposition caseable, jamais automatique, et signalée (fig. 3 : « Renommé depuis »).</div>
+  <div class="card"><b>Confidentialité</b> Le serveur distant choisi par l'utilisateur reçoit titres et résumés. C'est cohérent avec le principe Eudes : rien en dehors du modèle choisi, et le dire sur l'écran de plan (fig. 2) et dans les réglages (fig. 4).</div>
+  <div class="card"><b>Scope v1</b> Fig. 1 à 3 + réglages fig. 4 avec « Toujours proposer un plan » seul actif. « Ranger après chaque réponse » et le mode silencieux restent derrière un interrupteur, pour une deuxième passe après retour d'usage.</div>
+</div>
+
+<p class="foot">Maquette produite avant le code, dans l'esprit de <em>docs/maquettes</em> du dépôt : discuter de la direction sans consommer de build. Les écrans ne sont pas des captures de l'app ; teintes et libellés suivent <em>DesignSystem.swift</em>, <em>HistoryView.swift</em> et <em>SettingsView.swift</em> à la révision b9ab0f6 du 24 nov. 2026. À valider : deviendra une image dans <em>docs/maquettes</em> plus une ligne dans le README du dossier, avant toute issue.</p>
+
+</div>
+<script>
+  var html = document.documentElement;
+  var bl = document.getElementById('btn-light'), bd = document.getElementById('btn-dark');
+  bl.addEventListener('click', function(){ html.dataset.theme='light'; bl.classList.add('on'); bd.classList.remove('on'); });
+  bd.addEventListener('click', function(){ html.dataset.theme='dark'; bd.classList.add('on'); bl.classList.remove('on'); });
+
+  /* Cases du plan : validation ligne par ligne + libellé du bouton */
+  document.querySelectorAll('.plan-line').forEach(function(line){
+    line.addEventListener('click', function(e){
+      if (e.target.closest('.fold')) return; /* la pastille dossier reste une action à part */
+      var isOn = line.classList.toggle('off') === false;
+      var chk = line.querySelector('.chk use');
+      chk.setAttribute('href', isOn ? '#i-cradio' : '#i-circle');
+      refreshCount();
+    });
+  });
+  function refreshCount(){
+    var moves = document.querySelectorAll('.plan-line[data-move]').length
+      ? document.querySelectorAll('.plan-line[data-move]:not(.off)').length : 0;
+    var btn = document.getElementById('plan-apply');
+    if (btn){
+      btn.textContent = moves === 0 ? 'Rien à ranger' : ('Ranger ' + moves + (moves > 1 ? ' conversations' : ' conversation'));
+      btn.disabled = (moves === 0);
+    }
+    var head = document.querySelector('.sec-head .moves-count');
+    if (head) head.textContent = moves + ' proposées';
+  }
+  refreshCount();
+
+  /* Interrupteurs des réglages */
+  document.querySelectorAll('.switch').forEach(function(sw){
+    sw.addEventListener('click', function(){ sw.classList.toggle('on'); });
+  });
+
+  /* Bandeau Annuler de la fig. 3 */
+  var undo = document.getElementById('undo-btn'), banner = document.getElementById('undo-banner');
+  if (undo){
+    undo.addEventListener('click', function(){
+      if (banner.dataset.undone){ return; }
+      banner.dataset.undone = '1';
+      banner.querySelector('.grow').textContent = 'Rangement annulé, arborescence restaurée.';
+      undo.textContent = 'Rétablir';
+      undo.addEventListener('click', function(){
+        delete banner.dataset.undone;
+        banner.querySelector('.grow').textContent = '5 conversations rangées';
+        undo.textContent = 'Annuler';
+      });
+    });
+  }
+</script>
+</body>
+</html>
