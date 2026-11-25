@@ -27,4 +27,5 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
   usages, modèles téléchargés) et « Choisir un modèle » (un seul ordre du plus léger au
   plus lourd, poids écrit en clair, filtres Texte / Images / Installés, un geste par
   ligne). Interactions réelles : sélection, téléchargement simulé avec progression,
-  fiche « i » avec suppression, clair et sombre (issue #47).
+  fiche « i » avec suppression, clair et sombre (issue #49). Le code correspondant est
+  dans `ios/Eudes/UI/SettingsView.swift` (PR #50).
