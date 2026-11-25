@@ -437,7 +437,7 @@ private struct ConversationModelMenu: View {
             .frame(minHeight: 48, alignment: .leading)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ConversationModelRowButtonStyle())
         .disabled(disabled)
         .accessibilityLabel(accessibilityLabel(title: title, summary: summary))
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -469,6 +469,15 @@ private struct ConversationModelMenuHeight: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
+    }
+}
+
+/// Un fond discret au toucher : le popover n'hérite pas du surlignage d'un menu natif.
+private struct ConversationModelRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? Palette.userBubble : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 9))
     }
 }
 
