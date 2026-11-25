@@ -526,6 +526,8 @@ private var recommendedModelIDs: Set<String> {
 private func capabilityPill(_ text: String, systemImage: String, filled: Bool) -> some View {
     Label(text, systemImage: systemImage)
         .font(.caption2.weight(.semibold))
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
         .foregroundStyle(filled ? Palette.ink : Palette.muted)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
@@ -812,14 +814,68 @@ private struct CatalogModelRow: View {
         store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
     }
 
-    /// Un seul mot par état : « recommandé » est porté par la pilule du titre,
-    /// jamais redit dans le texte de la ligne.
-    private var stateText: String {
+    /// Un seul mot par état, et seulement s'il change un geste : « installé » est déjà
+    /// dit par le bouton « Utiliser », « à télécharger » par le bouton « Télécharger »,
+    /// et le poids par la jauge. « Recommandé » reste porté par la pastille du titre.
+    private var stateText: String? {
         if !active.isEmpty { return "Téléchargement en cours" }
         if tooHeavy != nil { return "Trop lourd pour cet iPhone" }
         if installed && isSelected { return "Utilisé pour les messages" }
-        if installed { return "Installé" }
-        return "À télécharger"
+        return nil
+    }
+
+    /// Le nom et sa pastille tiennent sur une ligne quand la largeur le permet ; sinon
+    /// la pastille entière passe dessous, plutôt que d'être coupée en « Recom- / mandé ».
+    @ViewBuilder private var titleWithBadge: some View {
+        if recommended {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    modelTitle
+                    recommendedPill
+                }
+                .fixedSize(horizontal: true, vertical: false)
+                VStack(alignment: .leading, spacing: 2) {
+                    modelTitle
+                    recommendedPill
+                }
+            }
+        } else {
+            modelTitle
+        }
+    }
+
+    private var modelTitle: some View {
+        Text(model.title)
+            .font(.subheadline.weight(recommended ? .semibold : .regular))
+            .foregroundStyle(Palette.ink)
+            .lineLimit(1)
+    }
+
+    private var recommendedPill: some View {
+        capabilityPill("Recommandé", systemImage: "checkmark.seal", filled: true)
+    }
+
+    /// Le geste de la ligne, en pilule comme la maquette : un libellé se lit plus vite
+    /// qu'une icône seule, et la forme reste la même pour « Télécharger » et « Utiliser ».
+    private func actionPill(_ title: String, systemImage: String? = nil,
+                            action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                if let systemImage {
+                    Image(systemName: systemImage).font(.caption.weight(.semibold))
+                }
+                Text(title).font(.caption.weight(.semibold))
+            }
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .foregroundStyle(Palette.ink)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().stroke(Palette.border, lineWidth: 0.5))
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
     }
 
     @ViewBuilder private var weightGauge: some View {
@@ -834,19 +890,12 @@ private struct CatalogModelRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(model.title)
-                        .font(.subheadline.weight(recommended ? .semibold : .regular))
-                        .foregroundStyle(Palette.ink)
-                    if recommended {
-                        capabilityPill("Recommandé", systemImage: "checkmark.seal", filled: true)
-                    }
-                }
+                titleWithBadge
                 if let errorText {
                     Text(errorText).font(.caption2).foregroundStyle(Palette.warningText)
-                } else {
+                } else if let stateText {
                     Text(stateText).font(.caption2).foregroundStyle(Palette.muted)
                 }
                 if showsStrength {
@@ -857,49 +906,7 @@ private struct CatalogModelRow: View {
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if !active.isEmpty {
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(width: 22, height: 22)
-                    .accessibilityLabel("Téléchargement de \(model.title) en cours")
-            } else if installed && isSelected {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(Palette.ink)
-                    .frame(width: 32, height: 32)
-                    .accessibilityLabel("\(model.title) est utilisé pour les messages")
-            } else if installed {
-                Button("Utiliser") { store.selectLocalModel(model.id) }
-                    .font(.caption.weight(.semibold))
-                    .buttonStyle(.borderless)
-                    .disabled(store.isPreparingSend)
-                    .accessibilityLabel("Utiliser \(model.title) pour les messages")
-            } else if tooHeavy == nil {
-                Button { pendingAction = .download(model) } label: {
-                    Image(systemName: "arrow.down.circle")
-                        .font(.system(size: 22))
-                        .foregroundStyle(Palette.ink)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("Télécharger \(model.title)")
-            }
-
-            // La suppression est un geste visible sur la ligne : un balayage n'est
-            // pas découvrable, et la fiche est un détour pour libérer de la place.
-            if installed && active.isEmpty {
-                Button { pendingAction = .remove(model) } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 17))
-                        .foregroundStyle(Palette.muted)
-                        .frame(width: 40, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.borderless)
-                .disabled(store.isPreparingSend || store.isGenerating)
-                .accessibilityLabel("Supprimer \(model.title) de l'iPhone")
-            }
+            actionControl
 
             Button(action: onInfo) {
                 Image(systemName: "info.circle")
@@ -910,6 +917,16 @@ private struct CatalogModelRow: View {
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Informations sur \(model.title)")
+        }
+        // Le geste de suppression quitte la ligne pour ne pas y entasser trois icônes :
+        // l'appui long le garde à portée, la fiche « i » reste le chemin visible.
+        .contextMenu {
+            Button("Informations", systemImage: "info.circle", action: onInfo)
+            if installed && active.isEmpty && !store.isGenerating && !store.isPreparingSend {
+                Button("Supprimer le modèle", systemImage: "trash", role: .destructive) {
+                    pendingAction = .remove(model)
+                }
+            }
         }
         .alert(pendingAction?.isRemoval == true ? "Supprimer le modèle ?" : "Télécharger le modèle ?",
                isPresented: Binding(get: { pendingAction != nil },
@@ -946,6 +963,35 @@ private struct CatalogModelRow: View {
                     Text("\(size) seront libérés. Tes conversations restent intactes.")
                 }
             }
+        }
+    }
+
+    /// Le geste utile de la ligne : suivre le transfert, confirmer que le modèle est
+    /// actif, utiliser un modèle installé, ou en télécharger un. Un modèle trop lourd
+    /// n'a pas de geste : sa ligne dit pourquoi.
+    @ViewBuilder private var actionControl: some View {
+        if !active.isEmpty {
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: 22, height: 22)
+                .accessibilityLabel("Téléchargement de \(model.title) en cours")
+        } else if installed && isSelected {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(Palette.ink)
+                .frame(width: 32, height: 32)
+                .accessibilityLabel("\(model.title) est utilisé pour les messages")
+        } else if installed {
+            actionPill("Utiliser") { store.selectLocalModel(model.id) }
+                .disabled(store.isPreparingSend)
+                .accessibilityLabel("Utiliser \(model.title) pour les messages")
+                .accessibilityIdentifier("model.row.use.\(model.id)")
+        } else if tooHeavy == nil {
+            actionPill("Télécharger", systemImage: "arrow.down.circle") {
+                pendingAction = .download(model)
+            }
+            .accessibilityLabel("Télécharger \(model.title)")
+            .accessibilityIdentifier("model.row.download.\(model.id)")
         }
     }
 }
@@ -1130,9 +1176,15 @@ private struct AllModelsView: View {
                         }
                     }
                 } header: {
-                    Label(section.name, systemImage: section.icon)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Label(section.name, systemImage: section.icon)
+                        Text(section.summary)
+                            .font(.caption)
+                            .fontWeight(.regular)
+                            .foregroundStyle(Palette.muted)
+                    }
+                    .textCase(nil)
                 }
-                footer: { Text(section.summary) }
                 .listRowBackground(Palette.surface)
                 .listRowSeparatorTint(Palette.border)
             }
