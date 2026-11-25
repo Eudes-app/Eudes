@@ -22,3 +22,9 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
 - `rangement-automatique-conversations.html` — le rangement automatique en quatre
   écrans : plan à cocher case par case, bandeau d'annulation complet, réglages avec
   profondeur et modèle d'analyse ; jamais de déplacement silencieux (issue #45).
+- `catalogue-simplifie.html` / `.png` / `-sombre.png` — les deux écrans du choix d'un
+  modèle, dans un seul flux : « Modèles et serveurs » (modèle actuel en tête, trois
+  usages, modèles téléchargés) et « Choisir un modèle » (un seul ordre du plus léger au
+  plus lourd, poids écrit en clair, filtres Texte / Images / Installés, un geste par
+  ligne). Interactions réelles : sélection, téléchargement simulé avec progression,
+  fiche « i » avec suppression, clair et sombre (issue #47).
