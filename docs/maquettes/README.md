@@ -29,3 +29,7 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
   ligne). Interactions réelles : sélection, téléchargement simulé avec progression,
   fiche « i » avec suppression, clair et sombre (issue #49). Le code correspondant est
   dans `ios/Eudes/UI/SettingsView.swift` (PR #50).
+- `menu-modeles-conversation.html` / `.png` / `-sombre.png` — le menu de la conversation :
+  la capsule du modèle, Apple Intelligence, les modèles installés avec leur taille, la
+  coche du modèle actif et « Tous les modèles ». Quatre états (aucun, un, trois, six
+  modèles installés), sélection réelle et bascule clair / sombre (issue #49, PR #50).
