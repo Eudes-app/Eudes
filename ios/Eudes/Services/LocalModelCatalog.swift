@@ -85,7 +85,7 @@ enum LocalModelCatalog {
                   sha256: "3793e1e6e2266919d6e015287221b41100175a98eddaba92e111aed3b05c93c4")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 262_144,
         kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
-        strength: "Très léger (1 Go) : répond vite et suit de longues discussions.")
+        strength: "Répond vite et suit de longues discussions.")
     static let vision = Model(id: "lfm3-vision", title: "LFM3 VL 2B", supportsImages: true,
         repository: "LFM3-VL-2B-GGUF", revision: "1add221a5ea6c047fcf1eaaf2d247939d7cf8849", assets: [
             Asset(filename: "LFM3-VL-2B-Q4_K_M.gguf", size: 1_099_627_808,
@@ -94,7 +94,7 @@ enum LocalModelCatalog {
                   sha256: "c5c5b58d544a18da919172d2d0368090ea1a4a351b6feb7f8a326a264a5918ab")
         ], family: "LFM3", licence: "Liquid AI Open License", nativeContext: 128_000,
         kvBytesPerToken: 12288, usesEmbeddedTemplate: true,
-        strength: "Un des plus compacts : 1,3 Go.")
+        strength: "Comprend les images et reste très réactif.")
     static let qwen35_2b = Model(id: "qwen35_2b", title: "Qwen3.5 2B", supportsImages: false,
         repository: "unsloth/Qwen3.5-2B-GGUF", revision: "f6d5376be1edb4d416d56da11e5397a961aca8ae", assets: [
             Asset(filename: "Qwen3.5-2B-Q4_K_M.gguf", size: 1280835840,
@@ -147,7 +147,7 @@ enum LocalModelCatalog {
                   sha256: "ac9934e8d7966d0d62442c202ec8fdad99a045dea79366c1a4a246a46f5c0533")
         ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 49152, usesEmbeddedTemplate: true,
-        strength: "Très léger (0,55 Go) : répond vite.")
+        strength: "Répond vite, même avec des images.")
 
     static let bonsai_4b = Model(id: "bonsai_4b", title: "Bonsai 4B", supportsImages: true,
         repository: "prism-ml/Ternary-Bonsai-2-4B-gguf", revision: "50ebba61be85e5be07e8083db468ace0fc1bac43", assets: [
@@ -157,7 +157,7 @@ enum LocalModelCatalog {
                   sha256: "db939d5f9b7014137810205e91d05e5f54afd72b0b3af9d33bd7d82f7906a55d")
         ], family: "Bonsai", licence: "Apache-2.0", nativeContext: 262144,
         kvBytesPerToken: 81920, usesEmbeddedTemplate: true,
-        strength: "Léger pour sa puissance (1,2 Go).")
+        strength: "Lit les images et garde de la puissance.")
 
     static let bonsai_8b = Model(id: "bonsai_8b", title: "Bonsai 8B", supportsImages: false,
         repository: "prism-ml/Ternary-Bonsai-8B-gguf", revision: "c2aefbeb4b24469cd11579c3384b990404c17a30", assets: [
@@ -205,14 +205,14 @@ enum LocalModelCatalog {
         let models: [Model]
 
         var id: Bool { supportsImages }
-        /// Le nom de la section reprend le libellé de capacité de ses modèles, au pluriel.
-        var name: String { supportsImages ? "Modèles texte + vision" : "Modèles texte" }
+        /// Le nom de la section dit l'usage, pas la capacité technique.
+        var name: String { supportsImages ? "Pour discuter avec des images" : "Pour discuter" }
         /// Les logos de l'écran : le chat pour le texte, l'œil pour la vision.
         var icon: String { supportsImages ? "eye" : "bubble.left.and.text.bubble.right" }
         /// Vraie par construction : la section est définie par ce qu'elle contient.
         var summary: String {
-            supportsImages ? "Lisent aussi les images. Le plus léger d'abord."
-                           : "Ne lisent pas les images. Le plus léger d'abord."
+            supportsImages ? "Poser aussi des questions sur vos photos"
+                           : "Écrire, poser des questions, trouver des idées"
         }
     }
 

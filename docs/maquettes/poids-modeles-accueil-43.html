@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Maquette — poids des modèles, écran principal (issue #43)</title>
+<style>
+  :root {
+    --fond:#171717; --surface:#242424; --carte:#252525; --bulle:#343434;
+    --encre:#ffffff; --attenue:#a3a3a3; --bordure:#383838; --rayon:14px;
+    --c1:#22c55e; --c2:#84cc16; --c3:#eab308; --c4:#f97316; --c5:#ef4444;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--fond); color:var(--encre);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif; }
+  .planche { display:flex; gap:24px; padding:24px; align-items:flex-start; }
+  .colonne { width:430px; display:flex; flex-direction:column; gap:10px; }
+  .cadre { width:430px; height:880px; background:var(--fond); border:1px solid var(--bordure);
+    border-radius:40px; overflow:hidden; display:flex; flex-direction:column; }
+  .statut { height:44px; flex:none; display:flex; align-items:center; padding:0 26px;
+    font-size:15px; font-weight:600; letter-spacing:.2px; }
+  .nav { height:44px; flex:none; display:flex; align-items:center; gap:6px; padding:0 12px; }
+  .nav .retour { width:34px; display:flex; align-items:center; justify-content:center; }
+  .nav .titre { flex:1; text-align:center; font-size:17px; font-weight:600; }
+  .nav .fin { min-width:52px; text-align:right; font-size:15px; font-weight:600; }
+  .contenu { flex:1; overflow:hidden; padding:2px 16px 0; }
+  .section { margin-top:20px; }
+  .entete { font-size:12px; font-weight:600; color:var(--attenue); text-transform:uppercase;
+    letter-spacing:.4px; margin:0 0 7px 2px; }
+  .groupe { background:var(--surface); border-radius:var(--rayon); overflow:hidden; }
+  .ligne { display:flex; align-items:flex-start; gap:8px; padding:12px 12px;
+    border-bottom:.5px solid var(--bordure); }
+  .ligne:last-child { border-bottom:none; }
+  .principal { flex:1; min-width:0; }
+  .nom { font-size:15px; font-weight:400; }
+  .nom.fort { font-weight:600; }
+  .titre-hero { font-size:21px; font-weight:700; }
+  .second { font-size:12px; color:var(--attenue); margin-top:2px; }
+  .actions { display:flex; align-items:center; gap:2px; padding-top:2px; }
+  .pilule { display:inline-flex; align-items:center; gap:5px; border:1px solid var(--bordure);
+    border-radius:999px; padding:6px 10px; font-size:12px; color:var(--encre); white-space:nowrap; }
+  .rond { width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    color:var(--attenue); }
+  .rond.vert { color:var(--c1); }
+  .jauge-line { padding:8px 12px 10px; border-bottom:.5px solid var(--bordure); }
+  .jauge-line .tete { display:flex; align-items:center; justify-content:space-between; }
+  .jauge-line .lab { font-size:11px; color:var(--attenue); }
+  .jauge-line .val { font-size:11px; font-weight:600; color:var(--encre); }
+  .piste { height:4px; border-radius:999px; background:var(--bordure); margin-top:6px; overflow:hidden; }
+  .piste > span { display:block; height:100%; background:var(--encre); border-radius:999px; }
+  .jauge { display:flex; align-items:center; gap:2px; margin-top:5px; }
+  .jauge .seg { width:5px; height:4px; border-radius:999px; background:var(--bordure); }
+  .seg.c1{background:var(--c1)} .seg.c2{background:var(--c2)} .seg.c3{background:var(--c3)}
+  .seg.c4{background:var(--c4)} .seg.c5{background:var(--c5)}
+  .fleche { color:var(--attenue); display:flex; align-items:center; }
+  .legende-panneau { font-size:12px; line-height:1.4; color:var(--attenue); }
+  .legende-panneau strong { color:var(--encre); font-weight:600; }
+</style>
+</head>
+<body>
+<main class="planche">
+
+  <!-- ===================== AVANT ===================== -->
+  <div class="colonne">
+    <div class="cadre">
+      <div class="statut">9:41</div>
+      <div class="nav">
+        <div class="retour">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div class="titre">Modèles et serveurs</div>
+        <div class="fin">Terminé</div>
+      </div>
+      <div class="contenu">
+
+        <div class="section" style="margin-top:10px">
+          <div class="entete">Modèle utilisé</div>
+          <div class="groupe">
+            <div class="ligne"><div class="principal">
+              <div class="titre-hero">Qwen3.5 4B</div>
+              <div class="second">Utilisé pour les messages · 2,7 Go</div>
+            </div></div>
+            <div class="jauge-line">
+              <div class="tete"><span class="lab">Mémoire nécessaire</span><span class="val">~3,5 Go sur 6 Go</span></div>
+              <div class="piste"><span style="width:59%"></span></div>
+            </div>
+            <div class="jauge-line">
+              <div class="tete"><span class="lab">Espace disque libre</span><span class="val">38 Go</span></div>
+              <div class="piste"><span style="width:30%"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">Que veux-tu faire ?</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="nom fort">Discuter tous les jours</div>
+              <div class="second">Qwen3.5 2B · 1,3 Go · à télécharger</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="nom fort">Réfléchir sur un problème</div>
+              <div class="second">Qwen3.5 4B · 2,7 Go · utilisé</div>
+            </div><div class="actions">
+              <div class="rond vert"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="nom fort">Comprendre une image</div>
+              <div class="second">LFM3 VL 2B · 1,3 Go · à télécharger</div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">Modèles téléchargés</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre nom">Qwen3.5 4B</div>
+              <div class="second">Utilisé pour les messages</div>
+            </div><div class="actions">
+              <div class="rond vert"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre nom">LFM3 VL 2B</div>
+              <div class="second">Installé</div>
+            </div><div class="actions">
+              <div class="pilule">Utiliser</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">Autres modèles</div>
+          <div class="groupe">
+            <div class="ligne"><div class="principal">
+              <div class="nom">Tous les modèles</div>
+              <div class="second">13 modèles</div>
+            </div><div class="fleche">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="legende-panneau"><strong>Avant.</strong> Écran principal actuel : les
+      recommandations et les modèles téléchargés indiquent leur taille en texte, sans
+      repère visuel de poids.</p>
+  </div>
+
+  <!-- ===================== APRÈS ===================== -->
+  <div class="colonne">
+    <div class="cadre">
+      <div class="statut">9:41</div>
+      <div class="nav">
+        <div class="retour">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        <div class="titre">Modèles et serveurs</div>
+        <div class="fin">Terminé</div>
+      </div>
+      <div class="contenu">
+
+        <div class="section" style="margin-top:10px">
+          <div class="entete">Modèle utilisé</div>
+          <div class="groupe">
+            <div class="ligne"><div class="principal">
+              <div class="titre-hero">Qwen3.5 4B</div>
+              <div class="second">Utilisé pour les messages · 2,7 Go</div>
+            </div></div>
+            <div class="jauge-line">
+              <div class="tete"><span class="lab">Mémoire nécessaire</span><span class="val">~3,5 Go sur 6 Go</span></div>
+              <div class="piste"><span style="width:59%"></span></div>
+            </div>
+            <div class="jauge-line">
+              <div class="tete"><span class="lab">Espace disque libre</span><span class="val">38 Go</span></div>
+              <div class="piste"><span style="width:30%"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">Que veux-tu faire ?</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="nom fort">Discuter tous les jours</div>
+              <div class="second">Qwen3.5 2B · 1,3 Go · à télécharger</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="nom fort">Réfléchir sur un problème</div>
+              <div class="second">Qwen3.5 4B · 2,7 Go · utilisé</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg c4"></span><span class="seg"></span></div>
+            </div><div class="actions">
+              <div class="rond vert"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="nom fort">Comprendre une image</div>
+              <div class="second">LFM3 VL 2B · 1,3 Go · à télécharger</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+            </div><div class="actions">
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v7m0 0l3-3m-3 3l-3-3"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">Modèles téléchargés</div>
+          <div class="groupe">
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre nom">Qwen3.5 4B</div>
+              <div class="second">Utilisé pour les messages</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg c3"></span><span class="seg c4"></span><span class="seg"></span></div>
+            </div><div class="actions">
+              <div class="rond vert"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+            <div class="ligne"><div class="principal">
+              <div class="ligne-titre nom">LFM3 VL 2B</div>
+              <div class="second">Installé</div>
+              <div class="jauge"><span class="seg c1"></span><span class="seg c2"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+            </div><div class="actions">
+              <div class="pilule">Utiliser</div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></svg></div>
+              <div class="rond"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></div>
+            </div></div>
+
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="entete">Autres modèles</div>
+          <div class="groupe">
+            <div class="ligne"><div class="principal">
+              <div class="nom">Tous les modèles</div>
+              <div class="second">13 modèles</div>
+            </div><div class="fleche">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p class="legende-panneau"><strong>Après.</strong> Seule la jauge compacte, sans
+      étiquette, s'ajoute sous les lignes de modèles des recommandations et des modèles
+      téléchargés. Le reste de l'écran est inchangé.</p>
+  </div>
+
+</main>
+</body>
+</html>
