@@ -270,44 +270,14 @@ private struct ConversationModelButton: View {
     @EnvironmentObject private var store: AppStore
     let model: String
     var openAllModels: () -> Void
-
-    /// Seuls les modèles dont les fichiers sont sur l'iPhone : le menu du chat sert
-    /// à changer vite, pas à explorer le catalogue.
-    private var installedModels: [LocalModelCatalog.Model] {
-        LocalModelCatalog.models.filter { LocalModelDownloads.isInstalled($0) }
-    }
+    @State private var showingMenu = false
 
     var body: some View {
         let name = model.trimmingCharacters(in: .whitespacesAndNewlines)
         let compactName = name.split(separator: "/").last.map(String.init) ?? name
 
-        Menu {
-            if store.connectionChoices.contains(where: { $0.isApple }) {
-                Button {
-                    store.selectServer(ServerProfile.appleID)
-                } label: {
-                    Label("Apple Intelligence",
-                          systemImage: store.selectedServer?.isApple == true ? "checkmark" : "apple.logo")
-                }
-                .disabled(store.isPreparingSend)
-            }
-            ForEach(installedModels) { model in
-                let selected = store.selectedServer?.isLocalLFM == true
-                    && store.selectedServer?.model == model.id
-                Button {
-                    store.selectLocalModel(model.id)
-                } label: {
-                    Label("\(model.title) · \(model.sizeLabel)",
-                          systemImage: selected ? "checkmark" : "iphone")
-                }
-                .disabled(store.isPreparingSend)
-            }
-            Divider()
-            Button {
-                openAllModels()
-            } label: {
-                Label("Tous les modèles", systemImage: "square.grid.2x2")
-            }
+        Button {
+            showingMenu.toggle()
         } label: {
             HStack(spacing: 8) {
                 if name.isEmpty {
@@ -335,6 +305,170 @@ private struct ConversationModelButton: View {
         .accessibilityValue(name.isEmpty ? Text("Aucun modèle sélectionné") : Text(name))
         .accessibilityHint("Ouvre le menu des modèles installés ; « Tous les modèles » pour le catalogue complet.")
         .accessibilityIdentifier("conversation.modelPicker")
+        // Le Menu natif ne sait afficher qu'un texte et une icône : un popover porte
+        // la jauge de poids et le résumé en clair, comme dans le catalogue.
+        .popover(isPresented: $showingMenu) {
+            ConversationModelMenu(store: store,
+                                  openAllModels: openAllModels,
+                                  close: { showingMenu = false })
+                .presentationCompactAdaptation(.popover)
+        }
+    }
+}
+
+/// Le menu rapide de la conversation : Apple Intelligence, puis les modèles installés
+/// avec leur jauge de poids, puis « Tous les modèles ». Un tap à l'extérieur ferme le
+/// popover ; une sélection ferme aussi le menu.
+private struct ConversationModelMenu: View {
+    @ObservedObject var store: AppStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let openAllModels: () -> Void
+    let close: () -> Void
+    @State private var contentHeight: CGFloat = 0
+
+    /// Seuls les modèles dont les fichiers sont sur l'iPhone : le menu du chat sert
+    /// à changer vite, pas à explorer le catalogue.
+    private var installedModels: [LocalModelCatalog.Model] {
+        LocalModelCatalog.models.filter { LocalModelDownloads.isInstalled($0) }
+    }
+
+    private var selectedModelID: String? {
+        guard store.selectedServer?.isLocalLFM == true else { return nil }
+        return store.selectedServer?.model
+    }
+
+    private var selectionDisabled: Bool {
+        store.isGenerating || store.isPreparingSend
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                if store.connectionChoices.contains(where: { $0.isApple }) {
+                    row(
+                        symbol: store.selectedServer?.isApple == true ? "checkmark" : "apple.logo",
+                        title: "Apple Intelligence",
+                        selected: store.selectedServer?.isApple == true,
+                        disabled: selectionDisabled,
+                        identifier: "conversation.modelMenu.apple",
+                        action: chooseApple
+                    )
+                }
+                ForEach(installedModels) { model in
+                    let selected = selectedModelID == model.id
+                    let level = ModelWeightLevel.forBytes(model.downloadBytes)
+                    row(
+                        symbol: selected ? "checkmark" : "iphone",
+                        title: model.title,
+                        level: level,
+                        summary: "\(level.label) · \(model.sizeLabel)",
+                        selected: selected,
+                        disabled: selectionDisabled,
+                        identifier: "conversation.modelMenu.\(model.id)",
+                        action: { chooseModel(model.id) }
+                    )
+                }
+                Rectangle()
+                    .fill(Palette.border)
+                    .frame(height: Palette.separatorWidth)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .accessibilityHidden(true)
+                row(
+                    symbol: "square.grid.2x2",
+                    title: "Tous les modèles",
+                    identifier: "conversation.modelMenu.all",
+                    action: showAllModels
+                )
+            }
+            .padding(6)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: ConversationModelMenuHeight.self,
+                                           value: proxy.size.height)
+                }
+            )
+        }
+        // Le popover prend la hauteur de son contenu, plafonnée comme la maquette :
+        // au-delà, la liste défile au lieu de dépasser l'écran.
+        .frame(width: dynamicTypeSize.isAccessibilitySize ? 320 : 280,
+               height: min(max(contentHeight, 44), 452))
+        .scrollIndicators(.hidden)
+        .onPreferenceChange(ConversationModelMenuHeight.self) { contentHeight = $0 }
+    }
+
+    private func row(
+        symbol: String,
+        title: String,
+        level: ModelWeightLevel? = nil,
+        summary: String? = nil,
+        selected: Bool = false,
+        disabled: Bool = false,
+        identifier: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(Palette.ink)
+                    .frame(width: 22)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.subheadline)
+                        .foregroundStyle(Palette.ink)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                    if let level, let summary {
+                        HStack(spacing: 5) {
+                            ModelWeightGauge(level: level, compact: true)
+                                .accessibilityHidden(true)
+                            Text(summary)
+                                .font(.caption2)
+                                .foregroundStyle(Palette.muted)
+                                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 9)
+            .frame(minHeight: 48, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .accessibilityLabel(accessibilityLabel(title: title, summary: summary))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityIdentifier(identifier)
+    }
+
+    private func accessibilityLabel(title: String, summary: String?) -> String {
+        guard let summary else { return title }
+        return "\(title), \(summary.replacingOccurrences(of: " · ", with: ", "))"
+    }
+
+    private func chooseApple() {
+        close()
+        store.selectServer(ServerProfile.appleID)
+    }
+
+    private func chooseModel(_ id: String) {
+        close()
+        store.selectLocalModel(id)
+    }
+
+    private func showAllModels() {
+        close()
+        openAllModels()
+    }
+}
+
+private struct ConversationModelMenuHeight: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
