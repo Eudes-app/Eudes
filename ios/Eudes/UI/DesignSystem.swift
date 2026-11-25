@@ -221,7 +221,9 @@ enum ModelWeightLevel: Int, CaseIterable, Sendable {
         }
     }
 
-    static let emptyColor = Color(red: 56 / 255, green: 56 / 255, blue: 56 / 255)
+    /// Couleur d'un segment vide : celle de la ligne qui porte la jauge, pour
+    /// ne pas se voir — adaptative clair/sombre avec le reste de Palette.
+    static let emptyColor = Palette.surface
 }
 
 /// Cinq segments arrondis : les `level` premiers prennent leur couleur, les autres
