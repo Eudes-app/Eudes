@@ -18,6 +18,10 @@ jobs:
     name: XCTest · iPhone simulator
     runs-on: xcode-27
     timeout-minutes: 60
+    # Les tests ne chargent que la tranche simulateur : ne pas compiler la
+    # tranche appareil, inutile ici.
+    env:
+      LLAMA_BUILD_SLICES: simulator
     outputs:
       ios_changed: ${{ steps.changed.outputs.ios_changed }}
     steps:
@@ -55,6 +59,8 @@ jobs:
         id: toolchain
         run: echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
 
+      # La branche par défaut publie ce cache via ios-cache.yml ; une PR ne peut
+      # voir que les caches de sa propre branche et de la branche par défaut.
       # La tranche simulateur d'EudesLlama est compilée depuis une révision figée de
       # llama.cpp : les octets produits ne dépendent pas de notre code. On réutilise ce
       # build d'un run à l'autre, jamais le code de l'app. La clé porte la version de
@@ -65,7 +71,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ios/Packages/EudesLlama/Artifacts
-          key: llama-sim-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('tools/prepare-llama-simulator.sh') }}
+          key: llama-sim-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ env.LLAMA_BUILD_SLICES }}-${{ hashFiles('tools/prepare-llama-simulator.sh') }}
 
       # DerivedData contient les modules compilés de l'app et des tests : le mettre en
       # cache évite de tout recompiler à chaque run. La clé porte la version de Xcode et
