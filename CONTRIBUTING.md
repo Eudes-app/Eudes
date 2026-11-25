@@ -54,7 +54,12 @@ bash tools/test-ios.sh
 # un simulateur précis, ou un cache de compilation réutilisé
 EUDES_SIMULATOR_ID=<UDID> bash tools/test-ios.sh
 EUDES_DERIVED_DATA_PATH=build/DerivedData bash tools/test-ios.sh
+
+# ce que fait la CI : tranche simulateur seule, sans la tranche appareil
+LLAMA_BUILD_SLICES=simulator bash tools/test-ios.sh
 ```
+
+Sans `LLAMA_BUILD_SLICES`, les deux tranches de llama.cpp sont compilées ; la tranche appareil est nécessaire à `tools/build-device.sh`, qui refuse sinon de compiler.
 
 Les journaux et le bundle `.xcresult` restent dans `build/test-results/`. En cas d'échec de compilation ou de test, le script sort en erreur.
 

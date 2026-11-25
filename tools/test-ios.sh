@@ -27,6 +27,7 @@ mkdir -p "$results_dir"
     xcrun --sdk iphonesimulator --show-sdk-version
     printf 'Revision: '
     git rev-parse HEAD
+    printf 'llama.cpp slices: %s\n' "${LLAMA_BUILD_SLICES:-all}"
 } | tee "$results_dir/environment.log"
 
 xcode_version="$(xcodebuild -version | awk '/^Xcode / { print $2 }')"
