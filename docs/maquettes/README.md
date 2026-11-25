@@ -15,3 +15,6 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
 - `points-forts-catalogue.png` — avant / après du catalogue : le badge « Vision » ne
   reste sur la famille que si **toute** la famille lit les images, et le point fort de
   chaque modèle s'affiche sous sa ligne (PR #39).
+- `rangement-automatique-conversations.html` — le rangement automatique en quatre
+  écrans : plan à cocher case par case, bandeau d'annulation complet, réglages avec
+  profondeur et modèle d'analyse ; jamais de déplacement silencieux (issue #45).
