@@ -33,3 +33,5 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
   la capsule du modèle, Apple Intelligence, les modèles installés avec leur taille, la
   coche du modèle actif et « Tous les modèles ». Quatre états (aucun, un, trois, six
   modèles installés), sélection réelle et bascule clair / sombre (issue #49, PR #50).
+  Une comparaison des trois densités de ligne — taille seule, niveau en mots, jauge
+  complète — aide à trancher la place du poids dans ce menu.
