@@ -527,9 +527,9 @@ private struct ConnectionSettingsView: View {
     }
 
     private var engineSubtitle: String {
-        guard let selected = store.selectedServer else { return "Choisis un modèle ci-dessous." }
+        guard let selected = store.selectedServer else { return "Choisis un modèle dans le catalogue." }
         if selected.isApple { return "L'iPhone répond, sans téléchargement." }
-        if selected.isLocalLFM { return "Fichiers absents : télécharge-le ci-dessous." }
+        if selected.isLocalLFM { return "Fichiers absents : ouvre le catalogue pour le télécharger." }
         return "Les réponses viennent de ce serveur."
     }
 
@@ -1131,6 +1131,7 @@ private struct UsageRow: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
+            guard !store.isPreparingSend else { return }
             if installed {
                 store.selectLocalModel(model.id)
             } else {
@@ -1180,7 +1181,8 @@ private struct InstalledModelRow: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            if !selected { store.selectLocalModel(model.id) }
+            guard !selected, !store.isPreparingSend else { return }
+            store.selectLocalModel(model.id)
         }
         .contextMenu {
             Button("Informations", systemImage: "info.circle", action: onOpen)
@@ -1304,7 +1306,6 @@ private struct ModelDetailView: View {
     @EnvironmentObject private var store: AppStore
     let model: LocalModelCatalog.Model
     @ObservedObject var inventory: LocalModelInventory
-    var role: LocalModelCatalog.Role? = nil
     @State private var pendingAction: PendingModelAction?
 
     private var tooHeavy: String? { model.compatibilityLabel() }
@@ -1321,9 +1322,6 @@ private struct ModelDetailView: View {
     var body: some View {
         SettingsForm {
             Section {
-                if let role {
-                    Text(role.detail).font(.caption).foregroundStyle(Palette.muted)
-                }
                 Text(model.strength).font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
                 LabeledContent("Taille", value: model.sizeLabel)
