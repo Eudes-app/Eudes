@@ -155,6 +155,9 @@
   .weight i.on:nth-child(5){background:var(--c5);}
   .weight span{font-size:11px; color:var(--muted); margin-left:4px; white-space:nowrap;}
   .r-foot .weight{flex:none; margin-top:0;}
+  .weight.big{margin-top:6px;}
+  .weight.big i{width:26px; height:6px; flex:1;}
+  .weight.big span{font-size:12px; margin-left:6px;}
 
   /* ===== Filtres et compte ===== */
   .filters{display:flex; gap:6px; margin:10px 0 4px; flex-wrap:wrap;}
@@ -329,8 +332,9 @@
     <ul>
       <li><b>Une seule porte vers le catalogue.</b> La carte du modèle actuel est entièrement
         cliquable, avec un chevron : elle ouvre le catalogue au lieu d'une fiche séparée.
-        Elle garde son nom, son type et la jauge de poids sous le nom. La fiche du modèle
-        actif reste accessible depuis sa ligne du catalogue.</li>
+        Elle garde son nom, son type et la jauge de poids sous le nom. Les trois usages
+        portent la même jauge : un seul langage visuel du haut de l'écran jusqu'au catalogue.
+        La fiche du modèle actif reste accessible depuis sa ligne du catalogue.</li>
       <li><b>La liste des téléchargés disparaît.</b> Son rôle est repris par le filtre
         « Installés », qui affiche son compte, et par la coche du modèle actif. La suppression
         d'un modèle reste dans la fiche et l'appui long.</li>
@@ -490,10 +494,11 @@ const ICONS = {
 };
 
 /* ====================== Rendu : jauge et pastilles ====================== */
-function weightLine(m){
+function weightLine(m, opts){
+  const big = opts && opts.big;
   const level = levelOf(m.gb);
   const segs = [1,2,3,4,5].map(i => `<i class="${i <= level ? 'on' : ''}"></i>`).join('');
-  return `<div class="weight" aria-label="Poids : ${LEVEL_LABEL[level]}, ${m.size}">${segs}<span>${LEVEL_LABEL[level]} · ${m.size}</span></div>`;
+  return `<div class="weight${big ? ' big' : ''}" aria-label="Poids : ${LEVEL_LABEL[level]}, ${m.size}">${segs}<span>${LEVEL_LABEL[level]} · ${m.size}</span></div>`;
 }
 function recommendedBadge(){
   return `<span class="badge">Recommandé</span>`;
@@ -517,7 +522,7 @@ function currentCardHTML(){
   const m = isApple(active) ? null : model(active);
   const title = m ? m.name : APPLE.name;
   const meta = m ? (m.images ? 'Texte + images' : 'Texte') : 'Sur l’iPhone, sans réglage.';
-  const gauge = m ? weightLine(m) : '';
+  const gauge = m ? weightLine(m, {big:true}) : '';
   const aria = isApple(active) ? 'Changer de modèle — Apple Intelligence est utilisé' : `Changer de modèle — ${title} est utilisé`;
   return `
     <div class="group"><button class="current row" data-act="focus-catalog" aria-label="${aria}" style="display:block;">
@@ -545,15 +550,16 @@ function renderParent(){
       ? `<span class="check-icon">${ICONS.checkCircle}</span>`
       : installed
         ? `<span class="r-end">Utiliser ${ICONS.chevron}</span>`
-        : `<span class="r-end">${m.size} ${ICONS.chevron}</span>`;
+        : `<span class="r-end">${ICONS.chevron}</span>`;
     return `
       <button class="row ${active ? 'active' : ''}" data-act="usage" data-role="${usage.role}"
               aria-label="${usage.headline} — ${m.name}">
         <span class="icon-circle">${ICONS[usage.icon]}</span>
-        <span class="grow">
-          <span class="r-title"><span class="r-name">${usage.headline}</span></span>
-          <span class="r-sub">${m.name}${installed ? ' · installé' : ''}</span>
-        </span>
+        <div class="grow">
+          <div class="r-title"><span class="r-name">${usage.headline}</span></div>
+          <div class="r-sub">${m.name}${installed ? ' · installé' : ''}</div>
+          ${weightLine(m)}
+        </div>
         ${end}
       </button>`;
   }).join('');
