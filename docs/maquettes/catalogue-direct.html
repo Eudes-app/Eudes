@@ -104,7 +104,7 @@
             padding:0 4px 6px; font-size:12.5px; font-weight:700; color:var(--muted);}
   .sec-head .meta{font-weight:400; font-size:11.5px;}
   .group{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
-  .row{display:flex; align-items:center; gap:11px; padding:10px 12px; min-height:56px;
+  .row{display:flex; align-items:center; gap:10px; padding:10px 10px; min-height:56px;
        border-top:.5px solid var(--border); background:var(--surface); cursor:pointer; width:100%;
        text-align:left; font:inherit; color:inherit; border-left:0; border-right:0; border-bottom:0;}
   .group > .row:first-child{border-top:0;}
@@ -118,7 +118,7 @@
   .r-sub{font-size:12px; color:var(--muted); margin-top:2px; line-height:1.35;}
   .r-sub.warn{color:var(--warning);}
   .r-strength{font-size:11.5px; color:var(--muted); margin-top:2px; line-height:1.4;}
-  .r-foot{display:flex; align-items:center; gap:6px; margin-top:6px;}
+  .r-foot{display:flex; align-items:center; gap:5px; margin-top:6px;}
   .r-foot .spacer{flex:1;}
   .info-btn{border:0; background:none; padding:5px 2px; font-size:17px; color:var(--muted);
             cursor:pointer; display:inline-flex; align-items:center;}
@@ -133,7 +133,7 @@
   /* ===== Pastilles ===== */
   .pill{
     display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border); border-radius:999px;
-    padding:5px 9px; font-size:11.5px; font-weight:600; color:var(--ink); background:transparent;
+    padding:5px 8px; font-size:11px; font-weight:600; color:var(--ink); background:transparent;
     white-space:nowrap; cursor:pointer; font-family:inherit;
   }
   .pill svg{font-size:12px;}
@@ -149,8 +149,8 @@
 
   /* ===== Jauge de poids ===== */
   .gauge{display:flex; align-items:center; gap:3px; margin-top:4px; min-width:0;}
-  .gauge i{display:block; flex:none; width:6px; height:5px; border-radius:999px; background:var(--track);}
-  .gauge span{font-size:11px; color:var(--muted); margin-left:4px; white-space:nowrap;
+  .gauge i{display:block; flex:none; width:5px; height:5px; border-radius:999px; background:var(--track);}
+  .gauge span{font-size:10.5px; color:var(--muted); margin-left:4px; white-space:nowrap;
               overflow:hidden; text-overflow:ellipsis; flex:0 1 auto; min-width:0;}
   .gauge.big{margin-top:6px;}
   .gauge.big i{width:auto; height:6px; flex:1;}
@@ -299,9 +299,9 @@
         <button data-act="theme" data-t="dark">Sombre</button>
       </div>
       <div class="seg" role="group" aria-label="Jauge de poids">
-        <button data-act="gauge" data-g="now" class="on">Actuelle</button>
+        <button data-act="gauge" data-g="now">Actuelle</button>
         <button data-act="gauge" data-g="a">A · lisible</button>
-        <button data-act="gauge" data-g="b">B · encre</button>
+        <button data-act="gauge" data-g="b" class="on">B · encre</button>
         <button data-act="gauge" data-g="c">C · barre</button>
       </div>
       <div class="scenarios" id="scenarios" role="group" aria-label="Scénario"></div>
@@ -388,8 +388,8 @@
         perdu des modèles.</li>
       <li><b>La jauge se compare en haut de page.</b> « Actuelle » garde le rendu d'aujourd'hui
         (piste très pâle) ; A éclaircit la piste en gardant le code couleur, B passe tout en
-        encre, C remplace les cinq paliers par une barre proportionnelle à la taille. Le choix
-        s'applique aux trois écrans en même temps.</li>
+        encre, C remplace les cinq paliers par une barre proportionnelle à la taille. B est la
+        variante retenue pour le code ; le sélecteur reste là pour comparer.</li>
     </ul>
 
     <h3>Ce que la maquette ne fait pas</h3>
@@ -398,8 +398,8 @@
         sont simulées à l'écran.</li>
       <li>La fiche du modèle (mémoire requise, licence, suppression) est inchangée : seule son
         entrée depuis la carte du modèle actuel change.</li>
-      <li>Pas de version SwiftUI ici : cette maquette s'appuie sur l'écran de la PR #50 et
-        décrit la modification à venir.</li>
+      <li>Le code correspondant vit dans <code>ios/Eudes/UI/SettingsView.swift</code> (PR #50) ;
+        cette maquette reste la référence visuelle de la proposition.</li>
       <li>Le correctif du badge « Recommandé » (PR #56) devra être reporté sur cette liste :
         c'est le même endroit, il se tronque en texte agrandi.</li>
     </ul>
@@ -493,7 +493,7 @@ const SCENARIOS = [
 
 /* ====================== État ====================== */
 const state = {
-  scenario:'trois', theme:'light', gauge:'now',
+  scenario:'trois', theme:'light', gauge:'b',
   installed:new Set(), active:null, device:8,
   filterAll:'all', filterInstalled:'installed',
   weightOpen:false,
@@ -798,7 +798,12 @@ function catalogHTML(filter, interactive){
   const countText = filter === 'installed'
     ? `${list.length} ${noun} installé${list.length > 1 ? 's' : ''}`
     : `${list.length} ${noun}`;
-  const legend = [1,2,3,4,5].map(i => `<i style="background:var(--c${i})"></i>`).join('');
+  const legend = [1,2,3,4,5].map(i => {
+    if (state.gauge === 'b' || state.gauge === 'c'){
+      return `<i style="background:var(--ink);opacity:${Math.min(1, 0.15 + 0.21 * i).toFixed(2)}"></i>`;
+    }
+    return `<i style="background:var(--c${i})"></i>`;
+  }).join('');
   const empty = filter === 'installed'
     ? 'Aucun modèle téléchargé pour l’instant. Choisis-en un sous « Tous », ou garde Apple Intelligence.'
     : 'Aucun modèle ne correspond à ce filtre.';

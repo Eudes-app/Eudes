@@ -254,7 +254,7 @@ private struct ConnectionSettingsView: View {
     @State private var showingInfo = false
     /// Une seule alerte pour toutes les suppressions de l'écran : deux `.alert` sur la
     /// même vue se remplacent, et la seconde ne se déclencherait jamais.
-    @State private var pendingDeletion: SettingsDeletion?
+    @State private var pendingDeletion: ServerProfile?
 
     var body: some View {
         SettingsForm {
@@ -287,62 +287,9 @@ private struct ConnectionSettingsView: View {
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
-            // Ce qui peut répondre ici, maintenant : Apple Intelligence et chaque modèle
-            // déjà téléchargé. C'est la seule liste où l'on voit d'un coup ce qui tient
-            // dans la poche, sans ouvrir le catalogue.
+            // Le catalogue entier derrière la carte du modèle actuel : la page répond
+            // d'abord à « quel modèle pour quoi », elle ne redit pas la liste.
             Section {
-                if store.connectionChoices.contains(where: { $0.isApple }) {
-                    Button {
-                        store.selectServer(ServerProfile.appleID)
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Apple Intelligence").foregroundStyle(Palette.ink)
-                                Text("Sur l'iPhone, sans réglage.").font(.caption).foregroundStyle(Palette.muted)
-                            }
-                            Spacer()
-                            if store.selectedServer?.isApple == true {
-                                Image(systemName: "checkmark").accessibilityLabel("Sélectionné")
-                            }
-                        }
-                    }
-                    .disabled(store.isPreparingSend)
-                }
-                if installedModels.isEmpty {
-                    Text("Aucun modèle téléchargé pour l’instant.")
-                        .font(.callout)
-                        .foregroundStyle(Palette.muted)
-                } else {
-                    ForEach(installedModels) { model in
-                        InstalledModelRow(model: model) {
-                            info = model
-                            showingInfo = true
-                        } onDelete: {
-                            pendingDeletion = .model(model)
-                        }
-                    }
-                }
-            } header: { Text("Modèles téléchargés") }
-            footer: { Text("Un modèle téléchargé reste sur l’iPhone et fonctionne sans réseau.") }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-
-            // Le catalogue entier derrière une seule ligne : la page répond d'abord à
-            // « quel modèle pour quoi », elle n'annonce pas treize fois le même fichier.
-            Section {
-                NavigationLink {
-                    AllModelsView(inventory: inventory)
-                } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Tous les modèles").foregroundStyle(Palette.ink)
-                        Text("\(LocalModelCatalog.models.count) modèles, du plus léger au plus lourd")
-                            .font(.caption)
-                            .foregroundStyle(Palette.muted)
-                    }
-                    .multilineTextAlignment(.leading)
-                }
-                .accessibilityIdentifier("models.all")
-
                 NavigationLink {
                     AdvancedModelSettingsView(inventory: inventory)
                 } label: {
@@ -353,7 +300,7 @@ private struct ConnectionSettingsView: View {
                     .multilineTextAlignment(.leading)
                 }
                 .accessibilityIdentifier("models.advanced")
-            } header: { Text("Autres modèles") }
+            } header: { Text("Avancé") }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
@@ -377,7 +324,7 @@ private struct ConnectionSettingsView: View {
                     }
                     .contextMenu { Button("Dupliquer", systemImage: "doc.on.doc") { duplicatingServer = profile } }
                     .swipeActions(edge: .leading) { Button("Dupliquer") { duplicatingServer = profile }.tint(Palette.accent) }
-                    .swipeActions { Button("Supprimer") { pendingDeletion = .server(profile) }.tint(Palette.accent) }
+                    .swipeActions { Button("Supprimer") { pendingDeletion = profile }.tint(Palette.accent) }
                 }
                 Button { addServer = true } label: { Label("Ajouter un serveur", systemImage: "plus.circle") }
             }
@@ -395,65 +342,43 @@ private struct ConnectionSettingsView: View {
         .sheet(isPresented: $addServer) { ServerEditorView() }
         .sheet(item: $editingServer) { ServerEditorView(profile: $0) }
         .sheet(item: $duplicatingServer) { ServerEditorView(duplicating: $0) }
-        .alert(deletionTitle, isPresented: Binding(get: { pendingDeletion != nil },
-                                                   set: { if !$0 { pendingDeletion = nil } })) {
-            deletionActions
-        } message: {
-            deletionMessage
-        }
-    }
-
-    private var deletionTitle: String {
-        pendingDeletion?.isModel == true ? "Supprimer le modèle ?" : "Supprimer ce serveur ?"
-    }
-
-    @ViewBuilder private var deletionActions: some View {
-        Button("Annuler", role: .cancel) { pendingDeletion = nil }
-        if let pendingDeletion {
-            switch pendingDeletion {
-            case .server(let profile):
+        .alert("Supprimer ce serveur ?", isPresented: Binding(get: { pendingDeletion != nil },
+                                                            set: { if !$0 { pendingDeletion = nil } })) {
+            Button("Annuler", role: .cancel) { pendingDeletion = nil }
+            if let pendingDeletion {
                 Button("Supprimer") {
-                    store.deleteServer(profile)
+                    store.deleteServer(pendingDeletion)
                     self.pendingDeletion = nil
                 }
-            case .model(let model):
-                Button("Supprimer \(model.title)", role: .destructive) {
-                    self.pendingDeletion = nil
-                    inventory.errorMessage = nil
-                    Task {
-                        do { try await store.deleteLocalModel(model.id) }
-                        catch { inventory.errorMessage = error.localizedDescription }
-                        await inventory.refresh()
-                    }
-                }
             }
-        }
-    }
-
-    @ViewBuilder private var deletionMessage: some View {
-        if let pendingDeletion {
-            switch pendingDeletion {
-            case .server:
-                Text("La clé API sera supprimée. Les anciennes conversations resteront lisibles, sans connexion à ce serveur.")
-            case .model(let model):
-                Text("\(model.sizeLabel) seront libérés. Tes conversations restent intactes.")
-            }
+        } message: {
+            Text("La clé API sera supprimée. Les anciennes conversations resteront lisibles, sans connexion à ce serveur.")
         }
     }
 
     /// La carte du modèle qui répond : son nom, ce qu'il est, son poids en clair, puis
-    /// le seul geste de cet endroit — changer de modèle dans le catalogue.
+    /// le seul geste de cet endroit — ouvrir le catalogue. La fiche du modèle actif
+    /// s'ouvre depuis sa ligne du catalogue.
     @ViewBuilder private var currentModelCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        NavigationLink {
+            AllModelsView(inventory: inventory)
+        } label: {
             if let model = usedModel {
                 HStack(alignment: .top, spacing: 10) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(model.title)
                             .font(.title3.weight(.bold))
                             .foregroundStyle(Palette.ink)
-                        Text("\(modelKind(model)) · \(modelWeightSummary(model))")
+                        Text(modelKind(model))
                             .font(.subheadline)
                             .foregroundStyle(Palette.muted)
+                        HStack(spacing: 6) {
+                            ModelWeightGauge(level: ModelWeightLevel.forBytes(model.downloadBytes), wide: true)
+                            Text(modelWeightSummary(model))
+                                .font(.caption)
+                                .foregroundStyle(Palette.muted)
+                                .lineLimit(1)
+                        }
                     }
                     Spacer(minLength: 8)
                     Image(systemName: "checkmark.circle.fill")
@@ -461,42 +386,23 @@ private struct ConnectionSettingsView: View {
                         .foregroundStyle(Palette.ink)
                         .accessibilityLabel("\(model.title) est utilisé pour les messages")
                 }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    info = model
-                    showingInfo = true
-                }
-                .accessibilityIdentifier("models.used")
-                changeModelLink(title: "Changer de modèle")
+                .padding(.vertical, 4)
             } else {
                 // Apple ou un serveur API : l'état se dit ici, le changement se fait dans
                 // le catalogue — pas de fiche à ouvrir.
-                Text(engineTitle)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(Palette.ink)
-                Text(engineSubtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(Palette.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                changeModelLink(title: "Choisir un modèle")
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(engineTitle)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Palette.ink)
+                    Text(engineSubtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(Palette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 4)
             }
         }
-        .padding(.vertical, 4)
-    }
-
-    private func changeModelLink(title: String) -> some View {
-        NavigationLink {
-            AllModelsView(inventory: inventory)
-        } label: {
-            Text(title)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(Palette.onAccent)
-                .padding(.horizontal, 15)
-                .padding(.vertical, 9)
-                .background(Palette.accent, in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("models.change")
+        .accessibilityIdentifier("models.used")
     }
 
     /// Un usage sans modèle assez léger disparaît de la liste : la ligne qui reste doit
@@ -531,14 +437,6 @@ private struct ConnectionSettingsView: View {
         if selected.isApple { return "L'iPhone répond, sans téléchargement." }
         if selected.isLocalLFM { return "Fichiers absents : ouvre le catalogue pour le télécharger." }
         return "Les réponses viennent de ce serveur."
-    }
-
-    /// Les modèles posés sur l'iPhone, du plus léger au plus lourd : c'est l'ordre du
-    /// catalogue, celui que la page garde partout.
-    private var installedModels: [LocalModelCatalog.Model] {
-        LocalModelCatalog.models
-            .filter { inventory.isInstalled($0) }
-            .sorted { $0.downloadBytes < $1.downloadBytes }
     }
 }
 
@@ -623,18 +521,6 @@ private enum PendingModelAction: Equatable {
 
     var isRemoval: Bool {
         if case .remove = self { return true }
-        return false
-    }
-}
-
-/// Les suppressions de l'écran « Modèles et serveurs » : une clé API ou les fichiers
-/// d'un modèle. Elles partagent une alerte, jamais deux.
-private enum SettingsDeletion {
-    case server(ServerProfile)
-    case model(LocalModelCatalog.Model)
-
-    var isModel: Bool {
-        if case .model = self { return true }
         return false
     }
 }
@@ -1111,6 +997,12 @@ private struct UsageRow: View {
                 Text(installed ? "\(model.title) · installé" : model.title)
                     .font(.caption)
                     .foregroundStyle(Palette.muted)
+                HStack(spacing: 6) {
+                    ModelWeightGauge(level: ModelWeightLevel.forBytes(model.downloadBytes), compact: true)
+                    Text(modelWeightSummary(model))
+                        .font(.caption2)
+                        .foregroundStyle(Palette.muted)
+                }
             }
             .multilineTextAlignment(.leading)
             Spacer(minLength: 8)
@@ -1123,10 +1015,6 @@ private struct UsageRow: View {
                 Text("Utiliser")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Palette.ink)
-            } else {
-                Text(model.sizeLabel)
-                    .font(.caption)
-                    .foregroundStyle(Palette.muted)
             }
         }
         .contentShape(Rectangle())
@@ -1144,60 +1032,12 @@ private struct UsageRow: View {
     }
 }
 
-/// Une ligne « Modèles téléchargés » : le nom, son poids en clair et un seul geste —
-/// utiliser ce modèle. La fiche (informations, suppression) s'ouvre par appui long.
-private struct InstalledModelRow: View {
-    @EnvironmentObject private var store: AppStore
-    let model: LocalModelCatalog.Model
-    var onOpen: () -> Void
-    var onDelete: () -> Void
-
-    private var selected: Bool {
-        store.selectedServer?.isLocalLFM == true && store.selectedServer?.model == model.id
-    }
-
-    var body: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(model.title)
-                    .font(.body.weight(selected ? .semibold : .regular))
-                    .foregroundStyle(Palette.ink)
-                Text(modelWeightSummary(model))
-                    .font(.caption)
-                    .foregroundStyle(Palette.muted)
-            }
-            .multilineTextAlignment(.leading)
-            Spacer(minLength: 8)
-            if selected {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Palette.ink)
-                    .accessibilityLabel("Utilisé pour les messages")
-            } else {
-                Text("Utiliser")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Palette.ink)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard !selected, !store.isPreparingSend else { return }
-            store.selectLocalModel(model.id)
-        }
-        .contextMenu {
-            Button("Informations", systemImage: "info.circle", action: onOpen)
-            Button("Supprimer le modèle", systemImage: "trash", role: .destructive, action: onDelete)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("installed.\(model.id)")
-    }
-}
-
-/// Le catalogue complet, ouvert depuis la carte du modèle actuel ou la ligne « Tous les
-/// modèles » : un seul ordre, du plus léger au plus lourd, un filtre par capacité et un
-/// geste par ligne. L'explication de la jauge ne précède plus la liste, elle se déplie.
+/// Le catalogue complet, ouvert depuis la carte du modèle actuel : un seul ordre, du plus
+/// léger au plus lourd, un filtre par capacité et un geste par ligne. Le filtre
+/// « Installés » remplace l'ancienne section des modèles téléchargés, et Apple
+/// Intelligence garde sa ligne, hors liste triée par poids.
 private struct AllModelsView: View {
+    @EnvironmentObject private var store: AppStore
     @ObservedObject var inventory: LocalModelInventory
     @State private var info: LocalModelCatalog.Model?
     @State private var showingInfo = false
@@ -1206,37 +1046,41 @@ private struct AllModelsView: View {
 
     var body: some View {
         SettingsForm {
+            if showsAppleRow {
+                Section {
+                    appleRow
+                }
+                .listRowBackground(Palette.surface)
+                .listRowSeparatorTint(Palette.border)
+            }
+
             Section {
-                DisclosureGroup(isExpanded: $showsWeightExplanation) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ModelWeightLegend()
-                        Text("Plus la jauge est remplie, plus le modèle est lourd : il peut faire chauffer le téléphone et consommer davantage de batterie. Le poids affiché est la taille du téléchargement.")
+                filterRow
+                if showsWeightExplanation {
+                    weightExplanation
+                }
+            } footer: {
+                HStack(spacing: 8) {
+                    Text(countLabel)
+                    Spacer(minLength: 0)
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) { showsWeightExplanation.toggle() }
+                    } label: {
+                        Text("Comprendre le poids")
                             .font(.caption)
                             .foregroundStyle(Palette.muted)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.top, 6)
-                } label: {
-                    Text("Comprendre le poids")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Palette.ink)
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("models.weight")
+                    .accessibilityValue(showsWeightExplanation ? "Déplié" : "Replié")
                 }
-                .accessibilityIdentifier("models.weight")
-            } footer: {
-                Text("\(LocalModelCatalog.models.count) modèles, du plus léger au plus lourd. Un seul modèle répond à la fois.")
             }
             .listRowBackground(Palette.surface)
             .listRowSeparatorTint(Palette.border)
 
             Section {
-                filterRow
-            } footer: { Text(countLabel) }
-            .listRowBackground(Palette.surface)
-            .listRowSeparatorTint(Palette.border)
-
-            Section {
                 if visibleModels.isEmpty {
-                    Text("Aucun modèle ne correspond à ce filtre.")
+                    Text(emptyMessage)
                         .font(.callout)
                         .foregroundStyle(Palette.muted)
                 } else {
@@ -1262,6 +1106,69 @@ private struct AllModelsView: View {
         }
     }
 
+    /// Apple Intelligence répond déjà, sans fichier : il ne peut pas vivre dans la liste
+    /// triée par poids, mais il doit rester sélectionnable ici. Sous le filtre « Images »,
+    /// qui parle des modèles à télécharger, sa ligne n'a rien à faire.
+    private var showsAppleRow: Bool {
+        filter != .images && store.connectionChoices.contains { $0.isApple }
+    }
+
+    @ViewBuilder private var appleRow: some View {
+        Button {
+            store.selectServer(ServerProfile.appleID)
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Palette.ink)
+                    .frame(width: 30, height: 30)
+                    .background(Palette.userBubble, in: Circle())
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Apple Intelligence")
+                        .foregroundStyle(Palette.ink)
+                    Text("Répond sur l'iPhone, sans réglage.")
+                        .font(.caption)
+                        .foregroundStyle(Palette.muted)
+                }
+                Spacer(minLength: 8)
+                if store.selectedServer?.isApple == true {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Palette.ink)
+                        .accessibilityLabel("Utilisé pour les messages")
+                } else {
+                    Text("Utiliser")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Palette.ink)
+                }
+            }
+        }
+        .disabled(store.isPreparingSend)
+        .accessibilityIdentifier("models.apple")
+    }
+
+    private var weightExplanation: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ModelWeightLegend()
+            Text("Plus la jauge est remplie, plus le modèle est lourd : il peut faire chauffer le téléphone et consommer davantage de batterie. Le poids affiché est la taille du téléchargement.")
+                .font(.caption)
+                .foregroundStyle(Palette.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var emptyMessage: String {
+        filter == .installed
+            ? "Aucun modèle téléchargé pour l'instant. Choisis-en un sous « Tous »."
+            : "Aucun modèle ne correspond à ce filtre."
+    }
+
+    private var installedCount: Int {
+        LocalModelCatalog.models.filter { inventory.isInstalled($0) }.count
+    }
+
     /// Un seul ordre, toujours le même : du plus léger au plus lourd, filtre appliqué.
     private var visibleModels: [LocalModelCatalog.Model] {
         LocalModelCatalog.models
@@ -1282,7 +1189,7 @@ private struct AllModelsView: View {
                 Button {
                     withAnimation(.easeInOut(duration: 0.15)) { filter = option }
                 } label: {
-                    Text(option.title)
+                    Text(option == .installed ? "\(option.title) · \(installedCount)" : option.title)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(filter == option ? Palette.onAccent : Palette.muted)
                         .padding(.horizontal, 11)
