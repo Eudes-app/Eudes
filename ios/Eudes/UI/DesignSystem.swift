@@ -14,6 +14,9 @@ enum Palette {
     static let warningText = Color(light: 0xB42318, dark: 0xFF6961)
     static let muted = Color(light: 0x777777, dark: 0xA3A3A3)
     static let border = Color(light: 0xE8E8E8, dark: 0x383838)
+    /// Piste d'une jauge vide : assez soutenue pour qu'on compte les segments restants,
+    /// assez discrète pour ne pas concurrencer la valeur remplie.
+    static let track = Color(light: 0xD8D8DE, dark: 0x414146)
     static let onAccent = Color(light: 0xFFFFFF, dark: 0x000000)
     static let scrim = Color.black.opacity(0.25)
     static let shadow = Color.black.opacity(0.08)
@@ -221,16 +224,20 @@ enum ModelWeightLevel: Int, CaseIterable, Sendable {
         }
     }
 
-    /// Couleur d'un segment vide : celle de la ligne qui porte la jauge, pour
-    /// ne pas se voir — adaptative clair/sombre avec le reste de Palette.
-    static let emptyColor = Palette.surface
+    /// Couleur d'un segment vide : une piste visible, pour que la jauge se lise même
+    /// quand elle n'est remplie qu'au premier palier.
+    static let emptyColor = Palette.track
 }
 
 /// Cinq segments arrondis : les `level` premiers prennent leur couleur, les autres
-/// restent gris. La version compacte, sans étiquette, tient sur une ligne de liste.
+/// restent sur la piste. `wide` les répartit sur la largeur disponible (carte du modèle actuel).
 struct ModelWeightGauge: View {
     let level: ModelWeightLevel
     var compact = false
+    var wide = false
+
+    private var segmentHeight: CGFloat { compact ? 4 : (wide ? 6 : 5) }
+    private var segmentWidth: CGFloat? { wide ? nil : (compact ? 5 : 12) }
 
     var body: some View {
         HStack(spacing: compact ? 2 : 3) {
@@ -239,12 +246,8 @@ struct ModelWeightGauge: View {
                     .fill(index <= level.rawValue
                           ? ModelWeightLevel.segmentColor(index)
                           : ModelWeightLevel.emptyColor)
-                    .frame(width: compact ? 5 : 12, height: compact ? 4 : 5)
-            }
-            if !compact {
-                Text(level.label)
-                    .font(.caption2)
-                    .foregroundStyle(Palette.muted)
+                    .frame(width: segmentWidth, height: segmentHeight)
+                    .frame(maxWidth: wide ? .infinity : nil)
             }
         }
         .accessibilityElement(children: .ignore)

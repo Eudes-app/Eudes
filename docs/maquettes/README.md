@@ -22,3 +22,21 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
 - `rangement-automatique-conversations.html` — le rangement automatique en quatre
   écrans : plan à cocher case par case, bandeau d'annulation complet, réglages avec
   profondeur et modèle d'analyse ; jamais de déplacement silencieux (issue #45).
+- `catalogue-simplifie.html` / `.png` / `-sombre.png` — les deux écrans du choix d'un
+  modèle, dans un seul flux : « Modèles et serveurs » (modèle actuel en tête, trois
+  usages, modèles téléchargés) et « Choisir un modèle » (un seul ordre du plus léger au
+  plus lourd, poids écrit en clair, filtres Texte / Images / Installés, un geste par
+  ligne). Interactions réelles : sélection, téléchargement simulé avec progression,
+  fiche « i » avec suppression, clair et sombre (issue #49). Le code correspondant est
+  dans `ios/Eudes/UI/SettingsView.swift` (PR #50).
+- `menu-modeles-conversation.html` / `.png` / `-sombre.png` — le menu de la conversation :
+  la capsule du modèle, Apple Intelligence, les modèles installés avec leur taille, la
+  coche du modèle actif et « Tous les modèles ». Quatre états (aucun, un, trois, six
+  modèles installés), sélection réelle et bascule clair / sombre (issue #49, PR #50).
+  Une comparaison des trois densités de ligne — taille seule, niveau en mots, jauge
+  complète — aide à trancher la place du poids dans ce menu.
+- `catalogue-direct.html` — les modèles sur une seule page : la carte du modèle actuel
+  mène directement au catalogue, qui porte les filtres Tous / Texte / Images / Installés
+  (avec son compte) et une ligne Apple Intelligence hors liste triée par poids. La
+  section « Modèles téléchargés » et la ligne « Tous les modèles » disparaissent ; le
+  troisième téléphone montre le catalogue ouvert sur « Installés » (suite de la PR #50).
