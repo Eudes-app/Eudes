@@ -35,3 +35,8 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
   modèles installés), sélection réelle et bascule clair / sombre (issue #49, PR #50).
   Une comparaison des trois densités de ligne — taille seule, niveau en mots, jauge
   complète — aide à trancher la place du poids dans ce menu.
+- `catalogue-direct.html` — les modèles sur une seule page : la carte du modèle actuel
+  mène directement au catalogue, qui porte les filtres Tous / Texte / Images / Installés
+  (avec son compte) et une ligne Apple Intelligence hors liste triée par poids. La
+  section « Modèles téléchargés » et la ligne « Tous les modèles » disparaissent ; le
+  troisième téléphone montre le catalogue ouvert sur « Installés » (suite de la PR #50).
