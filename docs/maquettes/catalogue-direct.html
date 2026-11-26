@@ -329,7 +329,8 @@
     <ul>
       <li><b>Une seule porte vers le catalogue.</b> La carte du modèle actuel est entièrement
         cliquable, avec un chevron : elle ouvre le catalogue au lieu d'une fiche séparée.
-        La fiche du modèle actif reste accessible depuis sa ligne du catalogue.</li>
+        Elle garde son nom, son type et la jauge de poids sous le nom. La fiche du modèle
+        actif reste accessible depuis sa ligne du catalogue.</li>
       <li><b>La liste des téléchargés disparaît.</b> Son rôle est repris par le filtre
         « Installés », qui affiche son compte, et par la coche du modèle actif. La suppression
         d'un modèle reste dans la fiche et l'appui long.</li>
@@ -513,10 +514,10 @@ function currentCardHTML(){
         </div>
       </button></div>`;
   }
-  const title = isApple(active) ? APPLE.name : model(active).name;
-  const meta = isApple(active)
-    ? 'Sur l’iPhone, sans réglage.'
-    : `${model(active).images ? 'Texte + images' : 'Texte'} · ${LEVEL_LABEL[levelOf(model(active).gb)]} · ${model(active).size}`;
+  const m = isApple(active) ? null : model(active);
+  const title = m ? m.name : APPLE.name;
+  const meta = m ? (m.images ? 'Texte + images' : 'Texte') : 'Sur l’iPhone, sans réglage.';
+  const gauge = m ? weightLine(m) : '';
   const aria = isApple(active) ? 'Changer de modèle — Apple Intelligence est utilisé' : `Changer de modèle — ${title} est utilisé`;
   return `
     <div class="group"><button class="current row" data-act="focus-catalog" aria-label="${aria}" style="display:block;">
@@ -524,6 +525,7 @@ function currentCardHTML(){
         <div class="grow">
           <div class="nm">${title}</div>
           <div class="meta">${meta}</div>
+          ${gauge}
         </div>
         <span class="check-icon" aria-label="Utilisé pour les messages">${ICONS.checkCircle}</span>
         <span class="chev">${ICONS.chevron}</span>
