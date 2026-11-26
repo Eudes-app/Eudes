@@ -300,8 +300,8 @@
       </div>
       <div class="seg" role="group" aria-label="Jauge de poids">
         <button data-act="gauge" data-g="now">Actuelle</button>
-        <button data-act="gauge" data-g="a">A · lisible</button>
-        <button data-act="gauge" data-g="b" class="on">B · encre</button>
+        <button data-act="gauge" data-g="a" class="on">A · lisible</button>
+        <button data-act="gauge" data-g="b">B · encre</button>
         <button data-act="gauge" data-g="c">C · barre</button>
       </div>
       <div class="scenarios" id="scenarios" role="group" aria-label="Scénario"></div>
@@ -388,7 +388,7 @@
         perdu des modèles.</li>
       <li><b>La jauge se compare en haut de page.</b> « Actuelle » garde le rendu d'aujourd'hui
         (piste très pâle) ; A éclaircit la piste en gardant le code couleur, B passe tout en
-        encre, C remplace les cinq paliers par une barre proportionnelle à la taille. B est la
+        encre, C remplace les cinq paliers par une barre proportionnelle à la taille. A est la
         variante retenue pour le code ; le sélecteur reste là pour comparer.</li>
     </ul>
 
@@ -493,7 +493,7 @@ const SCENARIOS = [
 
 /* ====================== État ====================== */
 const state = {
-  scenario:'trois', theme:'light', gauge:'b',
+  scenario:'trois', theme:'light', gauge:'a',
   installed:new Set(), active:null, device:8,
   filterAll:'all', filterInstalled:'installed',
   weightOpen:false,

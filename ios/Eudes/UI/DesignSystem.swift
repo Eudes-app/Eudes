@@ -213,13 +213,24 @@ enum ModelWeightLevel: Int, CaseIterable, Sendable {
         }
     }
 
+    /// Couleur du segment à cette position, du vert au rouge.
+    static func segmentColor(_ index: Int) -> Color {
+        switch index {
+        case 1: Color(red: 34 / 255, green: 197 / 255, blue: 94 / 255)
+        case 2: Color(red: 132 / 255, green: 204 / 255, blue: 22 / 255)
+        case 3: Color(red: 234 / 255, green: 179 / 255, blue: 8 / 255)
+        case 4: Color(red: 249 / 255, green: 115 / 255, blue: 22 / 255)
+        default: Color(red: 239 / 255, green: 68 / 255, blue: 68 / 255)
+        }
+    }
+
     /// Couleur d'un segment vide : une piste visible, pour que la jauge se lise même
     /// quand elle n'est remplie qu'au premier palier.
     static let emptyColor = Palette.track
 }
 
-/// Cinq segments arrondis : les `level` premiers prennent l'encre, les autres restent
-/// sur la piste. `wide` les répartit sur la largeur disponible (carte du modèle actuel).
+/// Cinq segments arrondis : les `level` premiers prennent leur couleur, les autres
+/// restent sur la piste. `wide` les répartit sur la largeur disponible (carte du modèle actuel).
 struct ModelWeightGauge: View {
     let level: ModelWeightLevel
     var compact = false
@@ -232,7 +243,9 @@ struct ModelWeightGauge: View {
         HStack(spacing: compact ? 2 : 3) {
             ForEach(1...5, id: \.self) { index in
                 Capsule()
-                    .fill(index <= level.rawValue ? Palette.ink : ModelWeightLevel.emptyColor)
+                    .fill(index <= level.rawValue
+                          ? ModelWeightLevel.segmentColor(index)
+                          : ModelWeightLevel.emptyColor)
                     .frame(width: segmentWidth, height: segmentHeight)
                     .frame(maxWidth: wide ? .infinity : nil)
             }
@@ -243,13 +256,13 @@ struct ModelWeightGauge: View {
     }
 }
 
-/// Bande de démonstration : le remplissage croissant de la jauge, du plus léger au plus lourd.
+/// Bande de démonstration : les cinq couleurs de la jauge, dans l'ordre.
 struct ModelWeightLegend: View {
     var body: some View {
         HStack(spacing: 3) {
             ForEach(1...5, id: \.self) { index in
                 Capsule()
-                    .fill(Palette.ink.opacity(min(1, 0.15 + 0.21 * Double(index))))
+                    .fill(ModelWeightLevel.segmentColor(index))
                     .frame(height: 6)
                     .frame(maxWidth: .infinity)
             }
