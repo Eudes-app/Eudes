@@ -11,14 +11,14 @@
     --surface:#F7F7F7; --user-bubble:#F0F0F0; --assistant-bubble:#FAFAFA; --ink:#171717;
     --warning:#B42318; --muted:#777777; --border:#E8E8E8; --on-accent:#FFFFFF;
     --page:#ECECEE; --page-ink:#171717; --page-muted:#6B6B6B; --card:#FFFFFF; --card-border:#DFDFDF;
-    --scrim:rgba(0,0,0,.32);
+    --scrim:rgba(0,0,0,.32); --track:#D8D8DE;
   }
   html[data-theme="dark"]{
     --accent:#FFFFFF; --background:#171717; --background-top:#303030; --background-middle:#242424;
     --surface:#242424; --user-bubble:#343434; --assistant-bubble:#252525; --ink:#FFFFFF;
     --warning:#FF6961; --muted:#A3A3A3; --border:#383838; --on-accent:#000000;
     --page:#0D0D0D; --page-ink:#F2F2F2; --page-muted:#9A9A9A; --card:#1D1D1D; --card-border:#2E2E2E;
-    --scrim:rgba(0,0,0,.55);
+    --scrim:rgba(0,0,0,.55); --track:#414146;
   }
   /* Cinq paliers de poids, identiques à ModelWeightLevel.segmentColor. */
   :root{
@@ -148,16 +148,44 @@
   .link{font:inherit; font-size:12px; color:var(--muted); background:none; border:0; padding:2px 4px; cursor:pointer;}
 
   /* ===== Jauge de poids ===== */
-  .weight{display:flex; align-items:center; gap:3px; margin-top:4px;}
-  .weight i{display:block; width:5px; height:4px; border-radius:999px; background:var(--border);}
-  .weight i.on:nth-child(1){background:var(--c1);} .weight i.on:nth-child(2){background:var(--c2);}
-  .weight i.on:nth-child(3){background:var(--c3);} .weight i.on:nth-child(4){background:var(--c4);}
-  .weight i.on:nth-child(5){background:var(--c5);}
-  .weight span{font-size:11px; color:var(--muted); margin-left:4px; white-space:nowrap;}
-  .r-foot .weight{flex:none; margin-top:0;}
-  .weight.big{margin-top:6px;}
-  .weight.big i{width:26px; height:6px; flex:1;}
-  .weight.big span{font-size:12px; margin-left:6px;}
+  .gauge{display:flex; align-items:center; gap:3px; margin-top:4px; min-width:0;}
+  .gauge i{display:block; flex:none; width:6px; height:5px; border-radius:999px; background:var(--track);}
+  .gauge span{font-size:11px; color:var(--muted); margin-left:4px; white-space:nowrap;
+              overflow:hidden; text-overflow:ellipsis; flex:0 1 auto; min-width:0;}
+  .gauge.big{margin-top:6px;}
+  .gauge.big i{width:auto; height:6px; flex:1;}
+  .gauge.big span{font-size:12px; margin-left:6px;}
+  /* A — même code couleur, piste lisible. */
+  .gauge.g-a i.on.s1{background:var(--c1);} .gauge.g-a i.on.s2{background:var(--c2);}
+  .gauge.g-a i.on.s3{background:var(--c3);} .gauge.g-a i.on.s4{background:var(--c4);}
+  .gauge.g-a i.on.s5{background:var(--c5);}
+  /* B — tout en encre, le niveau se lit au nombre de segments. */
+  .gauge.g-b i.on{background:var(--ink);}
+  /* Actuelle — ce que l'app fait aujourd'hui : petits segments, piste très pâle. */
+  .gauge.g-now i{width:5px; height:4px; background:var(--border);}
+  .gauge.g-now span{font-size:11px;}
+  .gauge.g-now i.on:nth-child(1){background:var(--c1);}
+  .gauge.g-now i.on:nth-child(2){background:var(--c2);}
+  .gauge.g-now i.on:nth-child(3){background:var(--c3);}
+  .gauge.g-now i.on:nth-child(4){background:var(--c4);}
+  .gauge.g-now i.on:nth-child(5){background:var(--c5);}
+  /* C — barre continue proportionnelle à la taille. */
+  .gauge-line{display:flex; align-items:center; gap:8px; margin-top:4px; min-width:0;}
+  .gauge-line .bar{display:block; flex:none; width:56px; height:6px; border-radius:999px;
+                   background:var(--track); overflow:hidden;}
+  .gauge-line .bar i{display:block; height:100%; border-radius:999px; background:var(--ink);}
+  .gauge-line.big{margin-top:6px;}
+  .gauge-line.big .bar{flex:1; width:auto;}
+  .gauge-line .gtext{font-size:11px; color:var(--muted); white-space:nowrap;
+                     overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  .gauge-line.big .gtext{font-size:12px;}
+  .r-foot .gauge,
+  .r-foot .gauge-line{flex:0 1 auto; min-width:0; margin-top:0;}
+  /* Comparateur du haut de page */
+  .gauge-samples{display:flex; flex-wrap:wrap; gap:10px 22px; margin:-8px 0 22px;}
+  .gauge-samples .gs{display:flex; align-items:center; gap:9px;}
+  .gauge-samples .gs b{font-size:12px; min-width:104px;}
+  .gauge-samples .gs small{color:var(--page-muted); font-size:11.5px;}
 
   /* ===== Filtres et compte ===== */
   .filters{display:flex; gap:6px; margin:10px 0 4px; flex-wrap:wrap;}
@@ -261,16 +289,25 @@
       « Tous les modèles » disparaissent. Les trois téléphones partagent le même état : choisis un
       modèle, la carte de gauche se met à jour ; le troisième montre le catalogue ouvert sur
       « Installés ». Rien n'est envoyé, rien n'est téléchargé — les tailles et les textes sont ceux
-      du catalogue réel.
+      du catalogue réel. Le sélecteur « Jauge » applique trois traitements à toute la page :
+      A garde le code couleur avec une piste lisible, B passe les segments en encre, C remplace
+      les paliers par une barre proportionnelle ; « Actuelle » montre l'existant.
     </p>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="Apparence">
         <button data-act="theme" data-t="light" class="on">Clair</button>
         <button data-act="theme" data-t="dark">Sombre</button>
       </div>
+      <div class="seg" role="group" aria-label="Jauge de poids">
+        <button data-act="gauge" data-g="now" class="on">Actuelle</button>
+        <button data-act="gauge" data-g="a">A · lisible</button>
+        <button data-act="gauge" data-g="b">B · encre</button>
+        <button data-act="gauge" data-g="c">C · barre</button>
+      </div>
       <div class="scenarios" id="scenarios" role="group" aria-label="Scénario"></div>
     </div>
     <p class="hint" id="scenario-hint"></p>
+    <div class="gauge-samples" id="gauge-samples"></div>
   </header>
 
   <div class="board">
@@ -349,6 +386,10 @@
       <li><b>Le filtre par défaut reste « Tous ».</b> « Installés » est à un appui, mais un
         filtre mémorisé qui rouvrirait sur « Installés » ferait croire que le catalogue a
         perdu des modèles.</li>
+      <li><b>La jauge se compare en haut de page.</b> « Actuelle » garde le rendu d'aujourd'hui
+        (piste très pâle) ; A éclaircit la piste en gardant le code couleur, B passe tout en
+        encre, C remplace les cinq paliers par une barre proportionnelle à la taille. Le choix
+        s'applique aux trois écrans en même temps.</li>
     </ul>
 
     <h3>Ce que la maquette ne fait pas</h3>
@@ -452,7 +493,7 @@ const SCENARIOS = [
 
 /* ====================== État ====================== */
 const state = {
-  scenario:'trois', theme:'light',
+  scenario:'trois', theme:'light', gauge:'now',
   installed:new Set(), active:null, device:8,
   filterAll:'all', filterInstalled:'installed',
   weightOpen:false,
@@ -496,9 +537,21 @@ const ICONS = {
 /* ====================== Rendu : jauge et pastilles ====================== */
 function weightLine(m, opts){
   const big = opts && opts.big;
+  const variant = (opts && opts.variant) || state.gauge;
   const level = levelOf(m.gb);
-  const segs = [1,2,3,4,5].map(i => `<i class="${i <= level ? 'on' : ''}"></i>`).join('');
-  return `<div class="weight${big ? ' big' : ''}" aria-label="Poids : ${LEVEL_LABEL[level]}, ${m.size}">${segs}<span>${LEVEL_LABEL[level]} · ${m.size}</span></div>`;
+  const label = `${LEVEL_LABEL[level]} · ${m.size}`;
+  const aria = `aria-label="Poids : ${LEVEL_LABEL[level]}, ${m.size}"`;
+  if (variant === 'c'){
+    const fill = Math.min(100, Math.round((m.gb / 5.33) * 100));
+    return `<div class="gauge-line${big ? ' big' : ''}" ${aria}>
+      <span class="bar"><i style="width:${fill}%"></i></span>
+      <span class="gtext">${label}</span>
+    </div>`;
+  }
+  const segs = [1,2,3,4,5]
+    .map(i => `<i class="${i <= level ? 'on s' + i : ''}"></i>`)
+    .join('');
+  return `<div class="gauge g-${variant}${big ? ' big' : ''}" ${aria}>${segs}<span>${label}</span></div>`;
 }
 function recommendedBadge(){
   return `<span class="badge">Recommandé</span>`;
@@ -910,6 +963,12 @@ document.addEventListener('click', event => {
       document.querySelectorAll('[data-act="theme"]').forEach(b =>
         b.classList.toggle('on', b.dataset.t === state.theme));
       break;
+    case 'gauge':
+      state.gauge = target.dataset.g;
+      document.querySelectorAll('[data-act="gauge"]').forEach(b =>
+        b.classList.toggle('on', b.dataset.g === state.gauge));
+      render();
+      break;
     case 'scenario':
       applyScenario(target.dataset.s);
       break;
@@ -971,6 +1030,17 @@ document.addEventListener('click', event => {
   }
 });
 
+/* ====================== Comparateur de jauges ====================== */
+function renderGaugeSamples(){
+  const m = model('lfm3-text');
+  const gs = (v, label, note) =>
+    `<div class="gs"><b>${label}</b>${weightLine(m, {variant:v})}<small>${note}</small></div>`;
+  document.getElementById('gauge-samples').innerHTML =
+    gs('a', 'A · piste lisible', 'mêmes couleurs, segments plus francs') +
+    gs('b', 'B · encre', 'un seul ton, le niveau se compte') +
+    gs('c', 'C · barre', 'remplissage à la taille réelle');
+}
+
 /* ====================== Scénarios ====================== */
 function renderScenarios(){
   document.getElementById('scenarios').innerHTML = SCENARIOS.map(s =>
@@ -1003,6 +1073,7 @@ function render(){
 }
 
 applyScenario('trois');
+renderGaugeSamples();
 </script>
 </body>
 </html>
