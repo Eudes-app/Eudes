@@ -526,6 +526,10 @@ private var recommendedModelIDs: Set<String> {
 private func capabilityPill(_ text: String, systemImage: String, filled: Bool) -> some View {
     Label(text, systemImage: systemImage)
         .font(.caption2.weight(.semibold))
+        // Une seule ligne, jamais rétrécie : la pastille se replierait ou s'abrégerait
+        // dès que la ligne du modèle manque de place.
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
         .foregroundStyle(filled ? Palette.ink : Palette.muted)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
@@ -836,7 +840,9 @@ private struct CatalogModelRow: View {
     var body: some View {
         HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
+                // Le badge occupe toujours la même place, sous le nom : sa largeur ne
+                // dépend ni du nom du modèle ni de la taille du texte.
+                VStack(alignment: .leading, spacing: 3) {
                     Text(model.title)
                         .font(.subheadline.weight(recommended ? .semibold : .regular))
                         .foregroundStyle(Palette.ink)
@@ -1119,8 +1125,9 @@ private struct AllModelsView: View {
             .listRowSeparatorTint(Palette.border)
 
             ForEach(LocalModelCatalog.capabilitySections) { section in
+                let models = visibleModels(in: section)
                 Section {
-                    ForEach(visibleModels(in: section)) { model in
+                    ForEach(Array(models.enumerated()), id: \.element.id) { index, model in
                         CatalogModelRow(model: model, inventory: inventory,
                                         recommended: recommendedModelIDs.contains(model.id),
                                         showsStrength: true,
@@ -1128,6 +1135,22 @@ private struct AllModelsView: View {
                             info = model
                             showingInfo = true
                         }
+                        // La cellule ne pose plus ses marges : la ligne les gère pour que
+                        // son trait de séparation parte du bord du texte et coure jusqu'au
+                        // bord de la ligne, sans dépendre des séparateurs système.
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .overlay(alignment: .bottom) {
+                            if index < models.count - 1 {
+                                Rectangle()
+                                    .fill(Palette.border)
+                                    .frame(height: Palette.separatorWidth)
+                                    .padding(.leading, 16)
+                                    .accessibilityHidden(true)
+                            }
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
                     }
                 } header: {
                     Label(section.name, systemImage: section.icon)

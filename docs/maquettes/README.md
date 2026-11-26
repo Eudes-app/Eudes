@@ -22,3 +22,7 @@ promet un écran qui n'existe pas coûte plus cher qu'elle ne rapporte.
 - `rangement-automatique-conversations.html` — le rangement automatique en quatre
   écrans : plan à cocher case par case, bandeau d'annulation complet, réglages avec
   profondeur et modèle d'analyse ; jamais de déplacement silencieux (issue #45).
+- `badge-recommande-separateurs.html` — le badge « Recommandé » qui se replie et se
+  tronque, et les traits de séparation qui ne partent pas du bord du texte : la capture,
+  puis le badge entier et toujours placé sous le nom, y compris avec un texte agrandi
+  (issue #55).
