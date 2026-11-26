@@ -466,7 +466,11 @@ private var recommendedModelIDs: Set<String> {
 /// par défaut — plus jamais sur un en-tête, qui ne parle que pour un groupe.
 private func capabilityPill(_ text: String, systemImage: String, filled: Bool) -> some View {
     Label(text, systemImage: systemImage)
-        .font(.caption2.weight(.semibold))
+        .font(.caption.weight(.semibold))
+        // Une seule ligne, jamais rétrécie : la pastille se replierait ou s'abrégerait
+        // dès que la ligne du modèle manque de place.
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
         .foregroundStyle(filled ? Palette.ink : Palette.muted)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
@@ -487,7 +491,7 @@ private struct ModelPillLabel: View {
                     .font(.system(size: 12, weight: .semibold))
             }
             Text(title)
-                .font(.caption2.weight(.semibold))
+                .font(.caption.weight(.semibold))
         }
         .foregroundStyle(Palette.ink)
         .padding(.horizontal, 9)
@@ -816,30 +820,30 @@ private struct CatalogModelRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(model.title)
-                    .font(.subheadline.weight(recommended ? .semibold : .regular))
+                    .font(.body.weight(recommended ? .semibold : .regular))
                     .foregroundStyle(Palette.ink)
                 if recommended {
                     capabilityPill("Recommandé", systemImage: "checkmark.seal", filled: true)
                 }
             }
             Text(model.strength)
-                .font(.caption)
+                .font(.footnote)
                 .foregroundStyle(Palette.muted)
                 .fixedSize(horizontal: false, vertical: true)
             stateLine
             HStack(spacing: 6) {
                 ModelWeightGauge(level: level, compact: true)
                 Text(modelWeightSummary(model))
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(Palette.muted)
                     .lineLimit(1)
                 Spacer(minLength: 8)
                 actionControl
                 Button(action: onInfo) {
                     Image(systemName: "info.circle")
-                        .font(.system(size: 19))
+                        .font(.system(size: 20))
                         .foregroundStyle(Palette.muted)
                         .frame(width: 32, height: 32)
                         .contentShape(Rectangle())
@@ -904,21 +908,21 @@ private struct CatalogModelRow: View {
     @ViewBuilder private var stateLine: some View {
         if !active.isEmpty {
             Text("Téléchargement en cours")
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(Palette.muted)
         } else if let errorText {
             Text(errorText)
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(Palette.warningText)
                 .fixedSize(horizontal: false, vertical: true)
         } else if let tooHeavy {
             Text(tooHeavy)
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(Palette.warningText)
                 .fixedSize(horizontal: false, vertical: true)
         } else if isSelected {
             Text("Utilisé pour les messages")
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(Palette.muted)
         }
     }
@@ -995,12 +999,12 @@ private struct UsageRow: View {
                     .font(.body)
                     .foregroundStyle(Palette.ink)
                 Text(installed ? "\(model.title) · installé" : model.title)
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(Palette.muted)
                 HStack(spacing: 6) {
                     ModelWeightGauge(level: ModelWeightLevel.forBytes(model.downloadBytes), compact: true)
                     Text(modelWeightSummary(model))
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(Palette.muted)
                 }
             }
@@ -1067,7 +1071,7 @@ private struct AllModelsView: View {
                         withAnimation(.easeInOut(duration: 0.15)) { showsWeightExplanation.toggle() }
                     } label: {
                         Text("Comprendre le poids")
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundStyle(Palette.muted)
                     }
                     .buttonStyle(.plain)
@@ -1084,12 +1088,29 @@ private struct AllModelsView: View {
                         .font(.callout)
                         .foregroundStyle(Palette.muted)
                 } else {
-                    ForEach(visibleModels) { model in
+                    let models = visibleModels
+                    ForEach(Array(models.enumerated()), id: \.element.id) { index, model in
                         CatalogModelRow(model: model, inventory: inventory,
                                         recommended: recommendedModelIDs.contains(model.id)) {
                             info = model
                             showingInfo = true
                         }
+                        // La cellule ne pose plus ses marges : la ligne les gère pour que
+                        // son trait de séparation parte du bord du texte et coure jusqu'au
+                        // bord de la ligne, sans dépendre des séparateurs système.
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .overlay(alignment: .bottom) {
+                            if index < models.count - 1 {
+                                Rectangle()
+                                    .fill(Palette.border)
+                                    .frame(height: Palette.separatorWidth)
+                                    .padding(.leading, 16)
+                                    .accessibilityHidden(true)
+                            }
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
                     }
                 }
             }
@@ -1190,7 +1211,7 @@ private struct AllModelsView: View {
                     withAnimation(.easeInOut(duration: 0.15)) { filter = option }
                 } label: {
                     Text(option == .installed ? "\(option.title) · \(installedCount)" : option.title)
-                        .font(.caption.weight(.semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(filter == option ? Palette.onAccent : Palette.muted)
                         .padding(.horizontal, 11)
                         .padding(.vertical, 6)

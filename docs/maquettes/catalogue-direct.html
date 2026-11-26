@@ -400,8 +400,9 @@
         entrée depuis la carte du modèle actuel change.</li>
       <li>Le code correspondant vit dans <code>ios/Eudes/UI/SettingsView.swift</code> (PR #50) ;
         cette maquette reste la référence visuelle de la proposition.</li>
-      <li>Le correctif du badge « Recommandé » (PR #56) devra être reporté sur cette liste :
-        c'est le même endroit, il se tronque en texte agrandi.</li>
+      <li>Le badge « Recommandé » est posé sous le nom, sur sa propre ligne, et les traits de
+        séparation courent du bord du texte au bord de la ligne (issue #55, intégrée à la
+        PR #50).</li>
     </ul>
   </section>
 </div>
@@ -737,7 +738,8 @@ function catalogRowHTML(m, interactive){
   return `
     <div class="row ${active ? 'active' : ''}" ${attrs}>
       <div class="grow">
-        <div class="r-title"><span class="r-name">${m.name}</span>${rec ? recommendedBadge() : ''}</div>
+        <div class="r-title"><span class="r-name">${m.name}</span></div>
+        ${rec ? `<div style="margin-top:3px;">${recommendedBadge()}</div>` : ''}
         <div class="r-strength">${m.strength}</div>
         ${stateText}
         <div class="r-foot">
