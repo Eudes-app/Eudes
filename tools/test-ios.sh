@@ -1,5 +1,11 @@
 #!/bin/bash
 # Run the same simulator suite locally and in GitHub Actions.
+#
+# Le simulateur démarre en arrière-plan avant `xcodebuild test` : il est prêt
+# quand la compilation se termine, sans allonger le chemin critique.
+#
+# EUDES_TEST_CLASSES limite la suite à des classes de tests (un shard de CI) :
+#   EUDES_TEST_CLASSES="VoiceAssistantTests PrivateStorageTests" bash tools/test-ios.sh
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,6 +26,14 @@ bash tools/prepare-llama-simulator.sh
 
 results_dir="$repo_root/build/test-results/$(date -u +%Y%m%dT%H%M%SZ)-$$"
 mkdir -p "$results_dir"
+
+# Chaque jalon porte son heure : la CI explique ainsi où passe le temps mural.
+milestone() {
+    local stamp
+    stamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf '%s %s\n' "$stamp" "$1" | tee -a "$results_dir/milestones.log"
+}
+
 {
     xcodebuild -version
     printf 'Developer directory: %s\n' "$DEVELOPER_DIR"
@@ -28,6 +42,7 @@ mkdir -p "$results_dir"
     printf 'Revision: '
     git rev-parse HEAD
     printf 'llama.cpp slices: %s\n' "${LLAMA_BUILD_SLICES:-all}"
+    printf 'Test classes: %s\n' "${EUDES_TEST_CLASSES:-all}"
 } | tee "$results_dir/environment.log"
 
 xcode_version="$(xcodebuild -version | awk '/^Xcode / { print $2 }')"
@@ -67,13 +82,24 @@ print(f'Simulator: {device["name"]} ({device["udid"]})', file=sys.stderr)
 PY
 
 read -r simulator_id simulator_state < "$results_dir/destination.txt"
+# Le simulateur démarre en arrière-plan pendant que xcodebuild compile : son
+# démarrage ne s'ajoute donc pas au temps du build.
 if [[ "$simulator_state" != Booted ]]; then
-    xcrun simctl boot "$simulator_id"
+    milestone "boot started for $simulator_id"
+    xcrun simctl boot "$simulator_id" > /dev/null 2>&1 || true
 fi
-xcrun simctl bootstatus "$simulator_id" -b
+
+only_testing=()
+if [[ -n "${EUDES_TEST_CLASSES:-}" ]]; then
+    for class_name in $EUDES_TEST_CLASSES; do
+        only_testing+=("-only-testing:EudesTests/$class_name")
+    done
+    milestone "shard covers ${#only_testing[@]} test classes"
+fi
 
 # Ad-hoc signing lets the test host exercise Keychain on the simulator.
 # It does not require an Apple account, certificate, or provisioning profile.
+milestone "xcodebuild test started"
 xcodebuild \
     -packageAuthorizationProvider netrc \
     -project ios/Eudes.xcodeproj \
@@ -86,7 +112,8 @@ xcodebuild \
     -resultBundlePath "$results_dir/EudesTests.xcresult" \
     CODE_SIGNING_ALLOWED=YES \
     CODE_SIGN_IDENTITY=- \
+    ${only_testing[@]+"${only_testing[@]}"} \
     test 2>&1 | tee "$results_dir/xcodebuild.log"
+milestone "xcodebuild test finished"
 
 printf '\nTests passed. Results: %s\n' "$results_dir"
-

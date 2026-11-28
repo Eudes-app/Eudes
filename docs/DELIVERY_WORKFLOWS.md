@@ -8,6 +8,12 @@ Deux caches accélèrent ce parcours : la tranche simulateur de llama.cpp (`ios/
 
 Pour garder le garde-fou de fusion, le check **iOS tests** doit figurer dans les status checks requis de `main` (protection de branche), comme le sont déjà `Workflow automation checks` et `Personal data check`.
 
+La suite XCTest est répartie sur trois jobs parallèles, un par shard. `tools/test_shards.py` lit les classes `XCTestCase` dans `ios/` et les équilibre sur le nombre de méthodes de test : la répartition n'est jamais recopiée dans le workflow, et `tests/test_test_shards.py` échoue si une classe n'est attribuée à aucun shard — un test ajouté ne peut donc pas sortir de la CI sans que quelqu'un le voie. Chaque job démarre son simulateur en arrière-plan puis lance `xcodebuild test` filtré sur son shard ; les jalons horodatés restent dans `build/test-results/*/milestones.log`. Les shards restent séquentiels (`-parallel-testing-enabled NO`) : aucun test ne partage un Keychain ni un simulateur avec un test simultané.
+
+Le découpage garde `xcodebuild test` en une seule invocation. Une première tentative séparait `build-for-testing` et `test-without-building` : le changement d'action invalidait le `DerivedData` restauré et faisait recompiler toute l'app, soit 12 minutes de build pour un shard. La mesure est dans l'issue 57.
+
+Le job agrégateur porte le nom du check, `XCTest · iPhone simulator`. Il s'exécute avec `if: always()` et échoue si un shard n'est pas vert : un job qui se contenterait de `needs` serait « skipped » en cas d'échec, et un check ignoré passe pour vert. `ios-cache.yml` continue, lui, d'exécuter la suite complète sur `main` pour publier les caches.
+
 ## Tests sur iPhone
 
 Le test sur appareil est manuel. Depuis un Mac auquel l’iPhone est connecté :

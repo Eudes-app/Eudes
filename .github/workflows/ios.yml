@@ -15,15 +15,19 @@ concurrency:
 jobs:
   tests:
     if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
-    name: XCTest · iPhone simulator
+    name: XCTest · iPhone simulator (${{ matrix.shard }}/3)
     runs-on: xcode-27
     timeout-minutes: 60
+    strategy:
+      # Un shard en échec ne doit pas annuler les autres : le journal du run
+      # reste complet, et l'agrégateur décide seul du résultat du check.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     # Les tests ne chargent que la tranche simulateur : ne pas compiler la
     # tranche appareil, inutile ici.
     env:
       LLAMA_BUILD_SLICES: simulator
-    outputs:
-      ios_changed: ${{ steps.changed.outputs.ios_changed }}
     steps:
       - name: Check out current sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,8 +36,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # PR purement documentaire (docs, skill, README…) : le check requis "iOS tests"
-      # doit exister mais réussit en quelques secondes sans lancer le simulateur.
+      # PR purement documentaire (docs, skill, README…) : le check requis
+      # "XCTest · iPhone simulator" doit exister mais réussit en quelques secondes
+      # sans lancer le simulateur.
       - name: Detect iOS-relevant changes
         id: changed
         env:
@@ -50,8 +55,23 @@ jobs:
         if: steps.changed.outputs.ios_changed == 'false'
         run: echo "Aucun changement iOS — tests sautés (PR documentaire)."
 
-      - name: Run Python unit tests
+      # Les trois shards répartissent la même suite : le total doit rester
+      # identique. Les classes sont lues dans les sources par test_shards.py,
+      # et tests/test_test_shards.py échoue si l'une n'est dans aucun shard.
+      - name: Select the test classes of this shard
         if: steps.changed.outputs.ios_changed == 'true'
+        id: shard
+        run: |
+          classes="$(python3 tools/test_shards.py --shards 3 --shard ${{ matrix.shard }} | tr '\n' ' ')"
+          if [[ -z "${classes// /}" ]]; then
+            echo "Aucune classe de tests pour le shard ${{ matrix.shard }}." >&2
+            exit 1
+          fi
+          echo "Shard ${{ matrix.shard }} : $classes"
+          echo "classes=$classes" >> "$GITHUB_OUTPUT"
+
+      - name: Run Python unit tests
+        if: steps.changed.outputs.ios_changed == 'true' && matrix.shard == 1
         run: python3 -m unittest discover -s tests -v
 
       - name: Read toolchain version
@@ -68,7 +88,8 @@ jobs:
       # ou de l'autre vide le cache au lieu de réutiliser un binaire périmé.
       - name: Restore the llama.cpp simulator build
         if: steps.changed.outputs.ios_changed == 'true'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: llama
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ios/Packages/EudesLlama/Artifacts
           key: llama-sim-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ env.LLAMA_BUILD_SLICES }}-${{ hashFiles('tools/prepare-llama-simulator.sh') }}
@@ -80,22 +101,62 @@ jobs:
       # une restauration partielle quand seules quelques sources ont changé.
       - name: Restore DerivedData
         if: steps.changed.outputs.ios_changed == 'true'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: derived
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: build/DerivedData
           key: derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/**/*.swift', 'ios/**/*.xcodeproj/**', 'ios/Packages/**/Package.swift', 'ios/**/*.xcconfig') }}
           restore-keys: |
             derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-
 
-      - name: Run the complete XCTest suite
+      - name: Run this shard of the XCTest suite
         if: steps.changed.outputs.ios_changed == 'true'
+        env:
+          EUDES_TEST_CLASSES: ${{ steps.shard.outputs.classes }}
         run: bash tools/test-ios.sh
+
+      # Un seul shard écrit les caches : les trois produisent le même contenu,
+      # et trois écritures concurrentes sur la même clé se disputeraient la place.
+      - name: Save the llama.cpp simulator build
+        if: success() && matrix.shard == 1 && steps.changed.outputs.ios_changed == 'true' && steps.llama.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ios/Packages/EudesLlama/Artifacts
+          key: llama-sim-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ env.LLAMA_BUILD_SLICES }}-${{ hashFiles('tools/prepare-llama-simulator.sh') }}
+
+      - name: Save DerivedData
+        if: success() && matrix.shard == 1 && steps.changed.outputs.ios_changed == 'true' && steps.derived.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: build/DerivedData
+          key: derived-data-${{ runner.os }}-${{ steps.toolchain.outputs.xcode }}-${{ hashFiles('ios/**/*.swift', 'ios/**/*.xcodeproj/**', 'ios/Packages/**/Package.swift', 'ios/**/*.xcconfig') }}
 
       - name: Upload test results and logs
         if: always() && steps.changed.outputs.ios_changed == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ios-tests-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ios-tests-${{ github.run_id }}-${{ github.run_attempt }}-shard${{ matrix.shard }}
           path: build/test-results/
           if-no-files-found: warn
           retention-days: 14
+
+  # Le nom de ce job est le check requis par la protection de main. Un job qui
+  # ne fait que `needs` un shard serait "skipped" quand ce shard échoue, et un
+  # check ignoré passe pour vert : d'où `if: always()` et la vérification
+  # explicite ci-dessous.
+  aggregate:
+    name: XCTest · iPhone simulator
+    needs: tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject a failed or cancelled shard
+        env:
+          RESULT: ${{ needs.tests.result }}
+        run: |
+          echo "Résultat des trois shards : $RESULT"
+          case "$RESULT" in
+            # "skipped" : PR brouillon, ou aucun fichier iOS modifié.
+            success|skipped) ;;
+            *) exit 1 ;;
+          esac
