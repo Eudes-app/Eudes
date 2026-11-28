@@ -1,10 +1,8 @@
 #!/bin/bash
 # Run the same simulator suite locally and in GitHub Actions.
 #
-# La compilation précède les tests pour que le démarrage du simulateur se fasse
-# pendant le build : `build-for-testing` vise une destination générique et ne
-# dépend d'aucun appareil, `test-without-building` réutilise le même
-# DerivedData sur le simulateur choisi.
+# Le simulateur démarre en arrière-plan avant `xcodebuild test` : il est prêt
+# quand la compilation se termine, sans allonger le chemin critique.
 #
 # EUDES_TEST_CLASSES limite la suite à des classes de tests (un shard de CI) :
 #   EUDES_TEST_CLASSES="VoiceAssistantTests PrivateStorageTests" bash tools/test-ios.sh
@@ -84,8 +82,8 @@ print(f'Simulator: {device["name"]} ({device["udid"]})', file=sys.stderr)
 PY
 
 read -r simulator_id simulator_state < "$results_dir/destination.txt"
-# Le démarrage se poursuit en arrière-plan pendant le build ; `bootstatus`
-# n'est attendu qu'au moment de lancer les tests.
+# Le simulateur démarre en arrière-plan pendant que xcodebuild compile : son
+# démarrage ne s'ajoute donc pas au temps du build.
 if [[ "$simulator_state" != Booted ]]; then
     milestone "boot started for $simulator_id"
     xcrun simctl boot "$simulator_id" > /dev/null 2>&1 || true
@@ -99,36 +97,23 @@ if [[ -n "${EUDES_TEST_CLASSES:-}" ]]; then
     milestone "shard covers ${#only_testing[@]} test classes"
 fi
 
-common=(
-    -packageAuthorizationProvider netrc
-    -project ios/Eudes.xcodeproj
-    -scheme Eudes
-    -configuration Debug
-    -derivedDataPath "${EUDES_DERIVED_DATA_PATH:-$repo_root/build/DerivedData}"
-    CODE_SIGNING_ALLOWED=YES
-    CODE_SIGN_IDENTITY=-
-)
-
-milestone "build-for-testing started"
-xcodebuild "${common[@]}" \
-    -destination 'generic/platform=iOS Simulator' \
-    build-for-testing 2>&1 | tee "$results_dir/build.log"
-milestone "build-for-testing finished"
-
-milestone "simulator boot awaited"
-xcrun simctl bootstatus "$simulator_id" -b 2>&1 | tee -a "$results_dir/build.log"
-milestone "simulator ready"
-
 # Ad-hoc signing lets the test host exercise Keychain on the simulator.
 # It does not require an Apple account, certificate, or provisioning profile.
-milestone "test-without-building started"
-xcodebuild "${common[@]}" \
+milestone "xcodebuild test started"
+xcodebuild \
+    -packageAuthorizationProvider netrc \
+    -project ios/Eudes.xcodeproj \
+    -scheme Eudes \
+    -configuration Debug \
     -destination "platform=iOS Simulator,id=$simulator_id" \
     -destination-timeout 120 \
+    -derivedDataPath "${EUDES_DERIVED_DATA_PATH:-$repo_root/build/DerivedData}" \
     -parallel-testing-enabled NO \
     -resultBundlePath "$results_dir/EudesTests.xcresult" \
+    CODE_SIGNING_ALLOWED=YES \
+    CODE_SIGN_IDENTITY=- \
     ${only_testing[@]+"${only_testing[@]}"} \
-    test-without-building 2>&1 | tee "$results_dir/xcodebuild.log"
-milestone "test-without-building finished"
+    test 2>&1 | tee "$results_dir/xcodebuild.log"
+milestone "xcodebuild test finished"
 
 printf '\nTests passed. Results: %s\n' "$results_dir"
