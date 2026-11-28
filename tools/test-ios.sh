@@ -1,5 +1,13 @@
 #!/bin/bash
 # Run the same simulator suite locally and in GitHub Actions.
+#
+# La compilation précède les tests pour que le démarrage du simulateur se fasse
+# pendant le build : `build-for-testing` vise une destination générique et ne
+# dépend d'aucun appareil, `test-without-building` réutilise le même
+# DerivedData sur le simulateur choisi.
+#
+# EUDES_TEST_CLASSES limite la suite à des classes de tests (un shard de CI) :
+#   EUDES_TEST_CLASSES="VoiceAssistantTests PrivateStorageTests" bash tools/test-ios.sh
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,6 +28,14 @@ bash tools/prepare-llama-simulator.sh
 
 results_dir="$repo_root/build/test-results/$(date -u +%Y%m%dT%H%M%SZ)-$$"
 mkdir -p "$results_dir"
+
+# Chaque jalon porte son heure : la CI explique ainsi où passe le temps mural.
+milestone() {
+    local stamp
+    stamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf '%s %s\n' "$stamp" "$1" | tee -a "$results_dir/milestones.log"
+}
+
 {
     xcodebuild -version
     printf 'Developer directory: %s\n' "$DEVELOPER_DIR"
@@ -28,6 +44,7 @@ mkdir -p "$results_dir"
     printf 'Revision: '
     git rev-parse HEAD
     printf 'llama.cpp slices: %s\n' "${LLAMA_BUILD_SLICES:-all}"
+    printf 'Test classes: %s\n' "${EUDES_TEST_CLASSES:-all}"
 } | tee "$results_dir/environment.log"
 
 xcode_version="$(xcodebuild -version | awk '/^Xcode / { print $2 }')"
@@ -67,26 +84,51 @@ print(f'Simulator: {device["name"]} ({device["udid"]})', file=sys.stderr)
 PY
 
 read -r simulator_id simulator_state < "$results_dir/destination.txt"
+# Le démarrage se poursuit en arrière-plan pendant le build ; `bootstatus`
+# n'est attendu qu'au moment de lancer les tests.
 if [[ "$simulator_state" != Booted ]]; then
-    xcrun simctl boot "$simulator_id"
+    milestone "boot started for $simulator_id"
+    xcrun simctl boot "$simulator_id" > /dev/null 2>&1 || true
 fi
-xcrun simctl bootstatus "$simulator_id" -b
+
+only_testing=()
+if [[ -n "${EUDES_TEST_CLASSES:-}" ]]; then
+    for class_name in $EUDES_TEST_CLASSES; do
+        only_testing+=("-only-testing:EudesTests/$class_name")
+    done
+    milestone "shard covers ${#only_testing[@]} test classes"
+fi
+
+common=(
+    -packageAuthorizationProvider netrc
+    -project ios/Eudes.xcodeproj
+    -scheme Eudes
+    -configuration Debug
+    -derivedDataPath "${EUDES_DERIVED_DATA_PATH:-$repo_root/build/DerivedData}"
+    CODE_SIGNING_ALLOWED=YES
+    CODE_SIGN_IDENTITY=-
+)
+
+milestone "build-for-testing started"
+xcodebuild "${common[@]}" \
+    -destination 'generic/platform=iOS Simulator' \
+    build-for-testing 2>&1 | tee "$results_dir/build.log"
+milestone "build-for-testing finished"
+
+milestone "simulator boot awaited"
+xcrun simctl bootstatus "$simulator_id" -b 2>&1 | tee -a "$results_dir/build.log"
+milestone "simulator ready"
 
 # Ad-hoc signing lets the test host exercise Keychain on the simulator.
 # It does not require an Apple account, certificate, or provisioning profile.
-xcodebuild \
-    -packageAuthorizationProvider netrc \
-    -project ios/Eudes.xcodeproj \
-    -scheme Eudes \
-    -configuration Debug \
+milestone "test-without-building started"
+xcodebuild "${common[@]}" \
     -destination "platform=iOS Simulator,id=$simulator_id" \
     -destination-timeout 120 \
-    -derivedDataPath "${EUDES_DERIVED_DATA_PATH:-$repo_root/build/DerivedData}" \
     -parallel-testing-enabled NO \
     -resultBundlePath "$results_dir/EudesTests.xcresult" \
-    CODE_SIGNING_ALLOWED=YES \
-    CODE_SIGN_IDENTITY=- \
-    test 2>&1 | tee "$results_dir/xcodebuild.log"
+    ${only_testing[@]+"${only_testing[@]}"} \
+    test-without-building 2>&1 | tee "$results_dir/xcodebuild.log"
+milestone "test-without-building finished"
 
 printf '\nTests passed. Results: %s\n' "$results_dir"
-

@@ -55,9 +55,14 @@ bash tools/test-ios.sh
 EUDES_SIMULATOR_ID=<UDID> bash tools/test-ios.sh
 EUDES_DERIVED_DATA_PATH=build/DerivedData bash tools/test-ios.sh
 
+# un seul shard, comme en CI (sans filtre, la suite complète s'exécute)
+EUDES_TEST_CLASSES="VoiceAssistantTests PrivateStorageTests" bash tools/test-ios.sh
+
 # ce que fait la CI : tranche simulateur seule, sans la tranche appareil
 LLAMA_BUILD_SLICES=simulator bash tools/test-ios.sh
 ```
+
+Le script compile d'abord (`build-for-testing` sur une destination générique) pendant que le simulateur démarre, puis exécute les tests (`test-without-building`). `python3 tools/test_shards.py --shards 3 --shard 2` affiche les classes du shard 2 ; `--list` affiche chaque classe avec son nombre de méthodes.
 
 Sans `LLAMA_BUILD_SLICES`, les deux tranches de llama.cpp sont compilées ; la tranche appareil est nécessaire à `tools/build-device.sh`, qui refuse sinon de compiler.
 
